@@ -29,11 +29,6 @@ export class JsIpfsService {
     return this.wrapIpfsItem(dirResult);
   }
 
-  async saveFileByPath(path) {
-    const fs = require('fs');
-    return this.saveFile({content: fs.createReadStream(path)});
-  }
-
   async saveFileByData(content) {
     if (_.isString(content)) {
       content = Buffer.from(content, 'utf8');
