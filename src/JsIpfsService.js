@@ -137,7 +137,7 @@ export class JsIpfsService {
         }
         reject('Failed to fetch');
       }, 1000);
-      ipfs.bootstrap.list((err, res) => {
+      this.node.bootstrap.list((err, res) => {
         responded = true;
         return err ? reject(err) : resolve(res.Peers);
       });
