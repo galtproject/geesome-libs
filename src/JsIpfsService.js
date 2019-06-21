@@ -2,8 +2,6 @@ const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
 
 export class JsIpfsService {
-  node;
-
   constructor(node) {
     this.node = node;
   }
