@@ -112,6 +112,12 @@ export class JsIpfsService {
   async getObjectProp(storageId, propName) {
     return this.node.dag.get(storageId + '/' + propName).then(response => response.value);
   }
+  
+  getObjectRef(storageId) {
+    return {
+      '/' : storageId
+    }
+  }
 
   async bindToStaticId(storageId, accountKey) {
     if (_.startsWith(accountKey, 'Qm')) {
