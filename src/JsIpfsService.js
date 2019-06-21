@@ -13,7 +13,7 @@ export class JsIpfsService {
             id: ipfsItem.hash,
             path: ipfsItem.path,
             size: ipfsItem.size,
-            storageAccountId: await this.getCurrentAccountId()
+            // storageAccountId: await this.getCurrentAccountId()
         }
     }
 
