@@ -124,7 +124,7 @@ export class JsIpfsService {
 
   async resolveStaticId(staticStorageId) {
     return this.node.name.resolve(staticStorageId).then(response => {
-      return response.path.replace('/ipfs/', '')
+      return (response && response.path ? response.path : response).replace('/ipfs/', '')
     });
   }
 
