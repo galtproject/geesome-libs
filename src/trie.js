@@ -1,5 +1,6 @@
 const trieLib = {
   setNode(tree, id, node) {
+    id = id.toString();
     const treePath = trieLib.getTreePath(id);
 
     let parentNode = tree;

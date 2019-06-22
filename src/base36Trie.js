@@ -3,7 +3,7 @@ const trie = require('./trie');
 
 const base36TrieLib = {
   setNode(tree, id, node) {
-    id = base36.encode(id);
+    id = base36.encode(id.toString());
     trie.setNode(tree, id, node);
   },
 
