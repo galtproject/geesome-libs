@@ -8,7 +8,7 @@ const base36TrieLib = {
   },
 
   getNode(tree, id) {
-    id = base36.encode(id);
+    id = base36.encode(id.toString());
     return trie.getNode(tree, id);
   },
 

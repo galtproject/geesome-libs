@@ -17,6 +17,7 @@ const trieLib = {
   },
 
   getNode(tree, id) {
+    id = id.toString();
     const treePath = trieLib.getTreePath(id);
     let curNode = tree;
     for (let i = 0; i < treePath.length; i++) {
