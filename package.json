@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "cids": "^0.7.1",
-    "lodash": "^4.17.11"sr
+    "lodash": "^4.17.11"
   }
 }
