@@ -1,7 +1,7 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
 
-export class JsIpfsService {
+module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
   }
@@ -112,13 +112,13 @@ export class JsIpfsService {
     }
   }
 
-  async bindToStaticId(storageId, accountKey) {
+  async bindToStaticId(storageId, accountKey, hours = 1) {
     if (_.startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
     return this.node.name.publish(`${storageId}`, {
       key: accountKey,
-      lifetime: '175200h'
+      lifetime: hours + 'h'
     }).then(response => response.name);
   }
 
@@ -185,4 +185,4 @@ export class JsIpfsService {
       })
     });
   }
-}
+};
