@@ -1,6 +1,6 @@
-module.exports.isNumber = (str) => {
-  const _ = require('lodash');
+const _ = require('lodash');
 
+module.exports.isNumber = (str) => {
   if (_.isString(str) && !/^[0-9.]+$/.test(str)) {
     return false;
   }
