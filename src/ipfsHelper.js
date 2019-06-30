@@ -8,7 +8,10 @@ const waterfall = require('async/waterfall');
 const base64url = require('base64url');
 const { fromB58String } = require('multihashes');
 
-module.exports = {
+const peerId = require('peer-id');
+const util = require('util');
+
+const ipfsHelper = {
   isIpfsHash(value) {
     if (!value) {
       return false;
@@ -52,11 +55,17 @@ module.exports = {
     const idKeys = ipns.getIdKeys(multihash);
     return `${namespace}${base64url.encode(idKeys.routingKey.toBuffer())}`;
   },
+
+  createPeerIdFromPubKey: util.promisify(peerId.createFromPubKey).bind(peerId),
+  createPeerIdFromPrivKey: util.promisify(peerId.createFromPrivKey).bind(peerId),
+  
   async parsePubSubEvent(event) {
-    event.key = await this.createPeerIdFromPubKey(event.key);
+    event.key = await ipfsHelper.createPeerIdFromPubKey(event.key);
     event.data = ipns.unmarshal(event.data);
-    event.data.peerId = await this.createPeerIdFromPubKey(event.data.pubKey);
+    event.data.peerId = await ipfsHelper.createPeerIdFromPubKey(event.data.pubKey);
     event.data.valueStr = event.data.value.toString('utf8');
     return event;
   }
 };
+
+module.exports = ipfsHelper;
