@@ -16,6 +16,7 @@ module.exports = class JsIpfsService {
     this.fSubPublishByPeerId = util.promisify(this.fsub.publishByPeerId).bind(this.fsub);
     this.swarmConnect = util.promisify(node.swarm.connect).bind(node.swarm);
     this.createPeerIdFromPubKey = util.promisify(peerId.createFromPubKey).bind(peerId);
+    this.createPeerIdFromPrivKey = util.promisify(peerId.createFromPrivKey).bind(peerId);
   }
 
   async wrapIpfsItem(ipfsItem) {
