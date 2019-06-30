@@ -1,7 +1,7 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
 const peerId = require('peer-id');
-const ipfsImproves = require('ipfsImproves');
+const ipfsImproves = require('./ipfsImproves');
 const util = require('util');
 
 module.exports = class JsIpfsService {
