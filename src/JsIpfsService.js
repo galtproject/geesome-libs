@@ -206,7 +206,7 @@ module.exports = class JsIpfsService {
   
   publishEventByPeerId(peerId, topic, data) {
     if(_.isString(data)) {
-      data = new Buffer('banana');
+      data = new Buffer(data);
     }
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
@@ -216,6 +216,17 @@ module.exports = class JsIpfsService {
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       });
+    });
+  }
+  
+  async keyLookup(accountKey) {
+    if (_.startsWith(accountKey, 'Qm')) {
+      accountKey = await this.getAccountNameById(accountKey);
+    }
+    return new Promise((resolve, reject) => {
+      ipfsHelper.keyLookup(this.node, accountKey, (err, res) => {
+        return err ? reject(err) : resolve(res);
+      })
     });
   }
 };
