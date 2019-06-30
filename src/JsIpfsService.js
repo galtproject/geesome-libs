@@ -12,7 +12,7 @@ module.exports = class JsIpfsService {
     ipfsImproves.improveFloodSub(this.fsub);
     ipfsImproves.improvePubSub(this.fsub);
 
-    this.pubSubSubscribe = util.promisify(this.fsub.subscribe).bind(this.fsub);
+    this.pubSubSubscribe = util.promisify(node.pubsub.subscribe).bind(node.pubsub);
     this.fSubPublishByPeerId = util.promisify(this.fsub.publishByPeerId).bind(this.fsub);
     this.swarmConnect = util.promisify(node.swarm.connect).bind(node.swarm);
     this.createPeerIdFromPubKey = util.promisify(peerId.createFromPubKey).bind(peerId);
