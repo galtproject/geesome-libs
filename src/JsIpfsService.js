@@ -209,6 +209,15 @@ module.exports = class JsIpfsService {
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
 
+  getIpnsPeers(ipnsId) {
+    const topic = ipfsHelper.getIpnsUpdatesTopic(ipnsId);
+    return this.getPeers(topic);
+  }
+  
+  getPeers(topic) {
+    return this.node.pubsub.peers(topic);
+  }
+
   subscribeToEvent(topic, callback) {
     return this.pubSubSubscribe(topic, async (event) => {
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
