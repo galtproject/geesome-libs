@@ -1,9 +1,21 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
+const peerId = require('peer-id');
+const ipfsImproves = require('ipfsImproves');
+const util = require('util');
 
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
+    this.fsub = node.libp2p._floodSub;
+    
+    ipfsImproves.improveFloodSub(this.fsub);
+    ipfsImproves.improvePubSub(this.fsub);
+
+    this.pubSubSubscribe = util.promisify(this.fsub.subscribe).bind(this.fsub);
+    this.fSubPublishByPeerId = util.promisify(this.fsub.publishByPeerId).bind(this.fsub);
+    this.swarmConnect = util.promisify(node.swarm.connect).bind(node.swarm);
+    this.createPeerIdFromPubKey = util.promisify(peerId.createFromPubKey).bind(peerId);
   }
 
   async wrapIpfsItem(ipfsItem) {
@@ -164,6 +176,7 @@ module.exports = class JsIpfsService {
 
   async nodeAddressList() {
     return new Promise((resolve, reject) => {
+      //TODO: replace by calling id()
       this.node.swarm.localAddrs((err, res) => {
         if (err) {
           return reject(err);
@@ -183,6 +196,26 @@ module.exports = class JsIpfsService {
           .value();
         resolve(addresses);
       })
+    });
+  }
+  
+  subscribeToIpnsUpdates(ipnsId, callback) {
+    const topic = ipfsHelper.getIpnsUpdatesTopic(ipnsId);
+    return this.subscribeToEvent(topic, callback);
+  }
+  
+  publishEventByPeerId(peerId, topic, data) {
+    if(_.isString(data)) {
+      data = new Buffer('banana');
+    }
+    return this.fSubPublishByPeerId(peerId, topic, data);
+  }
+
+  subscribeToEvent(topic, callback) {
+    return this.pubSubSubscribe(topic, async (event) => {
+      ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
+        callback(parsedEvent);
+      });
     });
   }
 };
