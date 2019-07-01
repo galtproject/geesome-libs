@@ -12,7 +12,10 @@ const base36TrieLib = {
     return trie.getNode(tree, id);
   },
 
-  getTreePath: trie.getTreePath
+  getTreePath(id) {
+    id = base36.encode(id.toString());
+    return trie.getTreePath(id);
+  }
 };
 
 module.exports = base36TrieLib;
