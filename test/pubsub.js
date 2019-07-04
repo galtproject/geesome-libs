@@ -78,7 +78,7 @@ describe('pubsub', function () {
       await nodeB.subscribeToEvent(testTopic, async (message) => {
         expect(message.keyPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
 
-        const isValid = await ipfsHelper.checkPubSubSign(message.key, message);
+        const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
         expect(isValid).to.equal(true);
         done();
       });

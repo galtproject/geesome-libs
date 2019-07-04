@@ -77,7 +77,7 @@ const ipfsHelper = {
     return event;
   },
 
-  checkPubSubSign(pubKey, message) {
+  checkPubSubSignature(pubKey, message) {
     const msg = utils.normalizeOutRpcMessage(_.pick(message, ['from', 'data', 'seqno', 'topicIDs']));
 
     const bytes = Buffer.concat([
