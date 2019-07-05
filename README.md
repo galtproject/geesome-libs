@@ -1,5 +1,5 @@
 # Libraries for effective working with IPFS
-Created for [GeeSome project](https://github.com/galtspace/geesome)
+Created for [GeeSome project](https://github.com/galtspace/geesome-core)
 ## Features:
 - Trie for store large list in IPLD: [base36Trie.js](./src/base36Trie.js)
 - IPFS wrapper for improve developer-friendly expirience: [JsIpfsService.js](./src/JsIpfsService.js)
