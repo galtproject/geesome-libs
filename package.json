@@ -16,6 +16,7 @@
     "ipns": "^0.5.2",
     "lodash": "^4.17.11",
     "peer-id": "^0.12.2",
+    "multihashes": "~0.4.14",
     "util": "^0.12.0"
   },
   "devDependencies": {

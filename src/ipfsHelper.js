@@ -6,10 +6,12 @@ const crypto = require('libp2p-crypto');
 const errcode = require('err-code');
 const waterfall = require('async/waterfall');
 const base64url = require('base64url');
-const { fromB58String } = require('multihashes');
-const { Message } = require('libp2p-pubsub/src/message')
-const { SignPrefix } = require('libp2p-pubsub/src/message/sign')
+const {fromB58String} = require('multihashes');
+const {Message} = require('libp2p-pubsub/src/message')
+const {SignPrefix} = require('libp2p-pubsub/src/message/sign')
 const {utils} = require('libp2p-pubsub');
+const multihash = require('multihashes');
+const ID_MULTIHASH_CODE = multihash.names.id
 
 const peerId = require('peer-id');
 const util = require('util');
@@ -61,9 +63,10 @@ const ipfsHelper = {
 
   createPeerIdFromPubKey: util.promisify(peerId.createFromPubKey).bind(peerId),
   createPeerIdFromPrivKey: util.promisify(peerId.createFromPrivKey).bind(peerId),
-  
+
   async parsePubSubEvent(event) {
-    event.key = await ipfsHelper.createPeerIdFromPubKey(event.key);
+    event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
+    event.key = event.keyPeerId._pubKey;
     try {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
@@ -73,17 +76,17 @@ const ipfsHelper = {
     }
     return event;
   },
-  
-  checkPubSubSign(peerId, message) {
+
+  checkPubSubSignature(pubKey, message) {
     const msg = utils.normalizeOutRpcMessage(_.pick(message, ['from', 'data', 'seqno', 'topicIDs']));
-    
+
     const bytes = Buffer.concat([
       SignPrefix,
       Message.encode(msg)
     ]);
 
     return new Promise((resolve, reject) => {
-      peerId._pubKey.verify(bytes, message.signature, (err, isValid) => {
+      pubKey.verify(bytes, message.signature, (err, isValid) => {
         err ? reject(err) : resolve(isValid);
       });
     });
