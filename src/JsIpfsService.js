@@ -221,6 +221,10 @@ module.exports = class JsIpfsService {
     return this.node.pubsub.peers(topic);
   }
 
+  getPubSubLs() {
+    return this.node.pubsub.ls();
+  }
+
   subscribeToEvent(topic, callback) {
     return this.pubSubSubscribe(topic, async (event) => {
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
