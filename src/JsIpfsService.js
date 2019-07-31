@@ -158,9 +158,13 @@ module.exports = class JsIpfsService {
   }
 
   async addBootNode(address) {
-    await new Promise((resolve, reject) => {
-      this.node.swarm.connect(address, (err, res) => err ? reject(err) : resolve());
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        this.node.swarm.connect(address, (err, res) => err ? reject(err) : resolve());
+      });
+    } catch (e) {
+      console.warn('addBootNode swarm.connect error', address, e);
+    }
     return new Promise((resolve, reject) => {
       this.node.bootstrap.add(address, (err, res) => err ? reject(err) : resolve(res.Peers));
     });
@@ -219,6 +223,10 @@ module.exports = class JsIpfsService {
   
   getPeers(topic) {
     return this.node.pubsub.peers(topic);
+  }
+
+  getPubSubLs() {
+    return this.node.pubsub.ls();
   }
 
   subscribeToEvent(topic, callback) {
