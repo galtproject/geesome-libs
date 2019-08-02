@@ -27,11 +27,9 @@ export class GeesomeClient {
   
   async init() {
     await this.setServer(this.server);
+    this.setApiKey(this.apiKey);
     if(this.ipfsNode) {
       await this.setIpfsNode(this.ipfsNode);
-    }
-    if(this.apiKey) {
-      this.setApiKey(this.apiKey);
     }
   }
   
@@ -60,11 +58,8 @@ export class GeesomeClient {
 
   async setServer(server) {
     this.server = server;
-    // localStorage.setItem('geesome-server', server);
-    // appStore.commit('serverAddress', server);
-
     this.$http.defaults.baseURL = server;
-    return this.setServerIpfsAddreses();
+    await this.setServerIpfsAddreses();
   }
   
   setApiKey(apiKey) {
