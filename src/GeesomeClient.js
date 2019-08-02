@@ -397,7 +397,7 @@ export class GeesomeClient {
   }
 
   async connectToIpfsNodeToServer() {
-    await pIteration.forEach(serverIpfsAddresses, async (address) => {
+    await pIteration.forEach(this.serverIpfsAddresses, async (address) => {
       return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
     })
   }
