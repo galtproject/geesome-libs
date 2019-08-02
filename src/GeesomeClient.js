@@ -412,19 +412,16 @@ export class GeesomeClient {
     });
   }
   
-  async getPreloadAddresses() {
-    let isLocalServer;
-
-    if (!this.server) {
-      let port = 7722;
-      if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || _.startsWith(document.location.pathname, '/node')) {
-        port = 7711;
-        isLocalServer = true;
-      }
-      this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
-    } else {
-      isLocalServer = _.includes(this.server, ':7711');
+  setServerByDocumentLocation() {
+    let port = 7722;
+    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || _.startsWith(document.location.pathname, '/node')) {
+      port = 7711;
     }
+    this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
+  }
+  
+  async getPreloadAddresses() {
+    let isLocalServer = _.includes(this.server, ':7711');
 
     await this.setServerIpfsAddreses();
 
