@@ -537,3 +537,11 @@ export class BrowserLocalClientStorage extends AbstractClientStorage {
     localStorage.setItem(name, JSON.stringify(value));
   }
 }
+
+
+module.exports = {
+  GeesomeClient,
+  AbstractClientStorage,
+  SimpleClientStorage,
+  BrowserLocalClientStorage
+};
