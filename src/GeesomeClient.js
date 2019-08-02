@@ -30,6 +30,9 @@ export class GeesomeClient {
     if(this.ipfsNode) {
       await this.setIpfsNode(this.ipfsNode);
     }
+    if(this.apiKey) {
+      this.setApiKey(this.apiKey);
+    }
   }
   
   getRequest(url, options = null) {
@@ -71,8 +74,13 @@ export class GeesomeClient {
     this.$http.defaults.headers.get['Authorization'] = 'Bearer ' + apiKey;
   }
 
-  async login(server, username, password) {
-    await this.setServer(server);
+  async setIpfsNode(ipfsNode) {
+    this.ipfsNode = ipfsNode;
+    this.ipfsService = new JsIpfsService(this.ipfsNode);
+    return this.connectToIpfsNodeToServer();
+  }
+
+  async loginUserPass(username, password) {
     return this.postRequest('/v1/login', {username, password}).then(data => {
       this.setApiKey(data.apiKey);
       return data;
@@ -452,12 +460,6 @@ export class GeesomeClient {
     return preloadAddresses;
   }
   
-  async setIpfsNode(ipfsNode) {
-    this.ipfsNode = ipfsNode;
-    this.ipfsService = new JsIpfsService(this.ipfsNode);
-    return this.connectToIpfsNodeToServer();
-  }
-  
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
       return new Promise((resolve, reject) => {
@@ -472,7 +474,7 @@ export class GeesomeClient {
       })
     }
     
-    this.setIpfsNode(await createIpfsNode({
+    return this.setIpfsNode(await createIpfsNode({
       preload: {
         enabled: true,
         addresses: await this.getPreloadAddresses()
