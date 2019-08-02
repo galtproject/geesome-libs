@@ -6,7 +6,7 @@ const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
-export class GeesomeClient {
+class GeesomeClient {
   constructor(config) {
     this.server = config.server;
     this.apiKey = config.apiKey;
@@ -475,7 +475,7 @@ export class GeesomeClient {
   }
 }
 
-export class AbstractClientStorage {
+class AbstractClientStorage {
   set(name, value) {
     assert(false, 'you have to override getValue');
   }
@@ -510,7 +510,7 @@ export class AbstractClientStorage {
   }
 }
 
-export class SimpleClientStorage extends AbstractClientStorage {
+class SimpleClientStorage extends AbstractClientStorage {
   constructor() {
     super();
     this.storage = {};
@@ -524,7 +524,7 @@ export class SimpleClientStorage extends AbstractClientStorage {
   }
 }
 
-export class BrowserLocalClientStorage extends AbstractClientStorage {
+class BrowserLocalClientStorage extends AbstractClientStorage {
   get(name) {
     try {
       return JSON.parse(localStorage.getItem(name));
