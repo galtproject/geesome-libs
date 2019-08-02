@@ -72,6 +72,10 @@ export class GeesomeClient {
 
     this.$http.defaults.headers.post['Authorization'] = 'Bearer ' + apiKey;
     this.$http.defaults.headers.get['Authorization'] = 'Bearer ' + apiKey;
+    
+    if(!apiKey) {
+      this.serverLessMode = true;
+    }
   }
 
   async setIpfsNode(ipfsNode) {
