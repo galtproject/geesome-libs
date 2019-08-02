@@ -525,7 +525,7 @@ export class SimpleClientStorage extends AbstractClientStorage {
 }
 
 export class BrowserLocalClientStorage extends AbstractClientStorage {
-  static get(name) {
+  get(name) {
     try {
       return JSON.parse(localStorage.getItem(name));
     } catch (e) {
@@ -533,7 +533,7 @@ export class BrowserLocalClientStorage extends AbstractClientStorage {
     }
   }
 
-  static set(name, value) {
+  set(name, value) {
     localStorage.setItem(name, JSON.stringify(value));
   }
 }
