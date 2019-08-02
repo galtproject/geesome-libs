@@ -227,7 +227,7 @@ export class GeesomeClient {
       ipldHash = ipldHash['/'];
     }
     //this.getRequest(`/ipld/${ipldHash}`))
-    return ipfsService.getObject(ipldHash).then(ipldData => {
+    return this.ipfsService.getObject(ipldHash).then(ipldData => {
       if (!ipldData) {
         return null;
       }
