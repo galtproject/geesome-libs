@@ -440,7 +440,7 @@ export class GeesomeClient {
       })
     }
 
-    preloadAddresses.map(address => {
+    preloadAddresses = preloadAddresses.map(address => {
       return address.replace('/p2p-circuit', '').replace('4002', '5002').replace(/\/ipfs\/.+/, '/');
     });
 
