@@ -7,14 +7,6 @@ const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
 export class GeesomeClient {
-  server;
-  apiKey;
-  ipfsNode;
-
-  ipfsService;
-  serverIpfsAddresses;
-  serverLessMode;
-
   constructor(config) {
     this.server = config.server;
     this.apiKey = config.apiKey;
@@ -23,6 +15,10 @@ export class GeesomeClient {
     this.clientStorage = config.clientStorage;
 
     this.$http = axios.create({});
+    
+    this.ipfsService = null;
+    this.serverIpfsAddresses = [];
+    this.serverLessMode = true;
   }
   
   async init() {
@@ -518,7 +514,10 @@ export class AbstractClientStorage {
 }
 
 export class SimpleClientStorage extends AbstractClientStorage {
-  storage = {};
+  constructor() {
+    super();
+    this.storage = {};
+  }
   
   set(name, value) {
     this.storage[name] = value;
