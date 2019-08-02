@@ -33,7 +33,7 @@ export class GeesomeClient {
     return this.wrapResponse(this.$http.get(url, options));
   }
   postRequest(url, data = null) {
-    return this.wrapResponse(this.$http.post(url, options));
+    return this.wrapResponse(this.$http.post(url, data));
   }
 
   wrapResponse(httPromise) {
