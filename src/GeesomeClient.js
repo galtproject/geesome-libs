@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+const axios = require('axios');
 const _ = require('lodash');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
