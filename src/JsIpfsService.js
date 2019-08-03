@@ -42,6 +42,12 @@ module.exports = class JsIpfsService {
     return this.wrapIpfsItem(dirResult);
   }
 
+  async saveBrowserFile(fileObject) {
+    const result = await this.node.add(fileObject);
+    await this.node.pin.add(result[0].hash);
+    return this.wrapIpfsItem(result[0]);
+  }
+
   async saveFileByData(content) {
     if (_.isString(content)) {
       content = Buffer.from(content, 'utf8');
