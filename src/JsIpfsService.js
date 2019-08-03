@@ -1,7 +1,7 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
 const ipfsImproves = require('./ipfsImproves');
-const util = require('util');
+const {promisify} = require('es6-promisify');
 
 module.exports = class JsIpfsService {
   constructor(node) {
@@ -14,9 +14,9 @@ module.exports = class JsIpfsService {
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     
-    this.pubSubSubscribe = util.promisify(node.pubsub.subscribe).bind(node.pubsub);
-    this.fSubPublishByPeerId = util.promisify(this.fsub.publishByPeerId).bind(this.fsub);
-    this.swarmConnect = util.promisify(node.swarm.connect).bind(node.swarm);
+    this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
+    this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
+    this.swarmConnect =  promisify(node.swarm.connect).bind(node.swarm);
   }
 
   async wrapIpfsItem(ipfsItem) {

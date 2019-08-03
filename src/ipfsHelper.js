@@ -14,7 +14,7 @@ const multihash = require('multihashes');
 const ID_MULTIHASH_CODE = multihash.names.id
 
 const peerId = require('peer-id');
-const util = require('util');
+const {promisify} = require('es6-promisify');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -61,8 +61,8 @@ const ipfsHelper = {
     return `${namespace}${base64url.encode(idKeys.routingKey.toBuffer())}`;
   },
 
-  createPeerIdFromPubKey: util.promisify(peerId.createFromPubKey).bind(peerId),
-  createPeerIdFromPrivKey: util.promisify(peerId.createFromPrivKey).bind(peerId),
+  createPeerIdFromPubKey: promisify(peerId.createFromPubKey).bind(peerId),
+  createPeerIdFromPrivKey: promisify(peerId.createFromPrivKey).bind(peerId),
 
   async parsePubSubEvent(event) {
     event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
