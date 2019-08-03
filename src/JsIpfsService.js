@@ -6,16 +6,21 @@ const {promisify} = require('es6-promisify');
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    this.fsub = node.libp2p._floodSub;
     
-    ipfsImproves.improveFloodSub(this.fsub);
-    ipfsImproves.improvePubSub(this.fsub);
+    if(node.libp2p) {
+      this.fsub = node.libp2p._floodSub;
+
+      ipfsImproves.improveFloodSub(this.fsub);
+      ipfsImproves.improvePubSub(this.fsub);
+      this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
+      this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
+    } else {
+      console.warn("[JsIpfsService] Warning: libp2p features disabled")
+    }
 
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     
-    this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
-    this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
     this.swarmConnect =  promisify(node.swarm.connect).bind(node.swarm);
   }
 
