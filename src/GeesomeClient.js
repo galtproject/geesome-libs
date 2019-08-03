@@ -184,7 +184,7 @@ class GeesomeClient {
       groupId = await this.resolveIpns(groupId);
     }
 
-    const groupObj = await this.getIpld(groupId);
+    const groupObj = await this.getObject(groupId);
 
     await this.fetchIpldFields(groupObj, ['avatarImage', 'coverImage']);
 
@@ -197,7 +197,7 @@ class GeesomeClient {
       if (!_.get(obj, fieldName)) {
         return;
       }
-      _.set(obj, fieldName, await this.getIpld(_.get(obj, fieldName)));
+      _.set(obj, fieldName, await this.getObject(_.get(obj, fieldName)));
     })
   }
 
@@ -210,7 +210,7 @@ class GeesomeClient {
       storageId = image.content;
     }
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getIpld(storageId).content);
+      storageId = (await this.getObject(storageId).content);
     }
     if (!storageId) {
       storageId = image;
@@ -218,7 +218,7 @@ class GeesomeClient {
     return this.server + '/v1/content-data/' + storageId;
   }
 
-  async getIpld(ipldHash) {
+  async getObject(ipldHash) {
     if (ipldHash.multihash || ipldHash.hash) {
       ipldHash = ipfsHelper.cidToHash(ipldHash);
     }
@@ -259,7 +259,7 @@ class GeesomeClient {
     const posts = [];
     pIteration.forEach(_.range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
-      const post = await this.getIpld(postsPath + postNumberPath);
+      const post = await this.getObject(postsPath + postNumberPath);
       post.id = postNumber;
       post.manifestId = ipfsHelper.cidToHash(trie.getNode(group.posts, postNumber));
       post.groupId = groupId;
@@ -284,12 +284,12 @@ class GeesomeClient {
     const group = await this.getGroup(groupId);
     let post;
     if (ipfsHelper.isIpldHash(postId)) {
-      post = await this.getIpld(postId);
+      post = await this.getObject(postId);
       post.manifestId = postId;
     } else {
       const postsPath = group.id + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
-      post = await this.getIpld(postsPath + postNumberPath);
+      post = await this.getObject(postsPath + postNumberPath);
       post.manifestId = ipfsHelper.cidToHash(trie.getNode(group.posts, postId));
     }
 
