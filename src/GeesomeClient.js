@@ -92,6 +92,10 @@ class GeesomeClient {
       return data;
     });
   }
+  
+  updateCurrentUser(userData) {
+    return this.postRequest(`/v1/user/update`, userData);
+  }
 
   createGroup(groupData) {
     return this.postRequest(`/v1/user/create-group`, groupData);
