@@ -351,6 +351,10 @@ class GeesomeClient {
     return this.getRequest(`/v1/admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
   }
 
+  getUserApiKeys() {
+    return this.getRequest(`/v1/user/api-keys`);
+  }
+
   adminCreateUser(userData) {
     return this.postRequest(`/v1/admin/add-user`, userData);
   }
@@ -371,7 +375,7 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
-  adminAddUserAPiKey(userId) {
+  adminAddUserApiKey(userId) {
     return this.postRequest(`/v1/admin/add-user-api-key`, {userId});
   }
 
