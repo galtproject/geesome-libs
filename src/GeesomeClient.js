@@ -312,8 +312,8 @@ class GeesomeClient {
     return this.getRequest(`/resolve/${ipns}`).catch(() => null);
   }
 
-  getFileCatalogItems(parentItemId, type, params) {
-    let {sortBy, sortDir, limit, offset, search} = params;
+  getFileCatalogItems(parentItemId, type, listParams = {}) {
+    let {sortBy, sortDir, limit, offset, search} = listParams;
 
     if (!sortBy) {
       sortBy = 'updatedAt';
@@ -346,12 +346,12 @@ class GeesomeClient {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
-  getAllItems(itemsName, search, listParams) {
+  getAllItems(itemsName, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`/v1/admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
   }
 
-  getUserApiKeys(listParams) {
+  getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`/v1/user/api-keys`, {params: {sortBy, sortDir, limit, offset}});
   }
