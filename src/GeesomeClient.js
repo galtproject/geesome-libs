@@ -346,13 +346,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
-  getAllItems(itemsName, search, params) {
-    let {sortBy, sortDir, limit, offset} = params;
+  getAllItems(itemsName, search, listParams) {
+    let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`/v1/admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
   }
 
-  getUserApiKeys() {
-    return this.getRequest(`/v1/user/api-keys`);
+  getUserApiKeys(listParams) {
+    let {sortBy, sortDir, limit, offset} = listParams;
+    return this.getRequest(`/v1/user/api-keys`, {params: {sortBy, sortDir, limit, offset}});
   }
 
   adminCreateUser(userData) {
