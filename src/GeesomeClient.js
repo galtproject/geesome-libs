@@ -1,12 +1,11 @@
-import axios from 'axios';
-
+const axios = require('axios');
 const _ = require('lodash');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
-export class GeesomeClient {
+class GeesomeClient {
   constructor(config) {
     this.server = config.server;
     this.apiKey = config.apiKey;
@@ -92,6 +91,10 @@ export class GeesomeClient {
       this.setApiKey(data.apiKey);
       return data;
     });
+  }
+  
+  updateCurrentUser(userData) {
+    return this.postRequest(`/v1/user/update`, userData);
   }
 
   createGroup(groupData) {
@@ -185,7 +188,7 @@ export class GeesomeClient {
       groupId = await this.resolveIpns(groupId);
     }
 
-    const groupObj = await this.getIpld(groupId);
+    const groupObj = await this.getObject(groupId);
 
     await this.fetchIpldFields(groupObj, ['avatarImage', 'coverImage']);
 
@@ -198,7 +201,7 @@ export class GeesomeClient {
       if (!_.get(obj, fieldName)) {
         return;
       }
-      _.set(obj, fieldName, await this.getIpld(_.get(obj, fieldName)));
+      _.set(obj, fieldName, await this.getObject(_.get(obj, fieldName)));
     })
   }
 
@@ -211,7 +214,7 @@ export class GeesomeClient {
       storageId = image.content;
     }
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getIpld(storageId).content);
+      storageId = (await this.getObject(storageId).content);
     }
     if (!storageId) {
       storageId = image;
@@ -219,7 +222,7 @@ export class GeesomeClient {
     return this.server + '/v1/content-data/' + storageId;
   }
 
-  async getIpld(ipldHash) {
+  async getObject(ipldHash) {
     if (ipldHash.multihash || ipldHash.hash) {
       ipldHash = ipfsHelper.cidToHash(ipldHash);
     }
@@ -260,7 +263,7 @@ export class GeesomeClient {
     const posts = [];
     pIteration.forEach(_.range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
-      const post = await this.getIpld(postsPath + postNumberPath);
+      const post = await this.getObject(postsPath + postNumberPath);
       post.id = postNumber;
       post.manifestId = ipfsHelper.cidToHash(trie.getNode(group.posts, postNumber));
       post.groupId = groupId;
@@ -285,12 +288,12 @@ export class GeesomeClient {
     const group = await this.getGroup(groupId);
     let post;
     if (ipfsHelper.isIpldHash(postId)) {
-      post = await this.getIpld(postId);
+      post = await this.getObject(postId);
       post.manifestId = postId;
     } else {
       const postsPath = group.id + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
-      post = await this.getIpld(postsPath + postNumberPath);
+      post = await this.getObject(postsPath + postNumberPath);
       post.manifestId = ipfsHelper.cidToHash(trie.getNode(group.posts, postId));
     }
 
@@ -313,8 +316,8 @@ export class GeesomeClient {
     return this.getRequest(`/resolve/${ipns}`).catch(() => null);
   }
 
-  getFileCatalogItems(parentItemId, type, params) {
-    let {sortBy, sortDir, limit, offset, search} = params;
+  getFileCatalogItems(parentItemId, type, listParams = {}) {
+    let {sortBy, sortDir, limit, offset, search} = listParams;
 
     if (!sortBy) {
       sortBy = 'updatedAt';
@@ -347,9 +350,14 @@ export class GeesomeClient {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
-  getAllItems(itemsName, search, params) {
-    let {sortBy, sortDir, limit, offset} = params;
+  getAllItems(itemsName, search = null, listParams = {}) {
+    let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`/v1/admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
+  }
+
+  getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
+    let {sortBy, sortDir, limit, offset} = listParams;
+    return this.getRequest(`/v1/user/api-keys`, {params: {sortBy, sortDir, limit, offset}});
   }
 
   adminCreateUser(userData) {
@@ -372,7 +380,7 @@ export class GeesomeClient {
     return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
-  adminAddUserAPiKey(userId) {
+  adminAddUserApiKey(userId) {
     return this.postRequest(`/v1/admin/add-user-api-key`, {userId});
   }
 
@@ -475,7 +483,7 @@ export class GeesomeClient {
   }
 }
 
-export class AbstractClientStorage {
+class AbstractClientStorage {
   set(name, value) {
     assert(false, 'you have to override getValue');
   }
@@ -510,7 +518,7 @@ export class AbstractClientStorage {
   }
 }
 
-export class SimpleClientStorage extends AbstractClientStorage {
+class SimpleClientStorage extends AbstractClientStorage {
   constructor() {
     super();
     this.storage = {};
@@ -524,7 +532,7 @@ export class SimpleClientStorage extends AbstractClientStorage {
   }
 }
 
-export class BrowserLocalClientStorage extends AbstractClientStorage {
+class BrowserLocalClientStorage extends AbstractClientStorage {
   get(name) {
     try {
       return JSON.parse(localStorage.getItem(name));
@@ -537,3 +545,11 @@ export class BrowserLocalClientStorage extends AbstractClientStorage {
     localStorage.setItem(name, JSON.stringify(value));
   }
 }
+
+
+module.exports = {
+  GeesomeClient,
+  AbstractClientStorage,
+  SimpleClientStorage,
+  BrowserLocalClientStorage
+};

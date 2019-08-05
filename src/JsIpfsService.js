@@ -1,22 +1,27 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
 const ipfsImproves = require('./ipfsImproves');
-const util = require('util');
+const {promisify} = require('es6-promisify');
 
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    this.fsub = node.libp2p._floodSub;
     
-    ipfsImproves.improveFloodSub(this.fsub);
-    ipfsImproves.improvePubSub(this.fsub);
+    if(node.libp2p) {
+      this.fsub = node.libp2p._floodSub;
+
+      ipfsImproves.improveFloodSub(this.fsub);
+      ipfsImproves.improvePubSub(this.fsub);
+      this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
+      this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
+    } else {
+      console.warn("[JsIpfsService] Warning: libp2p features disabled")
+    }
 
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     
-    this.pubSubSubscribe = util.promisify(node.pubsub.subscribe).bind(node.pubsub);
-    this.fSubPublishByPeerId = util.promisify(this.fsub.publishByPeerId).bind(this.fsub);
-    this.swarmConnect = util.promisify(node.swarm.connect).bind(node.swarm);
+    this.swarmConnect =  promisify(node.swarm.connect).bind(node.swarm);
   }
 
   async wrapIpfsItem(ipfsItem) {
@@ -40,6 +45,12 @@ module.exports = class JsIpfsService {
     const dirResult = _.find(result, {path: dirName});
     await this.node.pin.add(dirResult.hash);
     return this.wrapIpfsItem(dirResult);
+  }
+
+  async saveBrowserFile(fileObject) {
+    const result = await this.node.add(fileObject);
+    await this.node.pin.add(result[0].hash);
+    return this.wrapIpfsItem(result[0]);
   }
 
   async saveFileByData(content) {
