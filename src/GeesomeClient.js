@@ -445,7 +445,7 @@ class GeesomeClient {
       const serverDomain = extractHostname(this.server);
       
       if(serverDomain && !isIpAddress(serverDomain)) {
-        preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7711/https');
+        preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7722/https');
       }
       
       preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
