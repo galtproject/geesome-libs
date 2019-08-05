@@ -5,6 +5,8 @@ const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
+const { extractHostname, isIpAddress } = require('./common');
+
 class GeesomeClient {
   constructor(config) {
     this.server = config.server;
@@ -433,16 +435,22 @@ class GeesomeClient {
 
     await this.setServerIpfsAddreses();
 
-    let preloadAddresses;
+    let preloadAddresses = [];
 
     if (isLocalServer) {
-      preloadAddresses = this.serverIpfsAddresses.filter((address) => {
+      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
         return _.includes(address, '127.0.0.1');
-      })
+      }));
     } else {
-      preloadAddresses = this.serverIpfsAddresses.filter((address) => {
+      const serverDomain = extractHostname(this.server);
+      
+      if(!isIpAddress(serverDomain)) {
+        preloadAddresses.push('/dns4/' + serverDomain + '/tcp/5002/');
+      }
+      
+      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
         return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.') && address.length > 64;
-      })
+      }))
     }
 
     preloadAddresses = preloadAddresses.map(address => {
