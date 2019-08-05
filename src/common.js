@@ -36,8 +36,7 @@ module.exports.moveDate = (value, unit) => {
 
 
 module.exports.extractHostname = (url) => {
-  let matches = url.match(/^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i);
-  return matches && matches[1];  // domain will be null if no match is found
+  return (new URL(url)).hostname;
 };
 
 module.exports.isIpAddress = (str) => {
