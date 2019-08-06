@@ -219,7 +219,7 @@ class GeesomeClient {
     }
     
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getObject(storageId).content);
+      storageId = (await this.getObject(storageId)).content;
     }
     return this.server + '/v1/content-data/' + storageId;
   }
