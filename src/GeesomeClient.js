@@ -207,19 +207,19 @@ class GeesomeClient {
     })
   }
 
-  async getImageLink(image) {
+  async getContentLink(image) {
     if (!image) {
       return null;
     }
     let storageId;
     if (image.content) {
       storageId = image.content;
+    } else {
+      storageId = image;
     }
+    
     if (ipfsHelper.isIpldHash(storageId)) {
       storageId = (await this.getObject(storageId).content);
-    }
-    if (!storageId) {
-      storageId = image;
     }
     return this.server + '/v1/content-data/' + storageId;
   }
