@@ -111,6 +111,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/remove-friend`, {friendId});
   }
 
+  getPersonalChatGroups() {
+    return this.getRequest(`/v1/user/personal-chat-groups`);
+  }
+
   createGroup(groupData) {
     return this.postRequest(`/v1/user/create-group`, groupData);
   }
