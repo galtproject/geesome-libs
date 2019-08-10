@@ -99,6 +99,18 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/update`, userData);
   }
 
+  userGetFriends(search = null, listParams = {}) {
+    return this.getRequest(`/v1/user/get-friends`, {params: _.extend({search}, listParams)});
+  }
+
+  addFriend(friendId) {
+    return this.postRequest(`/v1/user/add-friend`, {friendId});
+  }
+
+  removeFriend(friendId) {
+    return this.postRequest(`/v1/user/remove-friend`, {friendId});
+  }
+
   createGroup(groupData) {
     return this.postRequest(`/v1/user/create-group`, groupData);
   }
