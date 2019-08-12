@@ -33,3 +33,12 @@ module.exports.moveFromDate = (fromDate, value, unit) => {
 module.exports.moveDate = (value, unit) => {
   return module.exports.moveFromDate(new Date(), value, unit);
 };
+
+
+module.exports.extractHostname = (url) => {
+  return (new URL(url)).hostname;
+};
+
+module.exports.isIpAddress = (str) => {
+  return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
+};

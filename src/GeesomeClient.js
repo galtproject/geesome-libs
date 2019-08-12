@@ -5,32 +5,37 @@ const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
+const {extractHostname, isIpAddress} = require('./common');
+
 class GeesomeClient {
   constructor(config) {
     this.server = config.server;
     this.apiKey = config.apiKey;
     this.ipfsNode = config.ipfsNode;
-    
+
     this.clientStorage = config.clientStorage;
 
     this.$http = axios.create({});
-    
+
     this.ipfsService = null;
     this.serverIpfsAddresses = [];
     this.serverLessMode = true;
+    // wait for respond of ipfs in miliseconds, until send request to server
+    this.ipfsIddleTime = 1000;
   }
-  
+
   async init() {
     await this.setServer(this.server);
     this.setApiKey(this.apiKey);
-    if(this.ipfsNode) {
+    if (this.ipfsNode) {
       await this.setIpfsNode(this.ipfsNode);
     }
   }
-  
+
   getRequest(url, options = null) {
     return this.wrapResponse(this.$http.get(url, options));
   }
+
   postRequest(url, data = null) {
     return this.wrapResponse(this.$http.post(url, data));
   }
@@ -40,7 +45,7 @@ class GeesomeClient {
       throw (data.response.data);
     });
   }
-  
+
   getCurrentUser() {
     return this.getRequest('/v1/user').then(user => {
       this.serverLessMode = false;
@@ -56,21 +61,22 @@ class GeesomeClient {
     this.$http.defaults.baseURL = server;
     await this.setServerIpfsAddreses();
   }
-  
+
   setApiKey(apiKey) {
     this.apiKey = apiKey;
 
     this.$http.defaults.headers.post['Authorization'] = 'Bearer ' + apiKey;
     this.$http.defaults.headers.get['Authorization'] = 'Bearer ' + apiKey;
-    
-    if(!apiKey) {
+
+    if (!apiKey) {
       this.serverLessMode = true;
     }
   }
 
-  async setIpfsNode(ipfsNode) {
+  async setIpfsNode(ipfsNode, ipfsIddleTime = 1000) {
     this.ipfsNode = ipfsNode;
     this.ipfsService = new JsIpfsService(this.ipfsNode);
+    this.ipfsIddleTime = ipfsIddleTime;
     return this.connectToIpfsNodeToServer();
   }
 
@@ -92,9 +98,25 @@ class GeesomeClient {
       return data;
     });
   }
-  
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
+  }
+
+  userGetFriends(search = null, listParams = {}) {
+    return this.getRequest(`/v1/user/get-friends`, {params: _.extend({search}, listParams)});
+  }
+
+  addFriend(friendId) {
+    return this.postRequest(`/v1/user/add-friend`, {friendId});
+  }
+
+  removeFriend(friendId) {
+    return this.postRequest(`/v1/user/remove-friend`, {friendId});
+  }
+
+  getPersonalChatGroups() {
+    return this.getRequest(`/v1/user/personal-chat-groups`);
   }
 
   createGroup(groupData) {
@@ -205,19 +227,19 @@ class GeesomeClient {
     })
   }
 
-  async getImageLink(image) {
-    if (!image) {
+  async getContentLink(content) {
+    if (!content) {
       return null;
     }
     let storageId;
-    if (image.content) {
-      storageId = image.content;
+    if (content.content) {
+      storageId = content.content;
+    } else {
+      storageId = content;
     }
+
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getObject(storageId).content);
-    }
-    if (!storageId) {
-      storageId = image;
+      storageId = (await this.getObject(storageId)).content;
     }
     return this.server + '/v1/content-data/' + storageId;
   }
@@ -229,14 +251,25 @@ class GeesomeClient {
     if (ipldHash['/']) {
       ipldHash = ipldHash['/'];
     }
-    //this.getRequest(`/ipld/${ipldHash}`))
-    return this.ipfsService.getObject(ipldHash).then(ipldData => {
+    let responded = false;
+    
+    return new Promise((resolve, reject) => {
+      this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
+      setTimeout(() => {
+        if (!responded) {
+          this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
+        }
+      }, this.ipfsIddleTime);
+    });
+    
+    function wrapObject(ipldData) {
+      responded = true;
       if (!ipldData) {
         return null;
       }
       ipldData.id = ipldHash;
       return ipldData;
-    });
+    }
   }
 
   async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
@@ -409,7 +442,7 @@ class GeesomeClient {
       return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
     })
   }
-  
+
   async setServerIpfsAddreses() {
     this.serverIpfsAddresses = await this.getNodeAddressList();
 
@@ -419,7 +452,7 @@ class GeesomeClient {
       }
     });
   }
-  
+
   setServerByDocumentLocation() {
     let port = 7722;
     if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || _.startsWith(document.location.pathname, '/node')) {
@@ -427,22 +460,28 @@ class GeesomeClient {
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
-  
+
   async getPreloadAddresses() {
     let isLocalServer = _.includes(this.server, ':7711');
 
     await this.setServerIpfsAddreses();
 
-    let preloadAddresses;
+    let preloadAddresses = [];
 
     if (isLocalServer) {
-      preloadAddresses = this.serverIpfsAddresses.filter((address) => {
+      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
         return _.includes(address, '127.0.0.1');
-      })
+      }));
     } else {
-      preloadAddresses = this.serverIpfsAddresses.filter((address) => {
+      const serverDomain = extractHostname(this.server);
+
+      if (serverDomain && !isIpAddress(serverDomain)) {
+        preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7722/https');
+      }
+
+      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
         return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.') && address.length > 64;
-      })
+      }))
     }
 
     preloadAddresses = preloadAddresses.map(address => {
@@ -454,12 +493,12 @@ class GeesomeClient {
       '/dns4/node0.preload.ipfs.io/tcp/443/wss/ipfs/QmZMxNdpMkewiVZLMRxaNxUeZpDUb34pWjZ1kZvsd16Zic',
       '/dns4/node1.preload.ipfs.io/tcp/443/wss/ipfs/Qmbut9Ywz9YEDrz8ySBSgWyJk41Uvm2QJPhwDJzJyGFsD6'
     ]);
-    
+
     console.log('preloadAddresses', preloadAddresses);
-    
+
     return preloadAddresses;
   }
-  
+
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
       return new Promise((resolve, reject) => {
@@ -473,7 +512,7 @@ class GeesomeClient {
         ipfs.once('error', err => reject(err))
       })
     }
-    
+
     return this.setIpfsNode(await createIpfsNode({
       preload: {
         enabled: true,
@@ -487,7 +526,7 @@ class AbstractClientStorage {
   set(name, value) {
     assert(false, 'you have to override getValue');
   }
-  
+
   get(name) {
     assert(false, 'you have to override getValue');
   }
@@ -523,10 +562,11 @@ class SimpleClientStorage extends AbstractClientStorage {
     super();
     this.storage = {};
   }
-  
+
   set(name, value) {
     this.storage[name] = value;
   }
+
   get(name) {
     return this.storage[name];
   }
