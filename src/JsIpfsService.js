@@ -221,6 +221,9 @@ module.exports = class JsIpfsService {
   }
   
   publishEventByPeerId(peerId, topic, data) {
+    if(_.isObject(data)) {
+      data = JSON.stringify(data);
+    }
     if(_.isString(data)) {
       data = new Buffer(data);
     }
