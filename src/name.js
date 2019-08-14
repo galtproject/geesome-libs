@@ -7,7 +7,7 @@ const name = {
   },
   getPersonalChatHash(friendsIds, groupTheme) {
     const hash = new Keccak(256);
-    return hash.update(name.getPersonalChatName(friendsIds, groupTheme));
+    return hash.update(name.getPersonalChatName(friendsIds, groupTheme)).digest('hex');
   }
 };
 
