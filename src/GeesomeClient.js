@@ -218,6 +218,18 @@ class GeesomeClient {
     return this.getAdminInGroups(['chat', 'personal_chat']);
   }
 
+  async getUser(userId) {
+    if (ipfsHelper.isIpfsHash(userId)) {
+      userId = await this.resolveIpns(userId);
+    }
+
+    const userObj = await this.getObject(userId);
+
+    await this.fetchIpldFields(userObj, ['avatarImage']);
+
+    return userObj;
+  }
+
   async getDbGroup(groupId) {
     return this.getRequest(`/v1/group/${groupId}`);
   }
