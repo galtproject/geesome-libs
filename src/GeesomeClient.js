@@ -183,20 +183,21 @@ class GeesomeClient {
     return this.getRequest('/v1/content/' + dbId);
   }
 
-  async getMemberInGroups() {
+  async getMemberInGroups(types) {
     let groupsIds;
     if (this.serverLessMode) {
       groupsIds = this.clientStorage.joinedGroups();
+      // TODO: filter by types
     } else {
-      //TODO: get groups list directly from ipld
-      groupsIds = await this.getRequest('/v1/user/member-in-groups').then(groups => groups.map(g => g.manifestStorageId));
+      //TODO: get groups list directly from ipld?
+      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groups => groups.map(g => g.manifestStorageId));
     }
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
 
-  getAdminInGroups() {
-    //TODO: get groups list directly from ipld
-    return this.getRequest('/v1/user/admin-in-groups').then(groups => {
+  getAdminInGroups(types) {
+    //TODO: get groups list directly from ipld?
+    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groups => {
       return pIteration.map(groups, (group) => this.getGroup(group.manifestStorageId))
     });
   }
