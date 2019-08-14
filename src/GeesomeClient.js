@@ -195,11 +195,27 @@ class GeesomeClient {
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
 
+  getMemberInChannels() {
+    return this.getMemberInGroups(['channel']);
+  }
+
+  getMemberInChats() {
+    return this.getMemberInGroups(['chat', 'personal_chat']);
+  }
+
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
     return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groups => {
       return pIteration.map(groups, (group) => this.getGroup(group.manifestStorageId))
     });
+  }
+  
+  getAdminInChannels() {
+    return this.getAdminInGroups(['channel']);
+  }
+
+  getAdminInChats() {
+    return this.getAdminInGroups(['chat', 'personal_chat']);
   }
 
   async getDbGroup(groupId) {
