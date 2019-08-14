@@ -79,6 +79,7 @@ const ipfsHelper = {
       });
     } catch (e) {
       // not ipns event
+      console.warn('Failed unmarshal ipns of event', event);
     }
     return event;
   },
