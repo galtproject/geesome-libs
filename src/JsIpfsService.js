@@ -244,7 +244,9 @@ module.exports = class JsIpfsService {
     return this.pubSubSubscribe(topic, async (event) => {
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
-      });
+      }).catch((error) => {
+        console.warn("PubSub ipns validation failed", event, error);
+      })
     });
   }
   

@@ -71,6 +71,12 @@ const ipfsHelper = {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
       event.data.peerId = await ipfsHelper.createPeerIdFromPubKey(event.data.pubKey);
+      
+      return new Promise((resolve, reject) => {
+        ipns.validate(event.data.peerId._pubKey, event.data, (err) => {
+          return err ? reject(err) : resolve(event);
+        })
+      });
     } catch (e) {
       // not ipns event
     }
