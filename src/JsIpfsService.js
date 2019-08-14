@@ -226,6 +226,10 @@ module.exports = class JsIpfsService {
     }
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
+  
+  async publishEventByIpnsId(ipnsId, topic, data) {
+    return this.publishEventByPeerId(await this.getAccountPeerId(ipnsId), topic, data);
+  }
 
   getIpnsPeers(ipnsId) {
     const topic = ipfsHelper.getIpnsUpdatesTopic(ipnsId);
