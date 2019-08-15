@@ -48,7 +48,7 @@ module.exports = {
           data: msg,
           seqno: seqno,
           topicIDs: topics,
-          key: peerId._pubKey
+          key: peerId._pubKey.bytes
         };
 
         // Emit to self if I'm interested
