@@ -301,6 +301,16 @@ class GeesomeClient {
       return ipldData;
     }
   }
+  
+  async getContentData(contentHash) {
+    if(contentHash['/']) {
+      contentHash = contentHash['/'];
+    }
+    if(ipfsHelper.isIpldHash(contentHash)) {
+      contentHash = (await this.getObject(contentHash)).content;
+    }
+    return this.ipfsService.getFileData(contentHash);
+  }
 
   async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
     const group = await this.getGroup(groupId);
