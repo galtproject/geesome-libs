@@ -67,6 +67,8 @@ const ipfsHelper = {
   async parsePubSubEvent(event) {
     event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
     event.key = event.keyPeerId._pubKey;
+    event.keyIpns = event.keyPeerId.toB58String();
+    
     try {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
