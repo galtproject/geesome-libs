@@ -375,7 +375,13 @@ class GeesomeClient {
       const postsPath = group.id + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
-      post.manifestId = ipfsHelper.cidToHash(trie.getNode(group.posts, postId));
+
+      const node = trie.getNode(group.posts, postId);
+      if(ipfsHelper.isCid(node)) {
+        post.manifestId = ipfsHelper.cidToHash(node);
+      } else {
+        post.manifestId = node['/'];
+      }
     }
 
     post.id = postId;
