@@ -68,7 +68,7 @@ module.exports = {
     }).bind(fsub);
 
     fsub.publish = function (topics, messages, callback) {
-      this.publishByPeerId(this.peerId, topics, messages, callback);
+      this.publishByPeerId(this.peerId || this.libp2p.peerInfo.id, topics, messages, callback);
     };
   }
 }
