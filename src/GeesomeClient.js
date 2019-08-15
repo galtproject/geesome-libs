@@ -285,6 +285,7 @@ class GeesomeClient {
     
     return new Promise((resolve, reject) => {
       this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
+      
       setTimeout(() => {
         if (!responded) {
           this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
@@ -309,7 +310,23 @@ class GeesomeClient {
     if(ipfsHelper.isIpldHash(contentHash)) {
       contentHash = (await this.getObject(contentHash)).content;
     }
-    return this.ipfsService.getFileData(contentHash);
+    
+    let responded = false;
+    
+    return new Promise((resolve, reject) => {
+      this.ipfsService.getFileData(contentHash).then(wrap).then(resolve).catch(reject);
+      
+      setTimeout(() => {
+        if (!responded) {
+          this.getContentData(contentHash).then(wrap).then(resolve).catch(reject);
+        }
+      }, this.ipfsIddleTime);
+    });
+    
+    function wrap(content) {
+      responded = true;
+      return content;
+    }
   }
 
   async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
