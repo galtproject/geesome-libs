@@ -47,8 +47,9 @@ module.exports = {
           from: from,
           data: msg,
           seqno: seqno,
-          topicIDs: topics
-        }
+          topicIDs: topics,
+          key: peerId._pubKey
+        };
 
         // Emit to self if I'm interested
         this._emitMessages(topics, [message])
