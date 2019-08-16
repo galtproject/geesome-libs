@@ -511,8 +511,18 @@ class GeesomeClient {
     return this.getRequest(`/v1/node-address-list`).then(data => data.result);
   }
 
-  getNodeAddress() {
-    return this.getRequest(`/v1/node-address`).then(data => data.result);
+  async getNodeAddress(includes = null) {
+    let addresses = await this.getNodeAddressList();
+
+    if(includes) {
+      return _.find(addresses, (address) => {
+        return _.includes(address, includes);
+      });
+    } else {
+      return _.filter(addresses, (address) => {
+        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && address.length > 64;//&& !_.includes(address, '/p2p-circuit/ipfs/')
+      })[0];
+    }
   }
 
   getGroupPeers(ipnsId) {

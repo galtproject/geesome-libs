@@ -193,20 +193,6 @@ module.exports = class JsIpfsService {
   async nodeAddressList() {
     return this.id().then(nodeId => nodeId.addresses);
   }
-
-  async nodeAddress(includes = null) {
-    let addresses = await this.nodeAddressList();
-
-    if(includes) {
-      return _.find(addresses, (address) => {
-        return _.includes(address, includes);
-      });
-    } else {
-      return _.filter(addresses, (address) => {
-        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && address.length > 64;//&& !_.includes(address, '/p2p-circuit/ipfs/')
-      })[0];
-    }
-  }
   
   subscribeToIpnsUpdates(ipnsId, callback) {
     const topic = getIpnsUpdatesTopic(ipnsId);
