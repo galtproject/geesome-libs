@@ -412,7 +412,11 @@ class GeesomeClient {
   }
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
-    this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), callback);
+    this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
+      if(_.includes(membersIpnsIds, event.keyIpns)) {
+        callback(event);
+      }
+    });
   }
 
   getCanCreatePost(groupId) {
