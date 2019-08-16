@@ -15,6 +15,7 @@ module.exports = class JsIpfsService {
       ipfsImproves.improveFloodSub(this.fsub);
       ipfsImproves.improvePubSub(this.fsub);
       this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
+      this.fSubPublish = promisify(this.fsub.publish).bind(this.fsub);
       this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
     } else {
       console.warn("[JsIpfsService] Warning: libp2p features disabled")
