@@ -23,7 +23,7 @@ module.exports = class JsIpfsService {
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     
-    this.swarmConnect =  promisify(node.swarm.connect).bind(node.swarm);
+    this.swarmConnect = promisify(node.swarm.connect).bind(node.swarm);
   }
 
   async wrapIpfsItem(ipfsItem) {
@@ -172,9 +172,7 @@ module.exports = class JsIpfsService {
 
   async addBootNode(address) {
     try {
-      await new Promise((resolve, reject) => {
-        this.node.swarm.connect(address, (err, res) => err ? reject(err) : resolve());
-      });
+      await this.swarmConnect(address);
     } catch (e) {
       console.warn('addBootNode swarm.connect error', address, e);
     }
