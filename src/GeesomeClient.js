@@ -406,6 +406,10 @@ class GeesomeClient {
     post.group = group;
     return post;
   }
+  
+  async getPost(postManifestIpld) {
+    return this.getObject(postManifestIpld);
+  }
 
   subscribeToGroupUpdates(groupId, callback) {
     this.ipfsService.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
