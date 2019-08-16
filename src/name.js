@@ -9,17 +9,26 @@ const name = {
     return _.sortBy(friendsIds).join(':') + ':personal_chat:' + groupTheme;
   },
   getPersonalChatTopic(friendsIds, groupTheme) {
-    const namespace = '/group/';
+    const namespace = '/geesome/group/';
     const hash = new Keccak(256);
     return namespace + hash.update(name.getPersonalChatName(friendsIds, groupTheme)).digest('hex');
+  },
+  getGroupUpdatesTopic(groupIpns) {
+    const namespace = '/geesome/group/';
+    return `${namespace}${name.base64Ipns(groupIpns)}`;
   },
 
   getIpnsUpdatesTopic(ipnsId) {
     const namespace = '/record/';
+    return `${namespace}${name.base64Ipns(ipnsId)}`;
+  },
+
+  base64Ipns(ipnsId) {
     const multihash = fromB58String(ipnsId);
     const idKeys = ipns.getIdKeys(multihash);
-    return `${namespace}${base64url.encode(idKeys.routingKey.toBuffer())}`;
+    return base64url.encode(idKeys.routingKey.toBuffer());
   }
 };
+
 
 module.exports = name;
