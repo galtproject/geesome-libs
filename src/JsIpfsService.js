@@ -3,6 +3,8 @@ const _ = require('lodash');
 const ipfsImproves = require('./ipfsImproves');
 const {promisify} = require('es6-promisify');
 
+const { getIpnsUpdatesTopic } = require('./name');
+
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
@@ -216,7 +218,7 @@ module.exports = class JsIpfsService {
   }
   
   subscribeToIpnsUpdates(ipnsId, callback) {
-    const topic = ipfsHelper.getIpnsUpdatesTopic(ipnsId);
+    const topic = getIpnsUpdatesTopic(ipnsId);
     return this.subscribeToEvent(topic, callback);
   }
   
@@ -235,7 +237,7 @@ module.exports = class JsIpfsService {
   }
 
   getIpnsPeers(ipnsId) {
-    const topic = ipfsHelper.getIpnsUpdatesTopic(ipnsId);
+    const topic = getIpnsUpdatesTopic(ipnsId);
     return this.getPeers(topic);
   }
   
