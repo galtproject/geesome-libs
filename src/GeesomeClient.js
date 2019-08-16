@@ -5,7 +5,8 @@ const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
-const {extractHostname, isIpAddress, getGroupUpdatesTopic, getPersonalChatTopic} = require('./common');
+const {extractHostname, isIpAddress} = require('./common');
+const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
   constructor(config) {
