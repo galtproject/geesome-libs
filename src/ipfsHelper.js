@@ -5,13 +5,12 @@ const ipns = require('ipns');
 const crypto = require('libp2p-crypto');
 const errcode = require('err-code');
 const waterfall = require('async/waterfall');
-const base64url = require('base64url');
-const {fromB58String} = require('multihashes');
 const {Message} = require('libp2p-pubsub/src/message')
 const {SignPrefix} = require('libp2p-pubsub/src/message/sign')
 const {utils} = require('libp2p-pubsub');
-const multihash = require('multihashes');
-const ID_MULTIHASH_CODE = multihash.names.id
+// const multihash = require('multihashes');
+// const {fromB58String} = require('multihashes');
+// const ID_MULTIHASH_CODE = multihash.names.id
 
 const peerId = require('peer-id');
 const {promisify} = require('es6-promisify');
@@ -53,12 +52,6 @@ const ipfsHelper = {
 
       return callback(null, privateKey)
     })
-  },
-  getIpnsUpdatesTopic(ipnsId) {
-    const namespace = '/record/';
-    const multihash = fromB58String(ipnsId);
-    const idKeys = ipns.getIdKeys(multihash);
-    return `${namespace}${base64url.encode(idKeys.routingKey.toBuffer())}`;
   },
 
   createPeerIdFromPubKey: promisify(peerId.createFromPubKey).bind(peerId),

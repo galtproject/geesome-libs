@@ -1,13 +1,24 @@
 const _ = require('lodash');
 const { Keccak } = require('sha3');
+const base64url = require('base64url');
+const ipns = require('ipns');
+const {fromB58String} = require('multihashes');
 
 const name = {
   getPersonalChatName(friendsIds, groupTheme) {
     return _.sortBy(friendsIds).join(':') + ':personal_chat:' + groupTheme;
   },
-  getPersonalChatHash(friendsIds, groupTheme) {
+  getPersonalChatTopic(friendsIds, groupTheme) {
+    const namespace = '/group/';
     const hash = new Keccak(256);
-    return hash.update(name.getPersonalChatName(friendsIds, groupTheme)).digest('hex');
+    return namespace + hash.update(name.getPersonalChatName(friendsIds, groupTheme)).digest('hex');
+  },
+
+  getIpnsUpdatesTopic(ipnsId) {
+    const namespace = '/record/';
+    const multihash = fromB58String(ipnsId);
+    const idKeys = ipns.getIdKeys(multihash);
+    return `${namespace}${base64url.encode(idKeys.routingKey.toBuffer())}`;
   }
 };
 
