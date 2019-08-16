@@ -190,23 +190,22 @@ module.exports = class JsIpfsService {
     });
   }
 
-  async nodeAddressList(remoteMode = true) {
-    let addresses = await this.id().then(nodeId => nodeId.addresses);
-    
-    if(remoteMode) {
-      addresses = _.chain(addresses)
-        .filter(address => !_.includes(address, '127.0.0.1'))
-        .orderBy([address => {
-          if (_.includes(address, '192.168'))
-            return -2;
-          if (_.includes(address, '/p2p-circuit/ipfs/'))
-            return -1;
-          return 0;
-        }], ['desc'])
-        .value()
+  async nodeAddressList() {
+    return this.id().then(nodeId => nodeId.addresses);
+  }
+
+  async nodeAddress(includes = null) {
+    let addresses = await this.nodeAddressList();
+
+    if(includes) {
+      return _.find(addresses, (address) => {
+        return _.includes(address, includes);
+      });
+    } else {
+      return _.filter(addresses, (address) => {
+        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && !_.includes(address, '/p2p-circuit/ipfs/');
+      })[0];
     }
-    
-    return addresses;
   }
   
   subscribeToIpnsUpdates(ipnsId, callback) {
