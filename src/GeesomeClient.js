@@ -4,6 +4,8 @@ const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
+const PeerId = require('peer-id');
+const PeerInfo = require('peer-info');
 
 const {extractHostname, isIpAddress} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
@@ -539,6 +541,10 @@ class GeesomeClient {
 
   async connectToIpfsNodeToServer() {
     const address = await this.getNodeAddress(this.isLocalServer() ? '127.0.0.1' : null);
+    
+    // prevent Error: Dial is currently blacklisted for this peer on swarm connect
+    this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(_.last(address.split('/')))));
+    
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
