@@ -541,7 +541,7 @@ class GeesomeClient {
     let preloadAddresses = [];
 
     if (this.isLocalServer()) {
-      preloadAddresses.push(await this.ipfsService.getNodeAddress('127.0.0.1'));
+      preloadAddresses.push(await this.getNodeAddress('127.0.0.1'));
     } else {
       const serverDomain = extractHostname(this.server);
 
@@ -549,7 +549,7 @@ class GeesomeClient {
         preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7722/https');
       }
 
-      preloadAddresses.push(await this.ipfsService.getNodeAddress('127.0.0.1'));
+      preloadAddresses.push(await this.getNodeAddress('127.0.0.1'));
     }
 
     preloadAddresses = preloadAddresses.map(address => {
