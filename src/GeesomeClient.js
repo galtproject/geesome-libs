@@ -19,7 +19,6 @@ class GeesomeClient {
     this.$http = axios.create({});
 
     this.ipfsService = null;
-    this.serverIpfsAddresses = [];
     this.serverLessMode = true;
     // wait for respond of ipfs in miliseconds, until send request to server
     this.ipfsIddleTime = 1000;
@@ -57,10 +56,9 @@ class GeesomeClient {
     });
   }
 
-  async setServer(server) {
+  setServer(server) {
     this.server = server;
     this.$http.defaults.baseURL = server;
-    await this.setServerIpfsAddreses();
   }
 
   setApiKey(apiKey) {
@@ -513,24 +511,17 @@ class GeesomeClient {
     return this.getRequest(`/v1/node-address-list`).then(data => data.result);
   }
 
+  getNodeAddress() {
+    return this.getRequest(`/v1/node-address`).then(data => data.result);
+  }
+
   getGroupPeers(ipnsId) {
     return this.getRequest(`/v1/group/${ipnsId}/peers`);
   }
 
   async connectToIpfsNodeToServer() {
-    await pIteration.forEach(this.serverIpfsAddresses, async (address) => {
-      return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
-    })
-  }
-
-  async setServerIpfsAddreses() {
-    this.serverIpfsAddresses = await this.getNodeAddressList();
-
-    this.serverIpfsAddresses.forEach(address => {
-      if (_.includes(address, '192.168')) {
-        this.serverIpfsAddresses.push(address.replace(/\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/, '127.0.0.1'));
-      }
-    });
+    const address = await this.getNodeAddress();
+    return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
   setServerByDocumentLocation() {
@@ -540,18 +531,17 @@ class GeesomeClient {
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
+  
+  isLocalServer() {
+    return _.includes(this.server, ':7711');
+  }
 
   async getPreloadAddresses() {
-    let isLocalServer = _.includes(this.server, ':7711');
-
-    await this.setServerIpfsAddreses();
 
     let preloadAddresses = [];
 
-    if (isLocalServer) {
-      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
-        return _.includes(address, '127.0.0.1');
-      }));
+    if (this.isLocalServer()) {
+      preloadAddresses.push(await this.ipfsService.getNodeAddress('127.0.0.1'));
     } else {
       const serverDomain = extractHostname(this.server);
 
@@ -559,9 +549,7 @@ class GeesomeClient {
         preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7722/https');
       }
 
-      preloadAddresses = preloadAddresses.concat(this.serverIpfsAddresses.filter((address) => {
-        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.') && address.length > 64;
-      }))
+      preloadAddresses.push(await this.ipfsService.getNodeAddress('127.0.0.1'));
     }
 
     preloadAddresses = preloadAddresses.map(address => {

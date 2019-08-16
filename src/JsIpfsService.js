@@ -203,7 +203,7 @@ module.exports = class JsIpfsService {
       });
     } else {
       return _.filter(addresses, (address) => {
-        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && !_.includes(address, '/p2p-circuit/ipfs/');
+        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && address.length > 64;//&& !_.includes(address, '/p2p-circuit/ipfs/')
       })[0];
     }
   }
