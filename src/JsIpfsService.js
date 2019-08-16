@@ -20,9 +20,8 @@ module.exports = class JsIpfsService {
       console.warn("[JsIpfsService] Warning: libp2p features disabled")
     }
 
-    this.id = node.id.bind(node);
-    this.stop = node.stop.bind(node);
-    
+    this.id = promisify(node.id).bind(node);
+    this.stop = promisify(node.stop).bind(node);
     this.swarmConnect = promisify(node.swarm.connect).bind(node.swarm);
   }
 
@@ -190,29 +189,23 @@ module.exports = class JsIpfsService {
     });
   }
 
-  async nodeAddressList() {
-    return new Promise((resolve, reject) => {
-      //TODO: replace by calling id()
-      this.node.swarm.localAddrs((err, res) => {
-        if (err) {
-          return reject(err);
-        }
-        let addresses = _.chain(JSON.parse(JSON.stringify(res)))
-          .filter(_.isString)
-          .filter(address => !_.includes(address, '127.0.0.1'))
-          .orderBy([address => {
-            if (_.includes(address, '192.168')) {
-              return -2;
-            }
-            if (_.includes(address, '/p2p-circuit/ipfs/')) {
-              return -1;
-            }
-            return 0;
-          }], ['desc'])
-          .value();
-        resolve(addresses);
-      })
-    });
+  async nodeAddressList(remoteMode = true) {
+    let addresses = await this.id().then(nodeId => nodeId.addresses);
+    
+    if(remoteMode) {
+      addresses = _.chain(addresses)
+        .filter(address => !_.includes(address, '127.0.0.1'))
+        .orderBy([address => {
+          if (_.includes(address, '192.168'))
+            return -2;
+          if (_.includes(address, '/p2p-circuit/ipfs/'))
+            return -1;
+          return 0;
+        }], ['desc'])
+        .value()
+    }
+    
+    return addresses;
   }
   
   subscribeToIpnsUpdates(ipnsId, callback) {
