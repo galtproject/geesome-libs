@@ -520,7 +520,7 @@ class GeesomeClient {
   }
 
   async connectToIpfsNodeToServer() {
-    const address = await this.getNodeAddress();
+    const address = await this.getNodeAddress(this.isLocalServer() ? '127.0.0.1' : '');
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
