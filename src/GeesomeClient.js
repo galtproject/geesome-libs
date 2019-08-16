@@ -540,7 +540,7 @@ class GeesomeClient {
   }
 
   async connectToIpfsNodeToServer() {
-    const address = await this.getNodeAddress(this.isLocalServer() ? '127.0.0.1' : null);
+    const address = await this.getNodeAddress(this.isLocalServer() ? '/p2p-circuit/ipfs/' : null);
     
     // prevent Error: Dial is currently blacklisted for this peer on swarm connect
     this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(_.last(address.split('/')))));
