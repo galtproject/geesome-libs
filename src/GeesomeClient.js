@@ -5,7 +5,7 @@ const ipfsHelper = require('./ipfsHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 
-const {extractHostname, isIpAddress} = require('./common');
+const {extractHostname, isIpAddress, getGroupUpdatesTopic, getPersonalChatTopic} = require('./common');
 
 class GeesomeClient {
   constructor(config) {
@@ -406,6 +406,14 @@ class GeesomeClient {
     post.groupId = groupId;
     post.group = group;
     return post;
+  }
+
+  subscribeToGroupUpdates(groupId, callback) {
+    this.ipfsService.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
+  }
+
+  subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
+    this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), callback);
   }
 
   getCanCreatePost(groupId) {
