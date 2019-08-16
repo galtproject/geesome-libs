@@ -41,8 +41,8 @@ class GeesomeClient {
   }
 
   wrapResponse(httPromise) {
-    return httPromise.then(response => response.data).catch(data => {
-      throw (data.response.data);
+    return httPromise.then(response => response.data).catch(err => {
+      throw (err.response ? err.response.data : err.message);
     });
   }
 
