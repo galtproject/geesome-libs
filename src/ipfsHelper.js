@@ -58,9 +58,16 @@ const ipfsHelper = {
   createPeerIdFromPrivKey: promisify(peerId.createFromPrivKey).bind(peerId),
 
   async parsePubSubEvent(event) {
-    event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
-    event.key = event.keyPeerId._pubKey;
-    event.keyIpns = event.keyPeerId.toB58String();
+    if(event.key) {
+      event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
+      event.key = event.keyPeerId._pubKey;
+      event.keyIpns = event.keyPeerId.toB58String();
+      
+      const pubSubSignatureValid = await ipfsHelper.checkPubSubSignature(event.key, event);
+      if(!pubSubSignatureValid) {
+        throw "pubsub_signature_invalid";
+      }
+    }
     
     try {
       event.data = ipns.unmarshal(event.data);
