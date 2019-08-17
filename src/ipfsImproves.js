@@ -47,12 +47,11 @@ module.exports = {
           from: from,
           data: msg,
           seqno: seqno,
-          topicIDs: topics,
-          key: peerId._pubKey.bytes
+          topicIDs: topics
         };
 
         // Emit to self if I'm interested
-        this._emitMessages(topics, [message])
+        this._emitMessages(topics, [Object.assign({ key: peerId._pubKey.bytes }, message)])
 
         this._buildMessageByPeerId(peerId, message, cb)
       }
