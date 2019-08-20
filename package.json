@@ -22,6 +22,7 @@
     "p-iteration": "^1.1.8",
     "peer-id": "^0.12.2",
     "peer-info": "^0.16.0",
+    "openpgp": "^4.6.0",
     "sha3": "^2.0.6"
   },
   "devDependencies": {

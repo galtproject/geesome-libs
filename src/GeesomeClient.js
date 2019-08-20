@@ -58,7 +58,7 @@ class GeesomeClient {
     });
   }
 
-  setServer(server) {
+  async setServer(server) {
     this.server = server;
     this.$http.defaults.baseURL = server;
   }
@@ -78,7 +78,9 @@ class GeesomeClient {
     this.ipfsNode = ipfsNode;
     this.ipfsService = new JsIpfsService(this.ipfsNode);
     this.ipfsIddleTime = ipfsIddleTime;
-    return this.connectToIpfsNodeToServer();
+    if(!this.serverLessMode) {
+      await this.connectToIpfsNodeToServer();
+    }
   }
 
   async loginUserPass(username, password) {
