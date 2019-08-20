@@ -16,7 +16,7 @@ const DaemonFactory = require('ipfsd-ctl');
 const df = DaemonFactory.create({type: 'proc'});
 const util = require('util');
 
-describe.only('pgp', function () {
+describe('pgp', function () {
   let geesomeClient;
 
   const dfSpawn = util.promisify(df.spawn).bind(df);
