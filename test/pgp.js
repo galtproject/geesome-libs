@@ -10,7 +10,6 @@ chai.use(dirtyChai);
 
 const IPFS = require('ipfs');
 const {GeesomeClient} = require('../src/GeesomeClient');
-const ipfsHelper = require('../src/ipfsHelper');
 const pgpHelper = require('../src/pgpHelper');
 
 const DaemonFactory = require('ipfsd-ctl');

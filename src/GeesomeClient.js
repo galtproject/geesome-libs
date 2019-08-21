@@ -58,6 +58,10 @@ class GeesomeClient {
     });
   }
 
+  async exportPrivateKey() {
+    return this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
+  }
+
   async setServer(server) {
     this.server = server;
     this.$http.defaults.baseURL = server;
