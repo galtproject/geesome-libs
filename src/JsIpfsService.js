@@ -1,5 +1,6 @@
 const ipfsHelper = require('./ipfsHelper');
 const _ = require('lodash');
+const ipns = require('ipns');
 const ipfsImproves = require('./ipfsImproves');
 const {promisify} = require('es6-promisify');
 
@@ -138,19 +139,39 @@ module.exports = class JsIpfsService {
     }
   }
 
-  async bindToStaticId(storageId, accountKey, hours = 1) {
+  async bindToStaticId(storageId, accountKey, options) {
     if (_.startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
-    return this.node.name.publish(`${storageId}`, {
-      key: accountKey,
-      lifetime: hours + 'h'
-    }).then(response => response.name);
+    if(!options.lifetime) {
+      options.lifetime = '1h';
+    }
+    return this.node.name.publish(storageId, _.extend({ key: accountKey }, options)).then(response => response.name);
   }
 
   async resolveStaticId(staticStorageId) {
     return this.node.name.resolve(staticStorageId).then(response => {
       return (response && response.path ? response.path : response).replace('/ipfs/', '')
+    });
+  }
+  
+  async resolveStaticIdEntry(staticStorageId) {
+    return new Promise((resolve, reject) => {
+      const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
+      const { routingKey } = ipns.getIdKeys(peerId.toBytes());
+
+      this.node._ipns.routing.get(routingKey.toBuffer(), (err, record) => {
+        if(err) {
+          return reject(err);
+        }
+        const ipnsEntry = ipns.unmarshal(record);
+
+        ipnsEntry.value = ipnsEntry.value.toString('utf8');
+        
+        this.node._ipns.resolver._validateRecord(peerId, ipnsEntry, (validationErr) => {
+          return validationErr ? reject(validationErr) : resolve(ipnsEntry);
+        });
+      })
     });
   }
 

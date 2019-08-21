@@ -10,7 +10,8 @@ const {SignPrefix} = require('libp2p-pubsub/src/message/sign')
 const {utils} = require('libp2p-pubsub');
 const multihash = require('multihashes');
 // const {fromB58String} = require('multihashes');
-const ID_MULTIHASH_CODE = multihash.names.id
+const ID_MULTIHASH_CODE = multihash.names.id;
+const bs58 = require('bs58')
 
 const peerId = require('peer-id');
 const {promisify} = require('es6-promisify');
@@ -58,17 +59,17 @@ const ipfsHelper = {
   createPeerIdFromPrivKey: promisify(peerId.createFromPrivKey).bind(peerId),
   createPeerIdFromIpns: peerId.createFromB58String.bind(peerId),
 
-  extractPublicKeyFromId(peerId) {
-    const decodedId = multihash.decode(peerId.id);
-    
-    console.log('decodedId', decodedId);
-
-    if (decodedId.code !== ID_MULTIHASH_CODE) {
-      return null
-    }
-
-    return crypto.keys.unmarshalPublicKey(decodedId.digest)
-  },
+  // extractPublicKeyFromId(peerId) {
+  //   const decodedId = multihash.decode(peerId.id);
+  //  
+  //   console.log('decodedId', decodedId);
+  //
+  //   if (decodedId.code !== ID_MULTIHASH_CODE) {
+  //     return null
+  //   }
+  //
+  //   return crypto.keys.unmarshalPublicKey(decodedId.digest)
+  // },
 
   async parsePubSubEvent(event) {
     if(event.key) {
