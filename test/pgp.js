@@ -10,6 +10,7 @@ chai.use(dirtyChai);
 
 const IPFS = require('ipfs');
 const {GeesomeClient} = require('../src/GeesomeClient');
+const ipfsHelper = require('../src/ipfsHelper');
 const pgpHelper = require('../src/pgpHelper');
 
 const DaemonFactory = require('ipfsd-ctl');
@@ -54,7 +55,7 @@ describe('pgp', function () {
 
   after((done) => {geesomeClient.ipfsService.stop().then(done)});
 
-  it('should handle signed event and validate signature', function (done) {
+  it.only('should handle signed event and validate signature', function (done) {
 
     (async () => {
       this.timeout(10 * 1000);
@@ -67,7 +68,16 @@ describe('pgp', function () {
 
       const bobPrivateKey = await pgpHelper.transformKey(bobKey.marshal());
       const alicePrivateKey = await pgpHelper.transformKey(aliceKey.marshal());
+      
+      // DO NOT WORKING :(
+      // const bobPublicPeerId = ipfsHelper.createPeerIdFromIpns(bobId);
+      // const alicePublicPeerId = ipfsHelper.createPeerIdFromIpns(aliceId);
+      //
+      // bobPublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(bobPublicPeerId);
+      // alicePublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(alicePublicPeerId);
 
+
+      console.log('bobKey.public.marshal()', bobKey.public.marshal());
       const bobPublicKey = await pgpHelper.transformKey(bobKey.public.marshal(), true);
       const alicePublicKey = await pgpHelper.transformKey(aliceKey.public.marshal(), true);
 
