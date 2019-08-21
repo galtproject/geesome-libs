@@ -55,7 +55,7 @@ describe('pgp', function () {
 
   after((done) => {geesomeClient.ipfsService.stop().then(done)});
 
-  it.only('should handle signed event and validate signature', function (done) {
+  it('should handle signed event and validate signature', function (done) {
 
     (async () => {
       this.timeout(10 * 1000);
