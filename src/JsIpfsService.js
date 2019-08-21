@@ -139,7 +139,7 @@ module.exports = class JsIpfsService {
     }
   }
 
-  async bindToStaticId(storageId, accountKey, options) {
+  async bindToStaticId(storageId, accountKey, options = {}) {
     if (_.startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
