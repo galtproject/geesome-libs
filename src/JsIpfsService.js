@@ -262,4 +262,10 @@ module.exports = class JsIpfsService {
     const privateKey = await this.keyLookup(accountKey);
     return ipfsHelper.createPeerIdFromPrivKey(privateKey.bytes);
   }
+
+  async getAccountPublicKey(accountKey) {
+    // TODO: find the more safety way
+    const privateKey = await this.keyLookup(accountKey);
+    return ipfsHelper.createPeerIdFromPrivKey(privateKey.bytes).public.marshal();
+  }
 };

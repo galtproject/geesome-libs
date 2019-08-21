@@ -55,7 +55,7 @@ describe('pgp', function () {
 
   after((done) => {geesomeClient.ipfsService.stop().then(done)});
 
-  it('should handle signed event and validate signature', function (done) {
+  it.only('should handle signed event and validate signature', function (done) {
 
     (async () => {
       this.timeout(10 * 1000);
@@ -72,12 +72,9 @@ describe('pgp', function () {
       // DO NOT WORKING :(
       // const bobPublicPeerId = ipfsHelper.createPeerIdFromIpns(bobId);
       // const alicePublicPeerId = ipfsHelper.createPeerIdFromIpns(aliceId);
-      //
       // bobPublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(bobPublicPeerId);
       // alicePublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(alicePublicPeerId);
-
-
-      console.log('bobKey.public.marshal()', bobKey.public.marshal());
+      
       const bobPublicKey = await pgpHelper.transformKey(bobKey.public.marshal(), true);
       const alicePublicKey = await pgpHelper.transformKey(aliceKey.public.marshal(), true);
 
