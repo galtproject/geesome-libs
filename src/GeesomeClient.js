@@ -8,7 +8,7 @@ const JsIpfsService = require('./JsIpfsService');
 const PeerId = require('peer-id');
 const PeerInfo = require('peer-info');
 
-const {extractHostname, isIpAddress} = require('./common');
+const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
@@ -406,7 +406,7 @@ class GeesomeClient {
     if (ipfsHelper.isIpldHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
-    } else {
+    } else if(isNumber(postId)) {
       const postsPath = group.id + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
@@ -420,6 +420,9 @@ class GeesomeClient {
         const manifestId = await this.decryptText(post);
         post = { manifestId };
       }
+    } else if(group.isEncrypted) {
+      const manifestId = await this.decryptText(postId);
+      post = { manifestId };
     }
 
     post.id = postId;
