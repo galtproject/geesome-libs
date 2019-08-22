@@ -2,6 +2,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
+const pgpHelper = require('./pgpHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 const PeerId = require('peer-id');
@@ -59,7 +60,13 @@ class GeesomeClient {
   }
 
   async exportPrivateKey() {
-    return this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
+    this._privateKey = await this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
+  }
+  
+  async decryptText(encryptedText) {
+    const pgpPrivateKey = await pgpHelper.transformKey(Buffer.from(this._privateKey));
+
+    return pgpHelper.decrypt([pgpPrivateKey], [], encryptedText);
   }
 
   async setServer(server) {
@@ -360,16 +367,20 @@ class GeesomeClient {
     const posts = [];
     pIteration.forEach(_.range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
-      const post = await this.getObject(postsPath + postNumberPath);
-      post.id = postNumber;
+      let post = await this.getObject(postsPath + postNumberPath);
       
       const node = trie.getNode(group.posts, postNumber);
       
       if(ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
-      } else {
+      } else if(node['/']) {
         post.manifestId = node['/'];
+      } else if(group.isEncrypted) {
+        const manifestId = await this.decryptText(post);
+        post = { manifestId };
       }
+      
+      post.id = postNumber;
       
       post.groupId = groupId;
       if (post) {
@@ -403,8 +414,11 @@ class GeesomeClient {
       const node = trie.getNode(group.posts, postId);
       if(ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
-      } else {
+      } else if(node['/']) {
         post.manifestId = node['/'];
+      } else if(group.isEncrypted) {
+        const manifestId = await this.decryptText(post);
+        post = { manifestId };
       }
     }
 

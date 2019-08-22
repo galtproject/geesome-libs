@@ -42,3 +42,10 @@ module.exports.extractHostname = (url) => {
 module.exports.isIpAddress = (str) => {
   return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
 };
+
+module.exports.isNumber = (str) => {
+  if(_.isString(str) && !/^[0-9.]+$/.test(str)) {
+    return false;
+  }
+  return !_.isNaN(parseFloat(str));
+};
