@@ -13,6 +13,7 @@ module.exports = {
   improvePubSub(fsub) {
     // https://github.com/libp2p/js-libp2p-pubsub/blob/f1e188929d779e7af91e1fd039b2c3b95cdf05df/src/index.js#L246
     fsub._buildMessageByPeerId = (function (peerId, message, callback) {
+      console.log('_buildMessageByPeerId', peerId, message);
       const msg = utils.normalizeOutRpcMessage(message)
       if (peerId) {
         signMessage(peerId, msg, callback)

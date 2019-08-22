@@ -228,7 +228,6 @@ module.exports = class JsIpfsService {
     if(_.isString(data)) {
       data = new Buffer(data);
     }
-    console.log('fSubPublishByPeerId', peerId, topic, data);
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
   
