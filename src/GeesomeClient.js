@@ -315,7 +315,9 @@ class GeesomeClient {
       if (!ipldData) {
         return null;
       }
-      ipldData.id = ipldHash;
+      if(_.isObject(ipldData)) {
+        ipldData.id = ipldHash;
+      }
       return ipldData;
     }
   }
