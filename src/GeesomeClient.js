@@ -377,7 +377,7 @@ class GeesomeClient {
         post.manifestId = node['/'];
       } else if(group.isEncrypted) {
         const manifestId = await this.decryptText(post);
-        post = { manifestId };
+        post = await this.getPost(manifestId);
       }
       
       post.id = postNumber;
@@ -418,11 +418,11 @@ class GeesomeClient {
         post.manifestId = node['/'];
       } else if(group.isEncrypted) {
         const manifestId = await this.decryptText(post);
-        post = { manifestId };
+        post = await this.getGroupPost(groupId, manifestId);
       }
     } else if(group.isEncrypted) {
       const manifestId = await this.decryptText(postId);
-      post = { manifestId };
+      post = await this.getGroupPost(groupId, manifestId);
     }
 
     post.id = postId;
