@@ -12,9 +12,7 @@ const ensureArray = utils.ensureArray
 module.exports = {
   improvePubSub(fsub) {
     // https://github.com/libp2p/js-libp2p-pubsub/blob/f1e188929d779e7af91e1fd039b2c3b95cdf05df/src/index.js#L246
-    fsub._buildMessageByPeerId = (function (peerId, message, callback) {
-      console.log('_buildMessageByPeerId', peerId, message);
-      const msg = utils.normalizeOutRpcMessage(message)
+    fsub._buildMessageByPeerId = (function (peerId, msg, callback) {
       if (peerId) {
         signMessage(peerId, msg, callback)
       } else {
@@ -51,10 +49,11 @@ module.exports = {
           topicIDs: topics
         };
 
-        // Emit to self if I'm interested
-        this._emitMessages(topics, [Object.assign({ key: peerId._pubKey.bytes }, message)])
-
-        this._buildMessageByPeerId(peerId, message, cb)
+        this._buildMessageByPeerId(peerId, message, (err, res) => {
+          // Emit to self if I'm interested
+          this._emitMessages(topics, [{ ...message, key: peerId._pubKey.bytes, signature: res.signature }])
+          cb(err, res);
+        })
       }
 
       asyncMap(messages, buildMessage, (err, msgObjects) => {

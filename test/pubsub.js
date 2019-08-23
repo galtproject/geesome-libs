@@ -74,13 +74,28 @@ describe('pubsub', function () {
     (async () => {
       const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
       const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId);
-
+      
+      let catchedEvents = 0;
       await nodeB.subscribeToEvent(testTopic, async (message) => {
         expect(message.keyPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
 
         const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
         expect(isValid).to.equal(true);
-        done();
+        catchedEvents++;
+        if(catchedEvents >= 2) {
+          done();
+        }
+      });
+      
+      await nodeA.subscribeToEvent(testTopic, async (message) => {
+        expect(message.keyPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
+
+        const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
+        expect(isValid).to.equal(true);
+        catchedEvents++;
+        if(catchedEvents >= 2) {
+          done();
+        }
       });
 
       await waitFor((callback) => {

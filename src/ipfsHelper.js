@@ -105,11 +105,13 @@ const ipfsHelper = {
   },
 
   checkPubSubSignature(pubKey, message) {
-    const msg = utils.normalizeOutRpcMessage(_.pick(message, ['from', 'data', 'seqno', 'topicIDs']));
+    const checkMessage = _.pick(message, ['from', 'data', 'seqno', 'topicIDs']);
+    
+    // const msg = utils.normalizeOutRpcMessage(checkMessage);
 
     const bytes = Buffer.concat([
       SignPrefix,
-      Message.encode(msg)
+      Message.encode(checkMessage)
     ]);
 
     return new Promise((resolve, reject) => {
