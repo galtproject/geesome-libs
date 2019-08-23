@@ -54,7 +54,7 @@ describe('pgp', function () {
 
   after((done) => {geesomeClient.ipfsService.stop().then(done)});
 
-  it('should handle signed event and validate signature', function (done) {
+  it.only('should handle signed event and validate signature', function (done) {
 
     (async () => {
       this.timeout(10 * 1000);
@@ -79,11 +79,15 @@ describe('pgp', function () {
 
       const plainText = 'Hello world!';
 
-      const encryptedText = await pgpHelper.encrypt([bobPrivateKey], [alicePublicKey], plainText);
+      const encryptedText = await pgpHelper.encrypt([bobPrivateKey], [alicePublicKey, bobPublicKey], plainText);
 
-      const decryptedText = await pgpHelper.decrypt([alicePrivateKey], [bobPublicKey], encryptedText);
+      const decryptedByAliceText = await pgpHelper.decrypt([alicePrivateKey], [bobPublicKey], encryptedText);
 
-      expect(plainText).to.equals(decryptedText);
+      expect(plainText).to.equals(decryptedByAliceText);
+
+      const decryptedByBobText = await pgpHelper.decrypt([bobPrivateKey], [], encryptedText);
+
+      expect(plainText).to.equals(decryptedByBobText);
       done();
     })();
   })
