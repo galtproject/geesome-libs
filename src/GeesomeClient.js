@@ -64,6 +64,9 @@ class GeesomeClient {
   }
   
   async decryptText(encryptedText) {
+    if(!this._privateKey) {
+      await this.exportPrivateKey();
+    }
     const pgpPrivateKey = await pgpHelper.transformKey(Buffer.from(this._privateKey));
 
     return pgpHelper.decrypt([pgpPrivateKey], [], encryptedText);
