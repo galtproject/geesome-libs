@@ -28,6 +28,7 @@ const pgpHelper = {
   },
   
   async transformKey(masrshalIpfsKey, isPublic) {
+    console.log('forge', forge);
     const buffer = new forge.util.ByteBuffer(masrshalIpfsKey);
     const asn1 = forge.asn1.fromDer(buffer);
 
