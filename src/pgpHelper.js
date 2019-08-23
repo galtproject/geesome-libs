@@ -1,5 +1,5 @@
 const openpgp = require('openpgp');
-const forge = require('node-forge/lib/forge');
+const forge = require('node-forge');
 const BN = require('bn.js');
 const _ = require('lodash');
 
@@ -28,7 +28,6 @@ const pgpHelper = {
   },
   
   async transformKey(masrshalIpfsKey, isPublic) {
-    console.log('forge', forge);
     const buffer = new forge.util.ByteBuffer(masrshalIpfsKey);
     const asn1 = forge.asn1.fromDer(buffer);
 
