@@ -47,7 +47,7 @@ const ipfsHelper = {
       (pem, cb) => crypto.keys.import(pem, pass, cb)
     ], (err, privateKey) => {
       if (err) {
-        log.error(err)
+        console.error(err);
         return callback(errcode(err, 'ERR_CANNOT_GET_KEY'))
       }
 
