@@ -76,6 +76,7 @@ module.exports = class JsIpfsService {
 
   async getAccountNameById(id) {
     const keys = await this.node.key.list();
+    console.log('keys', keys);
     return (_.find(keys, {id}) || {}).name || null;
   }
 
