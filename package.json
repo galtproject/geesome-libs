@@ -19,8 +19,12 @@
     "ipns": "^0.5.2",
     "lodash": "^4.17.15",
     "multihashes": "~0.4.14",
+    "node-forge": "0.8.5",
+    "openpgp": "^4.6.0",
     "p-iteration": "^1.1.8",
-    "peer-id": "^0.12.2"
+    "peer-id": "^0.12.2",
+    "peer-info": "^0.16.0",
+    "sha3": "^2.0.6"
   },
   "devDependencies": {
     "async": "^3.1.0",
