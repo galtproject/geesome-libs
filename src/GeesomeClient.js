@@ -649,6 +649,7 @@ class GeesomeClient {
   async initRuntimeIpfsNode() {
     const hat = require('hat');
     const DaemonFactory = require('ipfsd-ctl');
+    const IPFS = require('ipfs');
     const df = DaemonFactory.create({type: 'proc'});
     
     const dfSpawn = promisify(df.spawn).bind(df);
