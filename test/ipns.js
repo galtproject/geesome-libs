@@ -12,7 +12,6 @@ chai.use(dirtyChai);
 const parallel = require('async/parallel');
 
 const IPFS = require('ipfs');
-const ipns = require('ipns');
 const JsIpfsService = require('../src/JsIpfsService');
 const {getIpnsUpdatesTopic} = require('../src/name');
 const waitFor = require('./utils/wait-for');
