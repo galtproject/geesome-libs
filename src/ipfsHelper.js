@@ -27,7 +27,7 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return _.startsWith(value.codec, 'dag-') || (_.isString(value) && (_.startsWith(value, 'zd') || _.startsWith(value, 'ba')));
+    return _.startsWith(value.codec, 'dag-') || (_.isString(value) && /^\w+$/.test(value) && (_.startsWith(value, 'zd') || _.startsWith(value, 'ba')));
   },
   isCid(value) {
     return CID.isCID(value);
