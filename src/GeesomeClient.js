@@ -7,6 +7,7 @@ const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 const PeerId = require('peer-id');
 const PeerInfo = require('peer-info');
+const {promisify} = require('es6-promisify');
 
 const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
@@ -643,6 +644,36 @@ class GeesomeClient {
         addresses: await this.getPreloadAddresses()
       }
     }));
+  }
+
+  async initRuntimeIpfsNode() {
+    const hat = require('hat');
+    const DaemonFactory = require('ipfsd-ctl');
+    const IPFS = require('ipfs');
+    const df = DaemonFactory.create({type: 'proc'});
+    
+    const dfSpawn = promisify(df.spawn).bind(df);
+    
+    const createNode = async () => {
+      return dfSpawn({
+        exec: IPFS,
+        args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
+        config: {
+          Bootstrap: [],
+          Discovery: {
+            MDNS: {
+              Enabled: false
+            },
+            webRTCStar: {
+              Enabled: false
+            }
+          }
+        },
+        preload: {enabled: false, addresses: await this.getPreloadAddresses()}
+      }).then(node => node.api)
+    };
+
+    return this.setIpfsNode(await createNode());
   }
 }
 

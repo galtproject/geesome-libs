@@ -12,21 +12,20 @@ chai.use(dirtyChai);
 const parallel = require('async/parallel');
 
 const IPFS = require('ipfs');
-const ipns = require('ipns');
 const JsIpfsService = require('../src/JsIpfsService');
 const {getIpnsUpdatesTopic} = require('../src/name');
 const waitFor = require('./utils/wait-for');
 
 const DaemonFactory = require('ipfsd-ctl');
 const df = DaemonFactory.create({type: 'proc'});
-const util = require('util');
+const {promisify} = require('es6-promisify');
 
 describe('ipns', function () {
   let nodes;
   let nodeA;
   let nodeB;
 
-  const dfSpawn = util.promisify(df.spawn).bind(df);
+  const dfSpawn = promisify(df.spawn).bind(df);
   const createNode = () => {
     return dfSpawn({
       exec: IPFS,
