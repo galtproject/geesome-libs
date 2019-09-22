@@ -298,9 +298,9 @@ class GeesomeClient {
     if (ipfsHelper.isIpldHash(storageId)) {
       const manifest = await this.getObject(storageId);
       if(previewType) {
-        storageId = manifest.content;
-      } else {
         storageId = ((manifest.preview || {})[previewType] || {}).content || manifest.content;
+      } else {
+        storageId = manifest.content;
       }
     }
     return this.server + '/v1/content-data/' + storageId;
