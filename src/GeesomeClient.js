@@ -284,7 +284,7 @@ class GeesomeClient {
     })
   }
 
-  async getContentLink(content) {
+  async getContentLink(content, previewType = null) {
     if (!content) {
       return null;
     }
@@ -296,7 +296,12 @@ class GeesomeClient {
     }
 
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getObject(storageId)).content;
+      const manifest = await this.getObject(storageId);
+      if(previewType) {
+        storageId = manifest.content;
+      } else {
+        storageId = ((manifest.preview || {})[previewType] || {}).content || manifest.content;
+      }
     }
     return this.server + '/v1/content-data/' + storageId;
   }
