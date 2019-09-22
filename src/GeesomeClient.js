@@ -203,6 +203,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, _.extend({contentsIds}, params));
   }
 
+  regenerateUserPreviews(contentsIds, params) {
+    return this.postRequest(`/v1/user/regenerate-previews`);
+  }
+  
   getContentData(storageId) {
     return this.getRequest('/v1/content-data/' + storageId);
   }
