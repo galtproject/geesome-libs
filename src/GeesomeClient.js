@@ -293,8 +293,8 @@ class GeesomeClient {
       return null;
     }
     let storageId;
-    if (content.content) {
-      storageId = content.content;
+    if (content.storageId) {
+      storageId = content.storageId;
     } else {
       storageId = content;
     }
@@ -302,9 +302,9 @@ class GeesomeClient {
     if (ipfsHelper.isIpldHash(storageId)) {
       const manifest = await this.getObject(storageId);
       if(previewType) {
-        storageId = ((manifest.preview || {})[previewType] || {}).content || manifest.content;
+        storageId = ((manifest.preview || {})[previewType] || {}).storageId || manifest.storageId;
       } else {
-        storageId = manifest.content;
+        storageId = manifest.storageId;
       }
     }
     return this.server + '/v1/content-data/' + storageId;
@@ -346,7 +346,7 @@ class GeesomeClient {
       contentHash = contentHash['/'];
     }
     if(ipfsHelper.isIpldHash(contentHash)) {
-      contentHash = (await this.getObject(contentHash)).content;
+      contentHash = (await this.getObject(contentHash)).storageId;
     }
     
     let responded = false;
