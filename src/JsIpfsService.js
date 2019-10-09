@@ -298,4 +298,16 @@ module.exports = class JsIpfsService {
     // TODO: find the more safety way
     return (await this.keyLookup(accountKey)).public.marshal();
   }
+  
+  async makeDir(path) {
+    return this.node.files.mkdir(path, { parents: true });
+  }
+  
+  async copyFileFromId(storageId, filePath) {
+    const existFiles = await this.node.files.ls(filePath);
+    if(existFiles.length) {
+      await this.node.files.rm(filePath);
+    }
+    return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true, flush: true });
+  }
 };
