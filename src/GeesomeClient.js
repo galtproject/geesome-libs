@@ -356,7 +356,7 @@ class GeesomeClient {
       
       setTimeout(() => {
         if (!responded) {
-          this.getRequest(`/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
+          this.getRequest(`/v1/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
