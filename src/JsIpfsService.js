@@ -310,4 +310,9 @@ module.exports = class JsIpfsService {
     }
     return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true, flush: true });
   }
+
+  async getDirectoryId(path) {
+    const {hash} = await this.node.files.stat(path, {hash: true});
+    return hash;
+  }
 };
