@@ -517,6 +517,18 @@ class GeesomeClient {
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
+  
+  saveContentByPath(contentId, path) {
+    return this.postRequest(`/v1/user/file-catalog/save-content-by-path`, {contentId, path});
+  }
+
+  getContentByPath(path) {
+    return this.postRequest(`/v1/user/file-catalog/get-content-by-path`, {path});
+  }
+
+  publishFolder(folderId) {
+    return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`);
+  }
 
   getAllItems(itemsName, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
