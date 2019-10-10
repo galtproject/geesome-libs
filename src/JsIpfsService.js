@@ -308,7 +308,7 @@ module.exports = class JsIpfsService {
     if(existFiles.length) {
       await this.node.files.rm(filePath);
     }
-    return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true, flush: true });
+    return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true });
   }
 
   async getDirectoryId(path) {
