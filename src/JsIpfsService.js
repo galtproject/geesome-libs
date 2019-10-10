@@ -112,7 +112,14 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  getFileStream(filePath) {
+  async getFileStream(filePath) {
+    if(ipfsHelper.isIpfsHash(filePath)) {
+      const stat = await this.node.files.stat(filePath);
+      console.log('getFileStream stat', stat);
+      if(stat.type === 'directory') {
+        filePath += '/index.html';
+      }
+    }
     return new Promise((resolve, reject) => {
       this.node.getReadableStream(filePath).on('data', (file) => {
         resolve(file.content);
@@ -297,5 +304,29 @@ module.exports = class JsIpfsService {
   async getAccountPublicKey(accountKey) {
     // TODO: find the more safety way
     return (await this.keyLookup(accountKey)).public.marshal();
+  }
+  
+  async makeDir(path) {
+    return this.node.files.mkdir(path, { parents: true });
+  }
+  
+  async copyFileFromId(storageId, filePath) {
+    try {
+      const existFiles = await this.node.files.ls(filePath);
+      if(existFiles.length) {
+        await this.node.files.rm(filePath);
+      }
+    } catch (e) {
+      if(!_.includes(e.message, 'file does not exist')) {
+        console.error('copyFileFromId error:');
+        throw e;
+      }
+    }
+    return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true });
+  }
+
+  async getDirectoryId(path) {
+    const {hash} = await this.node.files.stat(path, {hash: true});
+    return hash;
   }
 };

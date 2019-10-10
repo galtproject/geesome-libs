@@ -203,6 +203,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, _.extend({contentsIds}, params));
   }
 
+  regenerateUserPreviews() {
+    return this.postRequest(`/v1/user/regenerate-previews`);
+  }
+  
   getContentData(storageId) {
     return this.getRequest('/v1/content-data/' + storageId);
   }
@@ -284,19 +288,24 @@ class GeesomeClient {
     })
   }
 
-  async getContentLink(content) {
+  async getContentLink(content, previewType = null) {
     if (!content) {
       return null;
     }
     let storageId;
-    if (content.content) {
-      storageId = content.content;
+    if (content.storageId) {
+      storageId = content.storageId;
     } else {
       storageId = content;
     }
 
     if (ipfsHelper.isIpldHash(storageId)) {
-      storageId = (await this.getObject(storageId)).content;
+      const manifest = await this.getObject(storageId);
+      if(previewType) {
+        storageId = ((manifest.preview || {})[previewType] || {}).storageId || manifest.storageId;
+      } else {
+        storageId = manifest.storageId;
+      }
     }
     return this.server + '/v1/content-data/' + storageId;
   }
@@ -337,7 +346,7 @@ class GeesomeClient {
       contentHash = contentHash['/'];
     }
     if(ipfsHelper.isIpldHash(contentHash)) {
-      contentHash = (await this.getObject(contentHash)).content;
+      contentHash = (await this.getObject(contentHash)).storageId;
     }
     
     let responded = false;
@@ -347,7 +356,7 @@ class GeesomeClient {
       
       setTimeout(() => {
         if (!responded) {
-          this.getContentData(contentHash).then(wrap).then(resolve).catch(reject);
+          this.getRequest(`/v1/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
@@ -507,6 +516,22 @@ class GeesomeClient {
 
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
+  }
+  
+  saveContentByPath(contentId, path) {
+    return this.postRequest(`/v1/user/file-catalog/save-content-by-path`, {contentId, path});
+  }
+
+  getContentByPath(path) {
+    return this.postRequest(`/v1/user/file-catalog/get-content-by-path`, {path});
+  }
+
+  getFileCatalogItemByPath(path, type) {
+    return this.postRequest(`/v1/user/file-catalog/get-item-by-path`, {path, type});
+  }
+
+  publishFolder(folderId) {
+    return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`);
   }
 
   getAllItems(itemsName, search = null, listParams = {}) {

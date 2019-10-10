@@ -10,6 +10,7 @@
 const CID = require('cids');
 const _ = require('lodash');
 const ipns = require('ipns');
+const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 
 const crypto = require('libp2p-crypto');
 const errcode = require('err-code');
@@ -126,6 +127,25 @@ const ipfsHelper = {
     return new Promise((resolve, reject) => {
       pubKey.verify(bytes, message.signature, (err, isValid) => {
         err ? reject(err) : resolve(isValid);
+      });
+    });
+  },
+  
+  getIpfsHashFromString(string) {
+    const Unixfs = require('ipfs-unixfs');
+    
+    return new Promise((resolve, reject) => {
+      const unixFsFile = new Unixfs('file', Buffer.from(string));
+      const buffer = unixFsFile.marshal();
+
+      DAGNode.create(buffer, (err, dagNode) => {
+        if (err) {
+          reject(new Error('Cannot create ipfs DAGNode'));
+        }
+
+        DAGUtil.cid(dagNode, (error, cid) => {
+          resolve(cid.toBaseEncodedString());
+        });
       });
     });
   }
