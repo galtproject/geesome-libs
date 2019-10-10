@@ -112,7 +112,14 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  getFileStream(filePath) {
+  async getFileStream(filePath) {
+    if(ipfsHelper.isIpfsHash(filePath)) {
+      const stat = await this.node.files.stat(filePath);
+      console.log('getFileStream stat', stat);
+      if(stat.type === 'directory') {
+        filePath += '/index.html';
+      }
+    }
     return new Promise((resolve, reject) => {
       this.node.getReadableStream(filePath).on('data', (file) => {
         resolve(file.content);
