@@ -310,7 +310,10 @@ module.exports = class JsIpfsService {
         await this.node.files.rm(filePath);
       }
     } catch (e) {
-      // files does not exists
+      if(!_.includes(e.message, 'file does not exist')) {
+        console.error('copyFileFromId error:');
+        throw e;
+      }
     }
     return this.node.files.cp('/ipfs/' + storageId, filePath, { parents: true });
   }
