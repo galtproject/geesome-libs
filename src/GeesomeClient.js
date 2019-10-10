@@ -526,6 +526,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/file-catalog/get-content-by-path`, {path});
   }
 
+  getFileCatalogItemByPath(path, type) {
+    return this.postRequest(`/v1/user/file-catalog/get-item-by-path`, {path, type});
+  }
+
   publishFolder(folderId) {
     return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`);
   }
