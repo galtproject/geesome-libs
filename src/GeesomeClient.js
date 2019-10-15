@@ -293,18 +293,25 @@ class GeesomeClient {
       return null;
     }
     let storageId;
-    if (content.storageId) {
-      storageId = content.storageId;
+    let manifest;
+    //                        TODO: delete deprecated content  field
+    if (content.storageId || content.content) {
+      manifest = content;
     } else {
       storageId = content;
     }
 
     if (ipfsHelper.isIpldHash(storageId)) {
-      const manifest = await this.getObject(storageId);
+      if(!manifest) {
+        manifest = await this.getObject(storageId);
+      }
       if(previewType) {
-        storageId = ((manifest.preview || {})[previewType] || {}).storageId || manifest.storageId;
+        const previewObj = ((manifest.preview || {})[previewType] || {});
+        //                                  TODO: delete deprecated content  field
+        storageId = previewObj.storageId || previewObj.content || manifest.storageId || manifest.content;
       } else {
-        storageId = manifest.storageId;
+        //                                TODO: delete deprecated content  field
+        storageId = manifest.storageId || manifest.content;
       }
     }
     return this.server + '/v1/content-data/' + storageId;
