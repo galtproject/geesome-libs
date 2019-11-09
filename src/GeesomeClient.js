@@ -176,6 +176,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupId}/is-member`).then(data => data.result);
   }
 
+  saveObject(object) {
+    return this.postRequest('/save-object', object, {headers: {'Content-Type': 'multipart/form-data'}});
+  }
+
   saveFile(file, params = {}) {
     const formData = new FormData();
 
@@ -184,19 +188,44 @@ class GeesomeClient {
     });
 
     formData.append("file", file);
-    return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}});
-  }
-
-  saveObject(object) {
-    return this.postRequest('/save-object', object, {headers: {'Content-Type': 'multipart/form-data'}});
+    return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}})
+      .then(res => this.asyncResponseWrapper(res));
   }
 
   saveContentData(content, params = {}) {
-    return this.postRequest('/v1/user/save-data', _.extend({content}, params));
+    return this.postRequest('/v1/user/save-data', _.extend({content}, params))
+      .then(res => this.asyncResponseWrapper(res));
   }
 
   saveDataByUrl(url, params = {}) {
-    return this.postRequest('/v1/user/save-data-by-url', _.extend({url}, params));
+    return this.postRequest('/v1/user/save-data-by-url', _.extend({url}, params))
+      .then(res => this.asyncResponseWrapper(res));
+  }
+  
+  asyncResponseWrapper(res) {
+    if(!res.asyncOperationId){
+      return res;
+    }
+    return new Promise((resolve, reject) => {
+      // TODO: use channel
+      const waitingForFinish = () => {
+        setTimeout(() => {
+          this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
+            if(operation.inProcess){
+              return waitingForFinish();
+            }
+            
+            if(operation.errorMessage) {
+              return reject({message: operation.errorMessage});
+            }
+            
+            resolve(this.getDbContent(operation.contentId));
+          })
+        }, 1000);
+      };
+      
+      waitingForFinish();
+    })
   }
 
   createPost(contentsIds, params) {
