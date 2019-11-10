@@ -334,13 +334,15 @@ class GeesomeClient {
       manifest = await this.getObject(storageId);
     }
 
-    if(previewType) {
-      const previewObj = ((manifest.preview || {})[previewType] || {});
-      //                                  TODO: delete deprecated content  field
-      storageId = previewObj.storageId || previewObj.content || manifest.storageId || manifest.content;
-    } else {
-      //                                TODO: delete deprecated content  field
-      storageId = manifest.storageId || manifest.content;
+    if (manifest) {
+      if(previewType) {
+        const previewObj = ((manifest.preview || {})[previewType] || {});
+        //                                  TODO: delete deprecated content  field
+        storageId = previewObj.storageId || previewObj.content || manifest.storageId || manifest.content;
+      } else {
+        //                                TODO: delete deprecated content  field
+        storageId = manifest.storageId || manifest.content;
+      }
     }
     return this.server + '/v1/content-data/' + storageId;
   }
