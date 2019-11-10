@@ -111,22 +111,23 @@ module.exports = class JsIpfsService {
     }
     return this.node.key.rm(name);
   }
-
-  async getFileStream(filePath) {
-    console.log('getFileStream filePath before', filePath);
+  
+  async getFileStat(filePath) {
+    return this.node.files.stat('/ipfs/' + filePath);
+  }
+  
+  async getFileStream(filePath, options = {}) {
     if(ipfsHelper.isIpfsHash(_.trim(filePath, '/'))) {
       filePath = _.trim(filePath, '/');
-      const stat = await this.node.files.stat('/ipfs/' + filePath);
-      console.log('getFileStream stat', stat);
+      const stat = await this.getFileStat('/ipfs/' + filePath);
       if(stat.type === 'directory') {
         filePath += '/index.html';
       }
     }
-    console.log('getFileStream filePath after', filePath);
     return new Promise((resolve, reject) => {
-      this.node.getReadableStream(filePath).on('data', (file) => {
+      this.node.getReadableStream(filePath, options).on('data', (file) => {
         resolve(file.content);
-      });
+      }).on('error', reject);
     });
   }
 
