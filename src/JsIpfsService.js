@@ -115,7 +115,7 @@ module.exports = class JsIpfsService {
   async getFileStat(filePath) {
     return this.node.files.stat('/ipfs/' + filePath);
   }
-  
+
   async getFileStream(filePath, options = {}) {
     if(ipfsHelper.isIpfsHash(_.trim(filePath, '/'))) {
       filePath = _.trim(filePath, '/');
@@ -124,11 +124,7 @@ module.exports = class JsIpfsService {
         filePath += '/index.html';
       }
     }
-    return new Promise((resolve, reject) => {
-      this.node.getReadableStream(filePath, options).on('data', (file) => {
-        resolve(file.content);
-      }).on('error', reject);
-    });
+    return this.node.catReadableStream(filePath, options);
   }
 
   getFileData(filePath) {
