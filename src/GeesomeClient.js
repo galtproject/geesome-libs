@@ -69,6 +69,10 @@ class GeesomeClient {
     });
   }
 
+  setUserAccount(accountData) {
+    return this.postRequest('/v1/user/set-account', accountData);
+  }
+
   async exportPrivateKey() {
     this._privateKey = await this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
   }
