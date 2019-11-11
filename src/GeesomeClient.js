@@ -112,19 +112,23 @@ class GeesomeClient {
   }
 
   async loginPassword(username, password) {
-    return this.postRequest('/v1/login', {username, password}).then(data => {
+    return this.postRequest('/v1/login/password', {username, password}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
     });
   }
 
-  async loginAuthMessage(authMessageId, signature) {
-    return this.postRequest('/v1/login', {username, password}).then(data => {
+  async loginAuthMessage(authMessageId, accountAddress, signature) {
+    return this.postRequest('/v1/login/auth-message', {authMessageId, accountAddress, signature}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
     });
+  }
+
+  async generateAuthMessage(accountProvider, accountAddress) {
+    return this.postRequest('/v1/generate-auth-message', {accountProvider, accountAddress});
   }
 
   async logout() {
