@@ -119,8 +119,8 @@ class GeesomeClient {
     });
   }
 
-  async loginAuthMessage(authMessageId, accountAddress, signature) {
-    return this.postRequest('/v1/login/auth-message', {authMessageId, accountAddress, signature}).then(data => {
+  async loginAuthMessage(authMessageId, accountAddress, signature, params = {}) {
+    return this.postRequest('/v1/login/auth-message', {authMessageId, accountAddress, signature, params}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
