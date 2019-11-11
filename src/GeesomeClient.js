@@ -594,15 +594,15 @@ class GeesomeClient {
 
   getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
-    return this.getRequest(`/v1/user/api-keys`, {params: {sortBy, sortDir, limit, offset}});
+    return this.getRequest(`/v1/user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
 
-  addUserApiKey() {
-    return this.postRequest(`/v1/user/api-keys/add`);
+  addUserApiKey(data) {
+    return this.postRequest(`/v1/user/api-key/add`, data);
   }
 
   updateUserApiKey(apiKeyId, updateData) {
-    return this.postRequest(`/v1/user/api-keys/${apiKeyId}/update`, updateData);
+    return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
   }
 
   adminCreateUser(userData) {
@@ -625,8 +625,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
-  adminAddUserApiKey(userId) {
-    return this.postRequest(`/v1/admin/add-user-api-key`, {userId});
+  adminAddUserApiKey(userId, data) {
+    return this.postRequest(`/v1/admin/add-user-api-key`, {userId, ...data});
   }
 
   adminGetBootNodes() {
