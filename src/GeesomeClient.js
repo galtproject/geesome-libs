@@ -633,6 +633,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/boot-nodes/remove`, {address});
   }
 
+  adminGetUserAccount(provider, address) {
+    return this.postRequest(`/v1/admin/get-user-account`, {provider, address});
+  }
+
   getNodeAddressList() {
     return this.getRequest(`/v1/node-address-list`).then(data => data.result);
   }
