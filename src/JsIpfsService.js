@@ -8,7 +8,16 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
-const _ = require('lodash');
+
+const extend = require('lodash/extend');
+const trim = require('lodash/trim');
+const isObject = require('lodash/isObject');
+const last = require('lodash/last');
+const find = require('lodash/find');
+const startsWith = require('lodash/startsWith');
+const includes = require('lodash/includes');
+const isString = require('lodash/isString');
+
 const ipns = require('ipns');
 const ipfsImproves = require('./ipfsImproves');
 const {promisify} = require('es6-promisify');
@@ -53,8 +62,8 @@ module.exports = class JsIpfsService {
 
   async saveDirectory(path) {
     const result = await this.node.addFromFs(path, {recursive: true, ignore: []});
-    const dirName = _.last(path.split('/'));
-    const dirResult = _.find(result, {path: dirName});
+    const dirName = last(path.split('/'));
+    const dirResult = find(result, {path: dirName});
     await this.node.pin.add(dirResult.hash);
     return this.wrapIpfsItem(dirResult);
   }
@@ -66,7 +75,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByData(content) {
-    if (_.isString(content)) {
+    if (isString(content)) {
       content = Buffer.from(content, 'utf8');
     }
     return this.saveFile({content});
@@ -80,13 +89,13 @@ module.exports = class JsIpfsService {
 
   async getAccountIdByName(name) {
     const keys = await this.node.key.list();
-    return (_.find(keys, {name}) || {}).id || null;
+    return (find(keys, {name}) || {}).id || null;
   }
 
   async getAccountNameById(id) {
     const keys = await this.node.key.list();
     // console.log('keys', id, keys);
-    return (_.find(keys, {id}) || {}).name || null;
+    return (find(keys, {id}) || {}).name || null;
   }
 
   async getCurrentAccountId() {
@@ -117,8 +126,8 @@ module.exports = class JsIpfsService {
   }
 
   async getFileStream(filePath, options = {}) {
-    if(ipfsHelper.isIpfsHash(_.trim(filePath, '/'))) {
-      filePath = _.trim(filePath, '/');
+    if(ipfsHelper.isIpfsHash(trim(filePath, '/'))) {
+      filePath = trim(filePath, '/');
       const stat = await this.getFileStat(filePath);
       if(stat.type === 'directory') {
         filePath += '/index.html';
@@ -132,7 +141,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveObject(objectData) {
-    // objectData = _.isObject(objectData) ? JSON.stringify(objectData) : objectData;
+    // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
     const savedObj = await this.node.dag.put(objectData);
     const ipldHash = ipfsHelper.cidToHash(savedObj);
     await this.node.pin.add(ipldHash);
@@ -157,13 +166,13 @@ module.exports = class JsIpfsService {
   }
 
   async bindToStaticId(storageId, accountKey, options = {}) {
-    if (_.startsWith(accountKey, 'Qm')) {
+    if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
     if(!options.lifetime) {
       options.lifetime = '1h';
     }
-    return this.node.name.publish(storageId, _.extend({ key: accountKey }, options)).then(response => response.name);
+    return this.node.name.publish(storageId, extend({ key: accountKey }, options)).then(response => response.name);
   }
 
   async resolveStaticId(staticStorageId) {
@@ -239,10 +248,10 @@ module.exports = class JsIpfsService {
   }
   
   publishEventByPeerId(peerId, topic, data) {
-    if(_.isObject(data)) {
+    if(isObject(data)) {
       data = JSON.stringify(data);
     }
-    if(_.isString(data)) {
+    if(isString(data)) {
       data = new Buffer(data);
     }
     return this.fSubPublishByPeerId(peerId, topic, data);
@@ -266,10 +275,10 @@ module.exports = class JsIpfsService {
   }
 
   publishEvent(topic, data) {
-    if(_.isObject(data)) {
+    if(isObject(data)) {
       data = JSON.stringify(data);
     }
-    if(_.isString(data)) {
+    if(isString(data)) {
       data = new Buffer(data);
     }
     return this.fSubPublish(topic, data);
@@ -286,7 +295,7 @@ module.exports = class JsIpfsService {
   }
   
   async keyLookup(accountKey) {
-    if (_.startsWith(accountKey, 'Qm')) {
+    if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
     return new Promise((resolve, reject) => {
@@ -317,7 +326,7 @@ module.exports = class JsIpfsService {
         await this.node.files.rm(filePath);
       }
     } catch (e) {
-      if(!_.includes(e.message, 'file does not exist')) {
+      if(!includes(e.message, 'file does not exist')) {
         console.error('copyFileFromId error:');
         throw e;
       }

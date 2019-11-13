@@ -8,15 +8,19 @@
  */
 
 const CID = require('cids');
-const _ = require('lodash');
+
+const startsWith = require('lodash/startsWith');
+const isString = require('lodash/isString');
+const pick = require('lodash/pick');
+
 const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 
 const crypto = require('libp2p-crypto');
 const errcode = require('err-code');
 const waterfall = require('async/waterfall');
-const {Message} = require('libp2p-pubsub/src/message')
-const {SignPrefix} = require('libp2p-pubsub/src/message/sign')
+const {Message} = require('libp2p-pubsub/src/message');
+const {SignPrefix} = require('libp2p-pubsub/src/message/sign');
 const {utils} = require('libp2p-pubsub');
 const multihash = require('multihashes');
 // const {fromB58String} = require('multihashes');
@@ -31,13 +35,13 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return _.startsWith(value, 'Qm');
+    return startsWith(value, 'Qm');
   },
   isIpldHash(value) {
     if (!value) {
       return false;
     }
-    return _.startsWith(value.codec, 'dag-') || (_.isString(value) && /^\w+$/.test(value) && (_.startsWith(value, 'zd') || _.startsWith(value, 'ba')));
+    return startsWith(value.codec, 'dag-') || (isString(value) && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
   },
   isCid(value) {
     return CID.isCID(value);
@@ -115,7 +119,7 @@ const ipfsHelper = {
   },
 
   checkPubSubSignature(pubKey, message) {
-    const checkMessage = _.pick(message, ['from', 'data', 'seqno', 'topicIDs']);
+    const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
     
     // const msg = utils.normalizeOutRpcMessage(checkMessage);
 

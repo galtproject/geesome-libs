@@ -8,7 +8,21 @@
  */
 
 const axios = require('axios');
-const _ = require('lodash');
+
+const extend = require('lodash/extend');
+const get = require('lodash/get');
+const set = require('lodash/set');
+const isObject = require('lodash/isObject');
+const forEach = require('lodash/forEach');
+const isUndefined = require('lodash/isUndefined');
+const range = require('lodash/range');
+const includes = require('lodash/includes');
+const merge = require('lodash/merge');
+const find = require('lodash/find');
+const filter = require('lodash/filter');
+const last = require('lodash/last');
+const startsWith = require('lodash/startsWith');
+
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
@@ -148,7 +162,7 @@ class GeesomeClient {
   }
 
   userGetFriends(search = null, listParams = {}) {
-    return this.getRequest(`/v1/user/get-friends`, {params: _.extend({search}, listParams)});
+    return this.getRequest(`/v1/user/get-friends`, {params: extend({search}, listParams)});
   }
 
   addFriend(friendId) {
@@ -199,7 +213,7 @@ class GeesomeClient {
   saveFile(file, params = {}) {
     const formData = new FormData();
 
-    _.forEach(params, (value, key) => {
+    forEach(params, (value, key) => {
       formData.append(key, value);
     });
 
@@ -209,12 +223,12 @@ class GeesomeClient {
   }
 
   saveContentData(content, params = {}) {
-    return this.postRequest('/v1/user/save-data', _.extend({content}, params))
+    return this.postRequest('/v1/user/save-data', extend({content}, params))
       .then(res => this.asyncResponseWrapper(res));
   }
 
   saveDataByUrl(url, params = {}) {
-    return this.postRequest('/v1/user/save-data-by-url', _.extend({url}, params))
+    return this.postRequest('/v1/user/save-data-by-url', extend({url}, params))
       .then(res => this.asyncResponseWrapper(res));
   }
   
@@ -245,7 +259,7 @@ class GeesomeClient {
   }
 
   createPost(contentsIds, params) {
-    return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, _.extend({contentsIds}, params));
+    return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, extend({contentsIds}, params));
   }
 
   regenerateUserPreviews() {
@@ -326,10 +340,10 @@ class GeesomeClient {
 
   async fetchIpldFields(obj, fieldsNamesArr) {
     await pIteration.forEach(fieldsNamesArr, async (fieldName) => {
-      if (!_.get(obj, fieldName)) {
+      if (!get(obj, fieldName)) {
         return;
       }
-      _.set(obj, fieldName, await this.getObject(_.get(obj, fieldName)));
+      set(obj, fieldName, await this.getObject(get(obj, fieldName)));
     })
   }
 
@@ -387,7 +401,7 @@ class GeesomeClient {
       if (!ipldData) {
         return null;
       }
-      if(_.isObject(ipldData)) {
+      if(isObject(ipldData)) {
         ipldData.id = ipldHash;
       }
       return ipldData;
@@ -429,8 +443,8 @@ class GeesomeClient {
       orderDir: 'desc'
     };
 
-    _.forEach(defaultOptions, (optionValue, optionName) => {
-      if (_.isUndefined(options[optionName])) {
+    forEach(defaultOptions, (optionValue, optionName) => {
+      if (isUndefined(options[optionName])) {
         options[optionName] = optionValue;
       }
     });
@@ -442,7 +456,7 @@ class GeesomeClient {
 
     const postsPath = group.id + '/posts/';
     const posts = [];
-    pIteration.forEach(_.range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
+    pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
       let post = await this.getObject(postsPath + postNumberPath);
       
@@ -519,7 +533,7 @@ class GeesomeClient {
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
     this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
-      if(_.includes(membersIpnsIds, event.keyIpns)) {
+      if(includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
       }
     });
@@ -653,12 +667,12 @@ class GeesomeClient {
     let addresses = await this.getNodeAddressList();
 
     if(includes) {
-      return _.find(addresses, (address) => {
-        return _.includes(address, includes);
+      return find(addresses, (address) => {
+        return includes(address, includes);
       });
     } else {
-      return _.filter(addresses, (address) => {
-        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && address.length > 64;//&& !_.includes(address, '/p2p-circuit/ipfs/')
+      return filter(addresses, (address) => {
+        return !includes(address, '127.0.0.1') && !includes(address, '192.168') && address.length > 64;//&& !includes(address, '/p2p-circuit/ipfs/')
       })[0];
     }
   }
@@ -675,21 +689,21 @@ class GeesomeClient {
     }
     
     // prevent Error: Dial is currently blacklisted for this peer on swarm connect
-    this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(_.last(address.split('/')))));
+    this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(last(address.split('/')))));
     
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
   setServerByDocumentLocation() {
     let port = 7722;
-    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || _.startsWith(document.location.pathname, '/node')) {
+    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
       port = 7711;
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
   
   isLocalServer() {
-    return _.includes(this.server, ':7711');
+    return includes(this.server, ':7711');
   }
 
   async getPreloadAddresses() {
@@ -726,7 +740,7 @@ class GeesomeClient {
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
       return new Promise((resolve, reject) => {
-        const ipfs = window['Ipfs'].createNode(_.merge({
+        const ipfs = window['Ipfs'].createNode(merge({
           EXPERIMENTAL: {
             pubsub: true,
             ipnsPubsub: true

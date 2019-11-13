@@ -10,7 +10,7 @@
 const openpgp = require('openpgp');
 const forge = require('node-forge');
 const BN = require('bn.js');
-const _ = require('lodash');
+const extend = require('lodash/extend');
 
 const pgpHelper = {
   async encrypt(privateKeys, publicKeys, text) {
@@ -163,7 +163,7 @@ const pgpHelper = {
       const primaryKey = this.keyPacket;
       const dataToVerify = {userId: userIdPacket, key: primaryKey};
       const selfCertification = await getLatestValidSignature(this.users[0].selfCertifications, primaryKey, openpgp.enums.signature.cert_generic, dataToVerify);
-      return _.extend(this.users[0], {selfCertification});
+      return extend(this.users[0], {selfCertification});
     }).bind(resultKey);
 
     resultKey.getKeys = (function() {

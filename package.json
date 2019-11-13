@@ -18,7 +18,7 @@
     "ipfs": "^0.35.0",
     "ipfsd-ctl": "^0.43.0",
     "ipns": "^0.5.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.11",
     "multihashes": "~0.4.14",
     "node-forge": "0.8.5",
     "openpgp": "^4.6.0",
