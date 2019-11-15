@@ -219,20 +219,20 @@ class GeesomeClient {
 
     formData.append("file", file);
     return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}})
-      .then(res => this.asyncResponseWrapper(res));
+      .then(res => this.asyncResponseWrapper(res, params));
   }
 
   saveContentData(content, params = {}) {
     return this.postRequest('/v1/user/save-data', extend({content}, params))
-      .then(res => this.asyncResponseWrapper(res));
+      .then(res => this.asyncResponseWrapper(res, params));
   }
 
   saveDataByUrl(url, params = {}) {
     return this.postRequest('/v1/user/save-data-by-url', extend({url}, params))
-      .then(res => this.asyncResponseWrapper(res));
+      .then(res => this.asyncResponseWrapper(res, params));
   }
   
-  asyncResponseWrapper(res) {
+  asyncResponseWrapper(res, params) {
     if(!res.asyncOperationId){
       return res;
     }
@@ -242,6 +242,9 @@ class GeesomeClient {
         setTimeout(() => {
           this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
             if(operation.inProcess){
+              if(params && params.onProcess) {
+                params.onProcess(operation);
+              }
               return waitingForFinish();
             }
             
