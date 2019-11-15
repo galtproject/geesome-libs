@@ -253,7 +253,7 @@ class GeesomeClient {
             }
             
             resolve(this.getDbContent(operation.contentId));
-          })
+          }).catch(waitingForFinish);
         }, 1000);
       };
       
