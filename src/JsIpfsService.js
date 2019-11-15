@@ -248,6 +248,10 @@ module.exports = class JsIpfsService {
   async nodeAddressList() {
     return this.id().then(nodeId => nodeId.addresses);
   }
+
+  getPins(hash) {
+    return this.node.pin.ls(hash);
+  }
   
   subscribeToIpnsUpdates(ipnsId, callback) {
     const topic = getIpnsUpdatesTopic(ipnsId);

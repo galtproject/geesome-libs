@@ -546,6 +546,10 @@ class GeesomeClient {
     return this.ipfsService.getFileStat(storageId);
   }
 
+  getStorageIdPins(storageId) {
+    return this.ipfsService.getPins(storageId);
+  }
+  
   getPeers(storageId) {
     return this.ipfsService.getPeers(storageId);
   }
