@@ -78,7 +78,13 @@ module.exports = class JsIpfsService {
     if (isString(content)) {
       content = Buffer.from(content, 'utf8');
     }
-    return this.saveFile({content});
+    return new Promise((resolve, reject) => {
+      this.saveFile({content}).then(resolve).catch(reject);
+      
+      if(content.on) {
+        content.on('error', reject);
+      }
+    });
   }
 
   async saveFile(options) {
