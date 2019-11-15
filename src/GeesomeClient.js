@@ -542,6 +542,14 @@ class GeesomeClient {
     });
   }
 
+  getPeers(storageId) {
+    return this.ipfsService.getPeers(storageId);
+  }
+
+  getIpnsPeers(storageId) {
+    return this.ipfsService.getIpnsPeers(storageId);
+  }
+
   getCanCreatePost(groupId) {
     return this.getRequest(`/v1/user/group/${groupId}/can-create-post`).then(data => data.valid);
   }
