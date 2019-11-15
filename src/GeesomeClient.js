@@ -666,12 +666,12 @@ class GeesomeClient {
     return this.getRequest(`/v1/node-address-list`).then(data => data.result);
   }
 
-  async getNodeAddress(includes = null) {
+  async getNodeAddress(_includesAddress = null) {
     let addresses = await this.getNodeAddressList();
 
-    if(includes) {
+    if(_includesAddress) {
       return find(addresses, (address) => {
-        return includes(address, includes);
+        return includes(address, _includesAddress);
       });
     } else {
       return filter(addresses, (address) => {
