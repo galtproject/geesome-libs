@@ -79,11 +79,12 @@ module.exports = class JsIpfsService {
       content = Buffer.from(content, 'utf8');
     }
     return new Promise((resolve, reject) => {
-      this.saveFile({content}).then(resolve).catch(reject);
-      
+      // if content is stream - subscribe for error
       if(content.on) {
+        // TODO: figure out why its not working
         content.on('error', reject);
       }
+      this.saveFile({content}).then(resolve).catch(reject);
     });
   }
 
