@@ -90,7 +90,7 @@ class GeesomeClient {
   async exportPrivateKey() {
     this._privateKey = await this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
   }
-  
+
   async decryptText(encryptedText) {
     if(!this._privateKey) {
       await this.exportPrivateKey();
@@ -231,7 +231,7 @@ class GeesomeClient {
     return this.postRequest('/v1/user/save-data-by-url', extend({url}, params))
       .then(res => this.asyncResponseWrapper(res, params));
   }
-  
+
   asyncResponseWrapper(res, params) {
     if(!res.asyncOperationId){
       return res;
@@ -247,16 +247,16 @@ class GeesomeClient {
               }
               return waitingForFinish();
             }
-            
+
             if(operation.errorMessage) {
               return reject({message: operation.errorMessage});
             }
-            
+
             resolve(this.getDbContent(operation.contentId));
           }).catch(waitingForFinish);
         }, 1000);
       };
-      
+
       waitingForFinish();
     })
   }
@@ -268,7 +268,7 @@ class GeesomeClient {
   regenerateUserPreviews() {
     return this.postRequest(`/v1/user/regenerate-previews`);
   }
-  
+
   getContentData(storageId) {
     return this.getRequest('/v1/content-data/' + storageId);
   }
@@ -284,7 +284,7 @@ class GeesomeClient {
       // TODO: filter by types
     } else {
       //TODO: get groups list directly from ipld?
-      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groups => groups.map(g => g.manifestStorageId));
+      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groupData => groupData.list.map(g => g.manifestStorageId));
     }
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
@@ -299,11 +299,11 @@ class GeesomeClient {
 
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
-    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groups => {
-      return pIteration.map(groups, (group) => this.getGroup(group.manifestStorageId))
+    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groupData => {
+      return pIteration.map(groupData.list, (group) => this.getGroup(group.manifestStorageId))
     });
   }
-  
+
   getAdminInChannels() {
     return this.getAdminInGroups(['channel']);
   }
@@ -388,17 +388,17 @@ class GeesomeClient {
       ipldHash = ipldHash['/'];
     }
     let responded = false;
-    
+
     return new Promise((resolve, reject) => {
       this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
-      
+
       setTimeout(() => {
         if (!responded) {
           this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
-    
+
     function wrapObject(ipldData) {
       responded = true;
       if (!ipldData) {
@@ -410,7 +410,7 @@ class GeesomeClient {
       return ipldData;
     }
   }
-  
+
   async getContentData(contentHash) {
     if(contentHash['/']) {
       contentHash = contentHash['/'];
@@ -418,19 +418,19 @@ class GeesomeClient {
     if(ipfsHelper.isIpldHash(contentHash)) {
       contentHash = (await this.getObject(contentHash)).storageId;
     }
-    
+
     let responded = false;
-    
+
     return new Promise((resolve, reject) => {
       this.ipfsService.getFileData(contentHash).then(wrap).then(resolve).catch(reject);
-      
+
       setTimeout(() => {
         if (!responded) {
           this.getRequest(`/v1/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
-    
+
     function wrap(content) {
       responded = true;
       return content;
@@ -462,9 +462,9 @@ class GeesomeClient {
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
       let post = await this.getObject(postsPath + postNumberPath);
-      
+
       const node = trie.getNode(group.posts, postNumber);
-      
+
       if(ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
       } else if(node['/']) {
@@ -473,9 +473,9 @@ class GeesomeClient {
         const manifestId = await this.decryptText(post);
         post = await this.getPost(manifestId);
       }
-      
+
       post.id = postNumber;
-      
+
       post.groupId = groupId;
       if (post) {
         post.group = group;
@@ -525,7 +525,7 @@ class GeesomeClient {
     post.group = group;
     return post;
   }
-  
+
   async getPost(postManifestIpld) {
     return this.getObject(postManifestIpld);
   }
@@ -541,7 +541,7 @@ class GeesomeClient {
       }
     });
   }
-  
+
   getStorageIdStat(storageId) {
     return this.ipfsService.getFileStat(storageId);
   }
@@ -549,7 +549,7 @@ class GeesomeClient {
   getStorageIdPins(storageId) {
     return this.ipfsService.getPins(storageId);
   }
-  
+
   getPeers(storageId) {
     return this.ipfsService.getPeers(storageId);
   }
@@ -603,7 +603,7 @@ class GeesomeClient {
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
-  
+
   saveContentByPath(contentId, path) {
     return this.postRequest(`/v1/user/file-catalog/save-content-by-path`, {contentId, path});
   }
@@ -706,10 +706,10 @@ class GeesomeClient {
     if(this.isLocalServer()) {
       address = address.replace('4002/ipfs', '4003/ws/ipfs')
     }
-    
+
     // prevent Error: Dial is currently blacklisted for this peer on swarm connect
     this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(last(address.split('/')))));
-    
+
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
@@ -720,7 +720,7 @@ class GeesomeClient {
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
-  
+
   isLocalServer() {
     return includes(this.server, ':7711');
   }
@@ -783,9 +783,9 @@ class GeesomeClient {
     const DaemonFactory = require('ipfsd-ctl');
     const IPFS = require('ipfs');
     const df = DaemonFactory.create({type: 'proc'});
-    
+
     const dfSpawn = promisify(df.spawn).bind(df);
-    
+
     const createNode = async () => {
       return dfSpawn({
         exec: IPFS,
