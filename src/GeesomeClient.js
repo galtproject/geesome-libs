@@ -600,6 +600,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/update`, updateData);
   }
 
+  deleteFileCatalogItem(itemId, options) {
+    return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/delete`, options);
+  }
+
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
