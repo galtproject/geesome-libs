@@ -27,7 +27,7 @@ const { getIpnsUpdatesTopic } = require('./name');
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    
+
     if(node.libp2p) {
       this.fsub = node.libp2p._floodSub;
 
@@ -127,7 +127,7 @@ module.exports = class JsIpfsService {
     }
     return this.node.key.rm(name);
   }
-  
+
   async getFileStat(filePath) {
     return this.node.files.stat('/ipfs/' + filePath);
   }
@@ -165,7 +165,7 @@ module.exports = class JsIpfsService {
   async getObjectProp(storageId, propName) {
     return this.node.dag.get(storageId + '/' + propName).then(response => response.value);
   }
-  
+
   getObjectRef(storageId) {
     return {
       '/' : storageId
@@ -187,7 +187,7 @@ module.exports = class JsIpfsService {
       return (response && response.path ? response.path : response).replace('/ipfs/', '')
     });
   }
-  
+
   async resolveStaticIdEntry(staticStorageId) {
     return new Promise((resolve, reject) => {
       const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
@@ -200,7 +200,7 @@ module.exports = class JsIpfsService {
         const ipnsEntry = ipns.unmarshal(record);
 
         ipnsEntry.value = ipnsEntry.value.toString('utf8');
-        
+
         this.node._ipns.resolver._validateRecord(peerId, ipnsEntry, (validationErr) => {
           return validationErr ? reject(validationErr) : resolve(ipnsEntry);
         });
@@ -228,7 +228,7 @@ module.exports = class JsIpfsService {
     await new Promise((resolve, reject) => {
       this.node.bootstrap.add(address, (err, res) => err ? reject(err) : resolve(res.Peers));
     });
-    
+
     try {
       await this.swarmConnect(address);
     } catch (e) {
@@ -252,12 +252,20 @@ module.exports = class JsIpfsService {
   getPins(hash) {
     return this.node.pin.ls(hash);
   }
-  
+
+  unPin(hash, options = {recursive: true}) {
+    return this.node.pin.rm(hash, options);
+  }
+
+  remove(hash, options = {recursive: true}) {
+    return this.node.files.rm('/ipfs/' + hash, options);
+  }
+
   subscribeToIpnsUpdates(ipnsId, callback) {
     const topic = getIpnsUpdatesTopic(ipnsId);
     return this.subscribeToEvent(topic, callback);
   }
-  
+
   publishEventByPeerId(peerId, topic, data) {
     if(isObject(data)) {
       data = JSON.stringify(data);
@@ -267,7 +275,7 @@ module.exports = class JsIpfsService {
     }
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
-  
+
   async publishEventByIpnsId(ipnsId, topic, data) {
     return this.publishEventByPeerId(await this.getAccountPeerId(ipnsId), topic, data);
   }
@@ -276,7 +284,7 @@ module.exports = class JsIpfsService {
     const topic = getIpnsUpdatesTopic(ipnsId);
     return this.getPeers(topic);
   }
-  
+
   getPeers(topic) {
     return this.node.pubsub.peers(topic);
   }
@@ -304,7 +312,7 @@ module.exports = class JsIpfsService {
       })
     });
   }
-  
+
   async keyLookup(accountKey) {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
@@ -325,11 +333,11 @@ module.exports = class JsIpfsService {
     // TODO: find the more safety way
     return (await this.keyLookup(accountKey)).public.marshal();
   }
-  
+
   async makeDir(path) {
     return this.node.files.mkdir(path, { parents: true });
   }
-  
+
   async copyFileFromId(storageId, filePath) {
     try {
       const existFiles = await this.node.files.ls(filePath);
