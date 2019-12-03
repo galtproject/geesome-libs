@@ -8,7 +8,21 @@
  */
 
 const axios = require('axios');
-const _ = require('lodash');
+
+const extend = require('lodash/extend');
+const get = require('lodash/get');
+const set = require('lodash/set');
+const isObject = require('lodash/isObject');
+const forEach = require('lodash/forEach');
+const isUndefined = require('lodash/isUndefined');
+const range = require('lodash/range');
+const includes = require('lodash/includes');
+const merge = require('lodash/merge');
+const find = require('lodash/find');
+const filter = require('lodash/filter');
+const last = require('lodash/last');
+const startsWith = require('lodash/startsWith');
+
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
@@ -69,10 +83,14 @@ class GeesomeClient {
     });
   }
 
+  setUserAccount(accountData) {
+    return this.postRequest('/v1/user/set-account', accountData);
+  }
+
   async exportPrivateKey() {
     this._privateKey = await this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
   }
-  
+
   async decryptText(encryptedText) {
     if(!this._privateKey) {
       await this.exportPrivateKey();
@@ -107,12 +125,24 @@ class GeesomeClient {
     }
   }
 
-  async loginUserPass(username, password) {
-    return this.postRequest('/v1/login', {username, password}).then(data => {
+  async loginPassword(username, password) {
+    return this.postRequest('/v1/login/password', {username, password}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
     });
+  }
+
+  async loginAuthMessage(authMessageId, accountAddress, signature, params = {}) {
+    return this.postRequest('/v1/login/auth-message', {authMessageId, accountAddress, signature, params}).then(data => {
+      this.setApiKey(data.apiKey);
+      this.serverLessMode = false;
+      return data;
+    });
+  }
+
+  async generateAuthMessage(accountProvider, accountAddress) {
+    return this.postRequest('/v1/generate-auth-message', {accountProvider, accountAddress});
   }
 
   async logout() {
@@ -132,7 +162,7 @@ class GeesomeClient {
   }
 
   userGetFriends(search = null, listParams = {}) {
-    return this.getRequest(`/v1/user/get-friends`, {params: _.extend({search}, listParams)});
+    return this.getRequest(`/v1/user/get-friends`, {params: extend({search}, listParams)});
   }
 
   addFriend(friendId) {
@@ -176,37 +206,69 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupId}/is-member`).then(data => data.result);
   }
 
-  saveFile(file, params = {}) {
-    const formData = new FormData();
-
-    _.forEach(params, (value, key) => {
-      formData.append(key, value);
-    });
-
-    formData.append("file", file);
-    return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}});
-  }
-
   saveObject(object) {
     return this.postRequest('/save-object', object, {headers: {'Content-Type': 'multipart/form-data'}});
   }
 
+  saveFile(file, params = {}) {
+    const formData = new FormData();
+
+    forEach(params, (value, key) => {
+      formData.append(key, value);
+    });
+
+    formData.append("file", file);
+    return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}})
+      .then(res => this.asyncResponseWrapper(res, params));
+  }
+
   saveContentData(content, params = {}) {
-    return this.postRequest('/v1/user/save-data', _.extend({content}, params));
+    return this.postRequest('/v1/user/save-data', extend({content}, params))
+      .then(res => this.asyncResponseWrapper(res, params));
   }
 
   saveDataByUrl(url, params = {}) {
-    return this.postRequest('/v1/user/save-data-by-url', _.extend({url}, params));
+    return this.postRequest('/v1/user/save-data-by-url', extend({url}, params))
+      .then(res => this.asyncResponseWrapper(res, params));
+  }
+
+  asyncResponseWrapper(res, params) {
+    if(!res.asyncOperationId){
+      return res;
+    }
+    return new Promise((resolve, reject) => {
+      // TODO: use channel
+      const waitingForFinish = () => {
+        setTimeout(() => {
+          this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
+            if(operation.inProcess){
+              if(params && params.onProcess) {
+                params.onProcess(operation);
+              }
+              return waitingForFinish();
+            }
+
+            if(operation.errorMessage) {
+              return reject({message: operation.errorMessage});
+            }
+
+            resolve(this.getDbContent(operation.contentId));
+          }).catch(waitingForFinish);
+        }, 1000);
+      };
+
+      waitingForFinish();
+    })
   }
 
   createPost(contentsIds, params) {
-    return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, _.extend({contentsIds}, params));
+    return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, extend({contentsIds}, params));
   }
 
   regenerateUserPreviews() {
     return this.postRequest(`/v1/user/regenerate-previews`);
   }
-  
+
   getContentData(storageId) {
     return this.getRequest('/v1/content-data/' + storageId);
   }
@@ -222,7 +284,7 @@ class GeesomeClient {
       // TODO: filter by types
     } else {
       //TODO: get groups list directly from ipld?
-      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groups => groups.map(g => g.manifestStorageId));
+      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groupData => groupData.list.map(g => g.manifestStorageId));
     }
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
@@ -237,11 +299,11 @@ class GeesomeClient {
 
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
-    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groups => {
-      return pIteration.map(groups, (group) => this.getGroup(group.manifestStorageId))
+    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groupData => {
+      return pIteration.map(groupData.list, (group) => this.getGroup(group.manifestStorageId))
     });
   }
-  
+
   getAdminInChannels() {
     return this.getAdminInGroups(['channel']);
   }
@@ -281,10 +343,10 @@ class GeesomeClient {
 
   async fetchIpldFields(obj, fieldsNamesArr) {
     await pIteration.forEach(fieldsNamesArr, async (fieldName) => {
-      if (!_.get(obj, fieldName)) {
+      if (!get(obj, fieldName)) {
         return;
       }
-      _.set(obj, fieldName, await this.getObject(_.get(obj, fieldName)));
+      set(obj, fieldName, await this.getObject(get(obj, fieldName)));
     })
   }
 
@@ -301,10 +363,11 @@ class GeesomeClient {
       storageId = content;
     }
 
-    if (ipfsHelper.isIpldHash(storageId)) {
-      if(!manifest) {
-        manifest = await this.getObject(storageId);
-      }
+    if (ipfsHelper.isIpldHash(storageId) && !manifest) {
+      manifest = await this.getObject(storageId);
+    }
+
+    if (manifest) {
       if(previewType) {
         const previewObj = ((manifest.preview || {})[previewType] || {});
         //                                  TODO: delete deprecated content  field
@@ -325,29 +388,29 @@ class GeesomeClient {
       ipldHash = ipldHash['/'];
     }
     let responded = false;
-    
+
     return new Promise((resolve, reject) => {
       this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
-      
+
       setTimeout(() => {
         if (!responded) {
           this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
-    
+
     function wrapObject(ipldData) {
       responded = true;
       if (!ipldData) {
         return null;
       }
-      if(_.isObject(ipldData)) {
+      if(isObject(ipldData)) {
         ipldData.id = ipldHash;
       }
       return ipldData;
     }
   }
-  
+
   async getContentData(contentHash) {
     if(contentHash['/']) {
       contentHash = contentHash['/'];
@@ -355,19 +418,19 @@ class GeesomeClient {
     if(ipfsHelper.isIpldHash(contentHash)) {
       contentHash = (await this.getObject(contentHash)).storageId;
     }
-    
+
     let responded = false;
-    
+
     return new Promise((resolve, reject) => {
       this.ipfsService.getFileData(contentHash).then(wrap).then(resolve).catch(reject);
-      
+
       setTimeout(() => {
         if (!responded) {
           this.getRequest(`/v1/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
-    
+
     function wrap(content) {
       responded = true;
       return content;
@@ -383,8 +446,8 @@ class GeesomeClient {
       orderDir: 'desc'
     };
 
-    _.forEach(defaultOptions, (optionValue, optionName) => {
-      if (_.isUndefined(options[optionName])) {
+    forEach(defaultOptions, (optionValue, optionName) => {
+      if (isUndefined(options[optionName])) {
         options[optionName] = optionValue;
       }
     });
@@ -396,12 +459,12 @@ class GeesomeClient {
 
     const postsPath = group.id + '/posts/';
     const posts = [];
-    pIteration.forEach(_.range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
+    pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
       let post = await this.getObject(postsPath + postNumberPath);
-      
+
       const node = trie.getNode(group.posts, postNumber);
-      
+
       if(ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
       } else if(node['/']) {
@@ -410,9 +473,9 @@ class GeesomeClient {
         const manifestId = await this.decryptText(post);
         post = await this.getPost(manifestId);
       }
-      
+
       post.id = postNumber;
-      
+
       post.groupId = groupId;
       if (post) {
         post.group = group;
@@ -462,7 +525,7 @@ class GeesomeClient {
     post.group = group;
     return post;
   }
-  
+
   async getPost(postManifestIpld) {
     return this.getObject(postManifestIpld);
   }
@@ -473,10 +536,26 @@ class GeesomeClient {
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
     this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
-      if(_.includes(membersIpnsIds, event.keyIpns)) {
+      if(includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
       }
     });
+  }
+
+  getStorageIdStat(storageId) {
+    return this.ipfsService.getFileStat(storageId);
+  }
+
+  getStorageIdPins(storageId) {
+    return this.ipfsService.getPins(storageId);
+  }
+
+  getPeers(storageId) {
+    return this.ipfsService.getPeers(storageId);
+  }
+
+  getIpnsPeers(storageId) {
+    return this.ipfsService.getIpnsPeers(storageId);
   }
 
   getCanCreatePost(groupId) {
@@ -521,10 +600,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/update`, updateData);
   }
 
+  deleteFileCatalogItem(itemId, options) {
+    return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/delete`, options);
+  }
+
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
     return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
   }
-  
+
   saveContentByPath(contentId, path) {
     return this.postRequest(`/v1/user/file-catalog/save-content-by-path`, {contentId, path});
   }
@@ -548,7 +631,15 @@ class GeesomeClient {
 
   getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
-    return this.getRequest(`/v1/user/api-keys`, {params: {sortBy, sortDir, limit, offset}});
+    return this.getRequest(`/v1/user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
+  }
+
+  addUserApiKey(data) {
+    return this.postRequest(`/v1/user/api-key/add`, data);
+  }
+
+  updateUserApiKey(apiKeyId, updateData) {
+    return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
   }
 
   adminCreateUser(userData) {
@@ -571,8 +662,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
-  adminAddUserApiKey(userId) {
-    return this.postRequest(`/v1/admin/add-user-api-key`, {userId});
+  adminAddUserApiKey(userId, data) {
+    return this.postRequest(`/v1/admin/add-user-api-key`, {userId, ...data});
   }
 
   adminGetBootNodes() {
@@ -587,20 +678,24 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/boot-nodes/remove`, {address});
   }
 
+  adminGetUserAccount(provider, address) {
+    return this.postRequest(`/v1/admin/get-user-account`, {provider, address});
+  }
+
   getNodeAddressList() {
     return this.getRequest(`/v1/node-address-list`).then(data => data.result);
   }
 
-  async getNodeAddress(includes = null) {
+  async getNodeAddress(_includesAddress = null) {
     let addresses = await this.getNodeAddressList();
 
-    if(includes) {
-      return _.find(addresses, (address) => {
-        return _.includes(address, includes);
+    if(_includesAddress) {
+      return find(addresses, (address) => {
+        return includes(address, _includesAddress);
       });
     } else {
-      return _.filter(addresses, (address) => {
-        return !_.includes(address, '127.0.0.1') && !_.includes(address, '192.168') && address.length > 64;//&& !_.includes(address, '/p2p-circuit/ipfs/')
+      return filter(addresses, (address) => {
+        return !includes(address, '127.0.0.1') && !includes(address, '192.168') && address.length > 64;//&& !includes(address, '/p2p-circuit/ipfs/')
       })[0];
     }
   }
@@ -615,23 +710,23 @@ class GeesomeClient {
     if(this.isLocalServer()) {
       address = address.replace('4002/ipfs', '4003/ws/ipfs')
     }
-    
+
     // prevent Error: Dial is currently blacklisted for this peer on swarm connect
-    this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(_.last(address.split('/')))));
-    
+    this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(last(address.split('/')))));
+
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
 
   setServerByDocumentLocation() {
     let port = 7722;
-    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || _.startsWith(document.location.pathname, '/node')) {
+    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
       port = 7711;
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
-  
+
   isLocalServer() {
-    return _.includes(this.server, ':7711');
+    return includes(this.server, ':7711');
   }
 
   async getPreloadAddresses() {
@@ -668,7 +763,7 @@ class GeesomeClient {
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
       return new Promise((resolve, reject) => {
-        const ipfs = window['Ipfs'].createNode(_.merge({
+        const ipfs = window['Ipfs'].createNode(merge({
           EXPERIMENTAL: {
             pubsub: true,
             ipnsPubsub: true
@@ -692,9 +787,9 @@ class GeesomeClient {
     const DaemonFactory = require('ipfsd-ctl');
     const IPFS = require('ipfs');
     const df = DaemonFactory.create({type: 'proc'});
-    
+
     const dfSpawn = promisify(df.spawn).bind(df);
-    
+
     const createNode = async () => {
       return dfSpawn({
         exec: IPFS,

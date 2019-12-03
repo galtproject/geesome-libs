@@ -7,33 +7,35 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const _ = require('lodash');
+const isNaN = require('lodash/isNaN');
+const isString = require('lodash/isString');
+const includes = require('lodash/includes');
 
 module.exports.isNumber = (str) => {
-  if (_.isString(str) && !/^[0-9.]+$/.test(str)) {
+  if (isString(str) && !/^[0-9.]+$/.test(str)) {
     return false;
   }
-  return !_.isNaN(parseFloat(str));
+  return !isNaN(parseFloat(str));
 };
 
 module.exports.moveFromDate = (fromDate, value, unit) => {
   value = parseFloat(value);
-  if(_.includes(unit, 'second')) {
+  if(includes(unit, 'second')) {
     return new Date(fromDate.getTime() + value * 1000);
   }
-  if(_.includes(unit, 'minute')) {
+  if(includes(unit, 'minute')) {
     return new Date(fromDate.getTime() + value * 60 * 1000);
   }
-  if(_.includes(unit, 'hour')) {
+  if(includes(unit, 'hour')) {
     return new Date(fromDate.getTime() + value * 60 * 60 * 1000);
   }
-  if(_.includes(unit, 'day')) {
+  if(includes(unit, 'day')) {
     return new Date(fromDate.getTime() + value * 24 * 60 * 60 * 1000);
   }
-  if(_.includes(unit, 'week')) {
+  if(includes(unit, 'week')) {
     return new Date(fromDate.getTime() + value * 7 * 24 * 60 * 60 * 1000);
   }
-  if(_.includes(unit, 'month')) {
+  if(includes(unit, 'month')) {
     return new Date(fromDate.getTime() + value * 30 * 24 * 60 * 60 * 1000);
   }
   return null;

@@ -8,7 +8,16 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
-const _ = require('lodash');
+
+const extend = require('lodash/extend');
+const trim = require('lodash/trim');
+const isObject = require('lodash/isObject');
+const last = require('lodash/last');
+const find = require('lodash/find');
+const startsWith = require('lodash/startsWith');
+const includes = require('lodash/includes');
+const isString = require('lodash/isString');
+
 const ipns = require('ipns');
 const ipfsImproves = require('./ipfsImproves');
 const {promisify} = require('es6-promisify');
@@ -18,7 +27,7 @@ const { getIpnsUpdatesTopic } = require('./name');
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    
+
     if(node.libp2p) {
       this.fsub = node.libp2p._floodSub;
 
@@ -53,8 +62,8 @@ module.exports = class JsIpfsService {
 
   async saveDirectory(path) {
     const result = await this.node.addFromFs(path, {recursive: true, ignore: []});
-    const dirName = _.last(path.split('/'));
-    const dirResult = _.find(result, {path: dirName});
+    const dirName = last(path.split('/'));
+    const dirResult = find(result, {path: dirName});
     await this.node.pin.add(dirResult.hash);
     return this.wrapIpfsItem(dirResult);
   }
@@ -66,10 +75,17 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByData(content) {
-    if (_.isString(content)) {
+    if (isString(content)) {
       content = Buffer.from(content, 'utf8');
     }
-    return this.saveFile({content});
+    return new Promise((resolve, reject) => {
+      // if content is stream - subscribe for error
+      if(content.on) {
+        // TODO: figure out why its not working
+        content.on('error', reject);
+      }
+      this.saveFile({content}).then(resolve).catch(reject);
+    });
   }
 
   async saveFile(options) {
@@ -80,13 +96,13 @@ module.exports = class JsIpfsService {
 
   async getAccountIdByName(name) {
     const keys = await this.node.key.list();
-    return (_.find(keys, {name}) || {}).id || null;
+    return (find(keys, {name}) || {}).id || null;
   }
 
   async getAccountNameById(id) {
     const keys = await this.node.key.list();
-    console.log('keys', id, keys);
-    return (_.find(keys, {id}) || {}).name || null;
+    // console.log('keys', id, keys);
+    return (find(keys, {id}) || {}).name || null;
   }
 
   async getCurrentAccountId() {
@@ -112,22 +128,19 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  async getFileStream(filePath) {
-    console.log('getFileStream filePath before', filePath);
-    if(ipfsHelper.isIpfsHash(_.trim(filePath, '/'))) {
-      filePath = _.trim(filePath, '/');
-      const stat = await this.node.files.stat('/ipfs/' + filePath);
-      console.log('getFileStream stat', stat);
+  async getFileStat(filePath) {
+    return this.node.files.stat('/ipfs/' + filePath);
+  }
+
+  async getFileStream(filePath, options = {}) {
+    if(ipfsHelper.isIpfsHash(trim(filePath, '/'))) {
+      filePath = trim(filePath, '/');
+      const stat = await this.getFileStat(filePath);
       if(stat.type === 'directory') {
         filePath += '/index.html';
       }
     }
-    console.log('getFileStream filePath after', filePath);
-    return new Promise((resolve, reject) => {
-      this.node.getReadableStream(filePath).on('data', (file) => {
-        resolve(file.content);
-      });
-    });
+    return this.node.catReadableStream(filePath, options);
   }
 
   getFileData(filePath) {
@@ -135,7 +148,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveObject(objectData) {
-    // objectData = _.isObject(objectData) ? JSON.stringify(objectData) : objectData;
+    // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
     const savedObj = await this.node.dag.put(objectData);
     const ipldHash = ipfsHelper.cidToHash(savedObj);
     await this.node.pin.add(ipldHash);
@@ -152,7 +165,7 @@ module.exports = class JsIpfsService {
   async getObjectProp(storageId, propName) {
     return this.node.dag.get(storageId + '/' + propName).then(response => response.value);
   }
-  
+
   getObjectRef(storageId) {
     return {
       '/' : storageId
@@ -160,13 +173,13 @@ module.exports = class JsIpfsService {
   }
 
   async bindToStaticId(storageId, accountKey, options = {}) {
-    if (_.startsWith(accountKey, 'Qm')) {
+    if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
     if(!options.lifetime) {
       options.lifetime = '1h';
     }
-    return this.node.name.publish(storageId, _.extend({ key: accountKey }, options)).then(response => response.name);
+    return this.node.name.publish(storageId, extend({ key: accountKey }, options)).then(response => response.name);
   }
 
   async resolveStaticId(staticStorageId) {
@@ -174,7 +187,7 @@ module.exports = class JsIpfsService {
       return (response && response.path ? response.path : response).replace('/ipfs/', '')
     });
   }
-  
+
   async resolveStaticIdEntry(staticStorageId) {
     return new Promise((resolve, reject) => {
       const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
@@ -187,7 +200,7 @@ module.exports = class JsIpfsService {
         const ipnsEntry = ipns.unmarshal(record);
 
         ipnsEntry.value = ipnsEntry.value.toString('utf8');
-        
+
         this.node._ipns.resolver._validateRecord(peerId, ipnsEntry, (validationErr) => {
           return validationErr ? reject(validationErr) : resolve(ipnsEntry);
         });
@@ -215,7 +228,7 @@ module.exports = class JsIpfsService {
     await new Promise((resolve, reject) => {
       this.node.bootstrap.add(address, (err, res) => err ? reject(err) : resolve(res.Peers));
     });
-    
+
     try {
       await this.swarmConnect(address);
     } catch (e) {
@@ -235,22 +248,34 @@ module.exports = class JsIpfsService {
   async nodeAddressList() {
     return this.id().then(nodeId => nodeId.addresses);
   }
-  
+
+  getPins(hash) {
+    return this.node.pin.ls(hash);
+  }
+
+  unPin(hash, options = {recursive: true}) {
+    return this.node.pin.rm(hash, options);
+  }
+
+  remove(hash, options = {recursive: true}) {
+    return this.node.files.rm('/ipfs/' + hash, options);
+  }
+
   subscribeToIpnsUpdates(ipnsId, callback) {
     const topic = getIpnsUpdatesTopic(ipnsId);
     return this.subscribeToEvent(topic, callback);
   }
-  
+
   publishEventByPeerId(peerId, topic, data) {
-    if(_.isObject(data)) {
+    if(isObject(data)) {
       data = JSON.stringify(data);
     }
-    if(_.isString(data)) {
+    if(isString(data)) {
       data = new Buffer(data);
     }
     return this.fSubPublishByPeerId(peerId, topic, data);
   }
-  
+
   async publishEventByIpnsId(ipnsId, topic, data) {
     return this.publishEventByPeerId(await this.getAccountPeerId(ipnsId), topic, data);
   }
@@ -259,7 +284,7 @@ module.exports = class JsIpfsService {
     const topic = getIpnsUpdatesTopic(ipnsId);
     return this.getPeers(topic);
   }
-  
+
   getPeers(topic) {
     return this.node.pubsub.peers(topic);
   }
@@ -269,10 +294,10 @@ module.exports = class JsIpfsService {
   }
 
   publishEvent(topic, data) {
-    if(_.isObject(data)) {
+    if(isObject(data)) {
       data = JSON.stringify(data);
     }
-    if(_.isString(data)) {
+    if(isString(data)) {
       data = new Buffer(data);
     }
     return this.fSubPublish(topic, data);
@@ -287,9 +312,9 @@ module.exports = class JsIpfsService {
       })
     });
   }
-  
+
   async keyLookup(accountKey) {
-    if (_.startsWith(accountKey, 'Qm')) {
+    if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
     return new Promise((resolve, reject) => {
@@ -308,11 +333,11 @@ module.exports = class JsIpfsService {
     // TODO: find the more safety way
     return (await this.keyLookup(accountKey)).public.marshal();
   }
-  
+
   async makeDir(path) {
     return this.node.files.mkdir(path, { parents: true });
   }
-  
+
   async copyFileFromId(storageId, filePath) {
     try {
       const existFiles = await this.node.files.ls(filePath);
@@ -320,7 +345,7 @@ module.exports = class JsIpfsService {
         await this.node.files.rm(filePath);
       }
     } catch (e) {
-      if(!_.includes(e.message, 'file does not exist')) {
+      if(!includes(e.message, 'file does not exist')) {
         console.error('copyFileFromId error:');
         throw e;
       }
