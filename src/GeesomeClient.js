@@ -404,9 +404,6 @@ class GeesomeClient {
       if (!ipldData) {
         return null;
       }
-      if(isObject(ipldData)) {
-        ipldData.id = ipldHash;
-      }
       return ipldData;
     }
   }
