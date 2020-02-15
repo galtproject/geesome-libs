@@ -24,6 +24,6 @@ module.exports = class JsIpfsServiceNode extends JsIpfsService {
     const allResults = await itAll(this.node.add(globSource(path, { recursive: true })));
     const dirResult = this.wrapIpfsItem(find(allResults, {path: dirName}));
     await this.node.pin.add(dirResult.id);
-    return this.wrapIpfsItem(dirResult);
+    return dirResult;
   }
 };
