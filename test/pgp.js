@@ -21,18 +21,23 @@ const IPFS = require('ipfs');
 const {GeesomeClient} = require('../src/GeesomeClient');
 const pgpHelper = require('../src/pgpHelper');
 
-const DaemonFactory = require('ipfsd-ctl');
-const df = DaemonFactory.create({type: 'proc'});
-const util = require('util');
+const Ctl = require('ipfsd-ctl');
+const factory = Ctl.createFactory({
+  ipfsModule: IPFS,
+  ipfsOptions: {
+    pass: hat(),
+  },
+  args: ['--enable-namesys-pubsub'],
+  type: 'proc',
+  test: true,
+  disposable: true
+});
 
 describe('pgp', function () {
   let geesomeClient;
 
-  const dfSpawn = util.promisify(df.spawn).bind(df);
   const createNode = () => {
-    return dfSpawn({
-      exec: IPFS,
-      args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
+    return factory.spawn({
       config: {
         Bootstrap: [],
         Discovery: {
@@ -61,9 +66,9 @@ describe('pgp', function () {
     })();
   });
 
-  after((done) => {geesomeClient.ipfsService.stop().then(done)});
+  after((done) => {factory.clean().then(() => done())});
 
-  it.only('should handle signed event and validate signature', function (done) {
+  it('should handle signed event and validate signature', function (done) {
 
     (async () => {
       this.timeout(10 * 1000);
@@ -76,7 +81,7 @@ describe('pgp', function () {
 
       const bobPrivateKey = await pgpHelper.transformKey(bobKey.marshal());
       const alicePrivateKey = await pgpHelper.transformKey(aliceKey.marshal());
-      
+
       // DO NOT WORKING :(
       // const bobPublicPeerId = ipfsHelper.createPeerIdFromIpns(bobId);
       // const alicePublicPeerId = ipfsHelper.createPeerIdFromIpns(aliceId);

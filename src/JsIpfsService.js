@@ -19,8 +19,6 @@ const includes = require('lodash/includes');
 const isString = require('lodash/isString');
 
 const ipns = require('ipns');
-const ipfsImproves = require('./ipfsImproves');
-const {promisify} = require('es6-promisify');
 
 const { getIpnsUpdatesTopic } = require('./name');
 
@@ -28,21 +26,21 @@ module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
 
-    if(node.libp2p) {
-      this.fsub = node.libp2p._floodSub;
+    if(node.pubsub) {
+      // this.fsub = node.libp2p._floodSub;
 
-      ipfsImproves.improveFloodSub(this.fsub);
-      ipfsImproves.improvePubSub(this.fsub);
-      this.fSubPublishByPeerId = promisify(this.fsub.publishByPeerId).bind(this.fsub);
-      this.fSubPublish = promisify(this.fsub.publish).bind(this.fsub);
-      this.pubSubSubscribe = promisify(node.pubsub.subscribe).bind(node.pubsub);
+      // ipfsImproves.improveFloodSub(this.fsub);
+      // ipfsImproves.improvePubSub(this.fsub);
+      this.fSubPublishByPeerId = node.pubsub.publishByPeerId.bind(node.pubsub);
+      this.fSubPublish = node.pubsub.publish.bind(node.pubsub);
+      this.pubSubSubscribe = node.pubsub.subscribe.bind(node.pubsub);
     } else {
-      console.warn("[JsIpfsService] Warning: libp2p features disabled")
+      console.warn("[JsIpfsService] Warning: pubsub features disabled")
     }
 
-    this.id = promisify(node.id).bind(node);
-    this.stop = promisify(node.stop).bind(node);
-    this.swarmConnect = promisify(node.swarm.connect).bind(node.swarm);
+    this.id = node.id.bind(node);
+    this.stop = node.stop.bind(node);
+    this.swarmConnect = node.swarm.connect.bind(node.swarm);
   }
 
   async wrapIpfsItem(ipfsItem) {
@@ -101,7 +99,6 @@ module.exports = class JsIpfsService {
 
   async getAccountNameById(id) {
     const keys = await this.node.key.list();
-    // console.log('keys', id, keys);
     return (find(keys, {id}) || {}).name || null;
   }
 
@@ -176,6 +173,7 @@ module.exports = class JsIpfsService {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
+    console.log('accountKey', accountKey)
     if(!options.lifetime) {
       options.lifetime = '1h';
     }
@@ -183,29 +181,29 @@ module.exports = class JsIpfsService {
   }
 
   async resolveStaticId(staticStorageId) {
-    return this.node.name.resolve(staticStorageId).then(response => {
-      return (response && response.path ? response.path : response).replace('/ipfs/', '')
-    });
+    const resArray = [];
+    for await (let res of this.node.name.resolve(staticStorageId)) {
+      resArray.push((res && res.path ? res.path : res).replace('/ipfs/', ''));
+    }
+    //TODO: support more then 1 value
+    return resArray[0];
   }
 
   async resolveStaticIdEntry(staticStorageId) {
-    return new Promise((resolve, reject) => {
-      const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
-      const { routingKey } = ipns.getIdKeys(peerId.toBytes());
+    const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
+    const { routingKey } = ipns.getIdKeys(peerId.toBytes());
 
-      this.node._ipns.routing.get(routingKey.toBuffer(), (err, record) => {
-        if(err) {
-          return reject(err);
-        }
-        const ipnsEntry = ipns.unmarshal(record);
+    const record = await this.node._ipns.routing.get(routingKey.toBuffer());
+    const ipnsEntry = ipns.unmarshal(record);
 
-        ipnsEntry.value = ipnsEntry.value.toString('utf8');
+    ipnsEntry.value = ipnsEntry.value.toString('utf8');
 
-        this.node._ipns.resolver._validateRecord(peerId, ipnsEntry, (validationErr) => {
-          return validationErr ? reject(validationErr) : resolve(ipnsEntry);
-        });
-      })
-    });
+    const valid = await this.node._ipns.resolver._validateRecord(peerId, ipnsEntry);
+    if(valid) {
+      return ipnsEntry;
+    } else {
+      throw "record not valid"
+    }
   }
 
   async getBootNodeList() {
@@ -217,17 +215,15 @@ module.exports = class JsIpfsService {
         }
         reject('Failed to fetch');
       }, 1000);
-      this.node.bootstrap.list((err, res) => {
+      this.node.bootstrap.list().then(res => {
         responded = true;
-        return err ? reject(err) : resolve(res.Peers);
+        return res.Peers
       });
     });
   }
 
   async addBootNode(address) {
-    await new Promise((resolve, reject) => {
-      this.node.bootstrap.add(address, (err, res) => err ? reject(err) : resolve(res.Peers));
-    });
+    await this.node.bootstrap.add(address);
 
     try {
       await this.swarmConnect(address);
@@ -237,12 +233,8 @@ module.exports = class JsIpfsService {
   }
 
   async removeBootNode(address) {
-    await new Promise((resolve, reject) => {
-      this.node.swarm.disconnect(address, (err, res) => err ? reject(err) : resolve());
-    });
-    return new Promise((resolve, reject) => {
-      this.node.bootstrap.rm(address, (err, res) => err ? reject(err) : resolve(res.Peers))
-    });
+    await this.node.swarm.disconnect(address);
+    return this.node.bootstrap.rm(address).then(res => res.Peers);
   }
 
   async nodeAddressList() {
@@ -285,11 +277,11 @@ module.exports = class JsIpfsService {
     return this.getPeers(topic);
   }
 
-  getPeers(topic) {
+  async getPeers(topic) {
     return this.node.pubsub.peers(topic);
   }
 
-  getPubSubLs() {
+  async getPubSubLs() {
     return this.node.pubsub.ls();
   }
 
@@ -305,6 +297,7 @@ module.exports = class JsIpfsService {
 
   subscribeToEvent(topic, callback) {
     return this.pubSubSubscribe(topic, async (event) => {
+      console.log('pubSubSubscribe', event);
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {

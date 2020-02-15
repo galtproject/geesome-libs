@@ -25,32 +25,32 @@ const JsIpfsService = require('../src/JsIpfsService');
 const {getIpnsUpdatesTopic} = require('../src/name');
 const waitFor = require('./utils/wait-for');
 
-const DaemonFactory = require('ipfsd-ctl');
-const df = DaemonFactory.create({type: 'proc'});
-const {promisify} = require('es6-promisify');
+const Ctl = require('ipfsd-ctl');
+const factory = Ctl.createFactory({
+  ipfsModule: IPFS,
+  ipfsOptions: {
+    pass: hat(),
+    libp2p: {
+      dialer: {
+        dialTimeout: 60e3 // increase timeout because travis is slow
+      }
+    }
+  },
+  args: ['--enable-namesys-pubsub'],
+  type: 'proc',
+  test: true,
+  // disposable: true
+});
 
 describe('ipns', function () {
-  let nodes;
   let nodeA;
   let nodeB;
 
-  const dfSpawn = promisify(df.spawn).bind(df);
   const createNode = () => {
-    return dfSpawn({
-      exec: IPFS,
-      args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
-      config: {
-        Bootstrap: [],
-        Discovery: {
-          MDNS: {
-            Enabled: false
-          },
-          webRTCStar: {
-            Enabled: false
-          }
-        }
-      },
-      preload: {enabled: false}
+    return factory.spawn({
+      ipfsOptions: {
+        EXPERIMENTAL: {ipnsPubsub: true}
+      }
     }).then(node => node.api)
   };
 
@@ -60,8 +60,7 @@ describe('ipns', function () {
     (async () => {
       nodeA = new JsIpfsService(await createNode());
       nodeB = new JsIpfsService(await createNode());
-      nodes = [nodeA, nodeB];
-      
+
       const idB = await nodeB.id();
       await nodeA.swarmConnect(idB.addresses[0]);
       await nodeA.addBootNode(idB.addresses[0]);
@@ -69,7 +68,7 @@ describe('ipns', function () {
     })();
   });
 
-  after((done) => parallel(nodes.map((node) => (cb) => node.stop(cb)), done));
+  after((done) => {factory.clean().then(() => done())})
 
   it('should handle signed event and validate signature', function (done) {
     this.timeout(80 * 1000);
@@ -101,7 +100,8 @@ describe('ipns', function () {
         })
       });
 
+      console.log('bindToStaticId')
       await nodeA.bindToStaticId(testHash, testAccountIpnsId, {resolve: false});
     })();
-  })
+  });
 });

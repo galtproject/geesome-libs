@@ -19,7 +19,6 @@ const pgpHelper = {
       publicKeys: publicKeys, // for encryption
       privateKeys: privateKeys                                 // for signing (optional)
     };
-    // console.log('encryptOptions', encryptOptions);
     const { data: encryptedData } = await openpgp.encrypt(encryptOptions);
     return encryptedData;
   },
@@ -191,7 +190,6 @@ function createdPreferredAlgos(algos, configAlgo) {
 }
 
 async function getLatestValidSignature(signatures, primaryKey, signatureType, dataToVerify, date = new Date()) {
-  // console.log('getLatestValidSignature', signatures);
   return signatures[0];
   // let signature;
   // for (let i = signatures.length - 1; i >= 0; i--) {

@@ -25,36 +25,34 @@ const JsIpfsService = require('../src/JsIpfsService')
 const ipfsHelper = require('../src/ipfsHelper')
 const waitFor = require('./utils/wait-for')
 
-const DaemonFactory = require('ipfsd-ctl')
-const df = DaemonFactory.create({type: 'proc'})
-const util = require('util');
+const Ctl = require('ipfsd-ctl');
+const factory = Ctl.createFactory({
+  ipfsModule: IPFS,
+  ipfsOptions: {
+    pass: hat(),
+    libp2p: {
+      dialer: {
+        dialTimeout: 60e3 // increase timeout because travis is slow
+      }
+    }
+  },
+  args: ['--enable-namesys-pubsub'],
+  type: 'proc',
+  test: true,
+  // disposable: true
+});
 
 describe('pubsub', function () {
   // if (!isNode) {
   //   return
   // }
 
-  let nodes
   let nodeA
   let nodeB
 
-  const dfSpawn = util.promisify(df.spawn).bind(df);
   const createNode = () => {
-    return dfSpawn({
-      exec: IPFS,
-      args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
-      config: {
-        Bootstrap: [],
-        Discovery: {
-          MDNS: {
-            Enabled: false
-          },
-          webRTCStar: {
-            Enabled: false
-          }
-        }
-      },
-      preload: {enabled: false}
+    return factory.spawn({
+
     }).then(node => node.api)
   };
 
@@ -64,15 +62,15 @@ describe('pubsub', function () {
     (async () => {
       nodeA = new JsIpfsService(await createNode());
       nodeB = new JsIpfsService(await createNode());
-      nodes = [nodeA, nodeB];
-      
+
       const idB = await nodeB.id();
+      console.log('idB.addresses[0]', idB.addresses[0])
       await nodeA.swarmConnect(idB.addresses[0]);
       done();
     })();
   });
 
-  after((done) => parallel(nodes.map((node) => (cb) => node.stop(cb)), done))
+  after((done) => {factory.clean().then(() => done())})
 
   it('should handle signed event and validate signature', function (done) {
     this.timeout(80 * 1000)
@@ -81,11 +79,15 @@ describe('pubsub', function () {
     const testTopic = 'test-topic';
 
     (async () => {
+      console.log('testTopic')
       const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
+      console.log('testAccountIpnsId')
       const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId);
+      console.log('testAccountPeerId')
       
       let catchedEvents = 0;
       await nodeB.subscribeToEvent(testTopic, async (message) => {
+        console.log('nodeB message', message);
         expect(message.keyPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
 
         const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
@@ -97,6 +99,7 @@ describe('pubsub', function () {
       });
       
       await nodeA.subscribeToEvent(testTopic, async (message) => {
+        console.log('nodeA message', message);
         expect(message.keyPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
 
         const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
@@ -109,10 +112,12 @@ describe('pubsub', function () {
 
       await waitFor((callback) => {
         nodeA.getPeers(testTopic).then(peers => {
+          console.log('peers', peers);
           callback(null, peers.length > 0);
         })
       });
 
+      console.log('publishEventByPeerId');
       await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
     })();
   })
