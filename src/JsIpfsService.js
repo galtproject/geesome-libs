@@ -17,6 +17,7 @@ const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
 const isString = require('lodash/isString');
+const urlSource = require('ipfs-utils/src/files/url-source');
 
 const ipns = require('ipns');
 
@@ -53,13 +54,13 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByUrl(url) {
-    const result = await this.node.addFromURL(url);
+    const result = await this.node.add(urlSource(url));
     await this.node.pin.add(result[0].hash);
     return this.wrapIpfsItem(result[0]);
   }
 
   async saveDirectory(path) {
-    const result = await this.node.addFromFs(path, {recursive: true, ignore: []});
+    const result = await this.node.add({path}, {recursive: true, ignore: []});
     const dirName = last(path.split('/'));
     const dirResult = find(result, {path: dirName});
     await this.node.pin.add(dirResult.hash);

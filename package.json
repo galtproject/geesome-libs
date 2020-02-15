@@ -16,6 +16,7 @@
     "es6-promisify": "^6.0.1",
     "hat": "^0.0.3",
     "ipfs": "git://github.com/galtproject/js-ipfs.git#3e2c24d4",
+    "ipfs-utils": "^0.7.2",
     "ipfsd-ctl": "^3.0.0",
     "ipns": "^0.7.0",
     "lodash": "^4.17.11",
