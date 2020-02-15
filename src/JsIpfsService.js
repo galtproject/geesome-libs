@@ -59,17 +59,17 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByUrl(url) {
-    const result = await this.node.add(urlSource(url));
-    result[0] = this.wrapIpfsItem(result[0]);
-    await this.node.pin.add(result[0].id);
-    return result[0];
+    let result = await itFirst(this.node.add(urlSource(url)));
+    result = this.wrapIpfsItem(result);
+    await this.node.pin.add(result.id);
+    return result;
   }
 
   async saveBrowserFile(fileObject) {
-    const result = await this.node.add(fileObject);
-    result[0] = this.wrapIpfsItem(result[0]);
-    await this.node.pin.add(result[0].id);
-    return result[0];
+    let result = await itFirst(this.node.add(fileObject));
+    result = this.wrapIpfsItem(result);
+    await this.node.pin.add(result.id);
+    return result;
   }
 
   async saveFileByData(content) {
@@ -87,10 +87,10 @@ module.exports = class JsIpfsService {
   }
 
   async saveFile(options) {
-    const result = await this.node.add([options]);
-    result[0] = this.wrapIpfsItem(result[0]);
-    await this.node.pin.add(result[0].id);
-    return result[0];
+    let result = await itFirst(this.node.add([options]));
+    result = this.wrapIpfsItem(result);
+    await this.node.pin.add(result.id);
+    return result;
   }
 
   async getAccountIdByName(name) {
