@@ -60,9 +60,13 @@ module.exports = class JsIpfsService {
   }
 
   async saveDirectory(path) {
-    const result = await this.node.add({path}, {recursive: true, ignore: []});
     const dirName = last(path.split('/'));
-    const dirResult = find(result, {path: dirName});
+    let dirResult;
+    for await (let res of this.node.add({path}, {recursive: true, ignore: []})) {
+      if(res.path === dirName) {
+        dirResult = res;
+      }
+    }
     await this.node.pin.add(dirResult.hash);
     return this.wrapIpfsItem(dirResult);
   }
