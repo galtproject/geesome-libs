@@ -55,10 +55,10 @@ const ipfsHelper = {
       cid = new CID(cid)
     }
 
-    if (cid.version === 0 && options.base && options.base !== 'base58btc') {
-      if (!options.upgrade) return cid.toString();
-      cid = cid.toV1()
-    }
+    // if (cid.version === 0 && options.base && options.base !== 'base58btc') {
+    //   if (!options.upgrade) return cid.toString();
+    //   cid = cid.toV1()
+    // }
 
     return cid.toBaseEncodedString();
   },

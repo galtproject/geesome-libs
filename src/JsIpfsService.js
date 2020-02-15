@@ -45,7 +45,7 @@ module.exports = class JsIpfsService {
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
   }
 
-  async wrapIpfsItem(ipfsItem) {
+  wrapIpfsItem(ipfsItem) {
     if(!ipfsItem.hash) {
       ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
       console.log('ipfsItem.hash', ipfsItem.hash);
