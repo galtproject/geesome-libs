@@ -142,7 +142,7 @@ const ipfsHelper = {
     const unixFsFile = new Unixfs('file', Buffer.from(string));
     const buffer = unixFsFile.marshal();
 
-    const dagNode = DAGNode.create(buffer);
+    const dagNode = new DAGNode(buffer);
 
     const cid = await DAGUtil.cid(dagNode);
     return cid.toBaseEncodedString();
