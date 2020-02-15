@@ -46,6 +46,10 @@ module.exports = class JsIpfsService {
   }
 
   async wrapIpfsItem(ipfsItem) {
+    if(!ipfsItem.hash) {
+      ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
+      console.log('ipfsItem.hash', ipfsItem.hash);
+    }
     return {
       id: ipfsItem.hash,
       path: ipfsItem.path,
@@ -56,14 +60,16 @@ module.exports = class JsIpfsService {
 
   async saveFileByUrl(url) {
     const result = await this.node.add(urlSource(url));
-    await this.node.pin.add(result[0].hash);
-    return this.wrapIpfsItem(result[0]);
+    result[0] = this.wrapIpfsItem(result[0]);
+    await this.node.pin.add(result[0].id);
+    return result[0];
   }
 
   async saveBrowserFile(fileObject) {
     const result = await this.node.add(fileObject);
-    await this.node.pin.add(result[0].hash);
-    return this.wrapIpfsItem(result[0]);
+    result[0] = this.wrapIpfsItem(result[0]);
+    await this.node.pin.add(result[0].id);
+    return result[0];
   }
 
   async saveFileByData(content) {
@@ -82,8 +88,9 @@ module.exports = class JsIpfsService {
 
   async saveFile(options) {
     const result = await this.node.add([options]);
-    await this.node.pin.add(result[0].hash);
-    return this.wrapIpfsItem(result[0]);
+    result[0] = this.wrapIpfsItem(result[0]);
+    await this.node.pin.add(result[0].id);
+    return result[0];
   }
 
   async getAccountIdByName(name) {
@@ -337,7 +344,10 @@ module.exports = class JsIpfsService {
   }
 
   async getDirectoryId(path) {
-    const {hash} = await this.node.files.stat(path, {hash: true});
+    let {hash, cid} = await this.node.files.stat(path, {hash: true});
+    if(!hash) {
+      hash = ipfsHelper.cidToIpfsHash(cid);
+    }
     return hash;
   }
 };

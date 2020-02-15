@@ -50,6 +50,18 @@ const ipfsHelper = {
     const cidsResult = new CID(1, 'dag-cbor', cid.multihash || Buffer.from(cid.hash.data));
     return cidsResult.toBaseEncodedString();
   },
+  cidToIpfsHash(cid) {
+    if (!CID.isCID(cid)) {
+      cid = new CID(cid)
+    }
+
+    if (cid.version === 0 && options.base && options.base !== 'base58btc') {
+      if (!options.upgrade) return cid.toString();
+      cid = cid.toV1()
+    }
+
+    return cid.toBaseEncodedString();
+  },
   async keyLookup(ipfsNode, kname, callback) {
     if (kname === 'self') {
       return callback(null, ipfsNode._peerInfo.id.privKey)
