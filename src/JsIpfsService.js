@@ -19,6 +19,8 @@ const includes = require('lodash/includes');
 const isString = require('lodash/isString');
 const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
+const itConcat = require('it-concat');
+const itToStream = require('it-to-stream');
 
 const ipns = require('ipns');
 
@@ -138,11 +140,11 @@ module.exports = class JsIpfsService {
         filePath += '/index.html';
       }
     }
-    return this.node.catReadableStream(filePath, options);
+    return itToStream(this.node.cat(filePath, options));
   }
 
   getFileData(filePath) {
-    return this.node.cat(filePath).then((result) => result);
+    return itConcat(this.node.cat(filePath));
   }
 
   async saveObject(objectData) {
