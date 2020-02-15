@@ -332,8 +332,8 @@ module.exports = class JsIpfsService {
 
   async copyFileFromId(storageId, filePath) {
     try {
-      const existFiles = await this.node.files.ls(filePath);
-      if(existFiles.length) {
+      const exist = await itFirst(this.node.files.ls(filePath));
+      if(exist) {
         await this.node.files.rm(filePath);
       }
     } catch (e) {
