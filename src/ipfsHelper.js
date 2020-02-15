@@ -137,23 +137,15 @@ const ipfsHelper = {
     return pubKey.verify(bytes, message.signature);
   },
   
-  getIpfsHashFromString(string) {
+  async getIpfsHashFromString(string) {
     const Unixfs = require('ipfs-unixfs');
-    
-    return new Promise((resolve, reject) => {
-      const unixFsFile = new Unixfs('file', Buffer.from(string));
-      const buffer = unixFsFile.marshal();
+    const unixFsFile = new Unixfs('file', Buffer.from(string));
+    const buffer = unixFsFile.marshal();
 
-      DAGNode.create(buffer, (err, dagNode) => {
-        if (err) {
-          reject(new Error('Cannot create ipfs DAGNode'));
-        }
+    const dagNode = DAGNode.create(buffer);
 
-        DAGUtil.cid(dagNode, (error, cid) => {
-          resolve(cid.toBaseEncodedString());
-        });
-      });
-    });
+    const cid = await DAGUtil.cid(dagNode);
+    return cid.toBaseEncodedString();
   }
 };
 
