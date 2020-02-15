@@ -18,6 +18,7 @@ const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
 const isString = require('lodash/isString');
 const urlSource = require('ipfs-utils/src/files/url-source');
+const itFirst = require('it-first');
 
 const ipns = require('ipns');
 
@@ -57,18 +58,6 @@ module.exports = class JsIpfsService {
     const result = await this.node.add(urlSource(url));
     await this.node.pin.add(result[0].hash);
     return this.wrapIpfsItem(result[0]);
-  }
-
-  async saveDirectory(path) {
-    const dirName = last(path.split('/'));
-    let dirResult;
-    for await (let res of this.node.add({path}, {recursive: true, ignore: []})) {
-      if(res.path === dirName) {
-        dirResult = res;
-      }
-    }
-    await this.node.pin.add(dirResult.hash);
-    return this.wrapIpfsItem(dirResult);
   }
 
   async saveBrowserFile(fileObject) {
@@ -186,12 +175,8 @@ module.exports = class JsIpfsService {
   }
 
   async resolveStaticId(staticStorageId) {
-    const resArray = [];
-    for await (let res of this.node.name.resolve(staticStorageId)) {
-      resArray.push((res && res.path ? res.path : res).replace('/ipfs/', ''));
-    }
     //TODO: support more then 1 value
-    return resArray[0];
+    return itFirst(this.node.name.resolve(staticStorageId)).then(h => h.replace('/ipfs/', ''));
   }
 
   async resolveStaticIdEntry(staticStorageId) {

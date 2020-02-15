@@ -8,10 +8,21 @@
  */
 
 const JsIpfsService = require('./JsIpfsService');
+const globSource = require('ipfs-utils/src/files/glob-source');
+const itAll = require('it-all');
+const find = require('lodash/find');
 
 module.exports = class JsIpfsServiceNode extends JsIpfsService {
   async saveFileByPath(path) {
     const fs = require('fs');
     return this.saveFile({content: fs.createReadStream(path)});
+  }
+
+  async saveDirectory(path) {
+    const dirName = last(path.split('/'));
+    const allResults = await itAll(this.node.add(globSource(path, { recursive: true })));
+    const dirResult = find(allResults, {path: dirName});
+    await this.node.pin.add(dirResult.hash);
+    return this.wrapIpfsItem(dirResult);
   }
 };
