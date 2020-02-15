@@ -11,6 +11,7 @@ const JsIpfsService = require('./JsIpfsService');
 const globSource = require('ipfs-utils/src/files/glob-source');
 const itAll = require('it-all');
 const find = require('lodash/find');
+const last = require('lodash/last');
 
 module.exports = class JsIpfsServiceNode extends JsIpfsService {
   async saveFileByPath(path) {
