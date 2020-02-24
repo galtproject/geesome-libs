@@ -617,8 +617,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/file-catalog/get-item-by-path`, {path, type});
   }
 
-  publishFolder(folderId) {
-    return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`);
+  publishFolder(folderId, params = {}) {
+    return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`, params);
   }
 
   getAllItems(itemsName, search = null, listParams = {}) {
