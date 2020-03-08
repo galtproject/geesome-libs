@@ -149,7 +149,7 @@ module.exports = class JsIpfsService {
 
   async saveObject(objectData) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
-    const savedObj = await this.node.dag.put(objectData);
+    const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
     await this.node.pin.add(ipldHash);
     return ipldHash;
