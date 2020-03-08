@@ -168,7 +168,7 @@ module.exports = class JsIpfsService {
     const ipldHash = ipfsHelper.cidToHash(savedObj);
 
     const pinPromise = this.node.pin.add(ipldHash).then(() => {
-      console.log('pinned:', result.id);
+      console.log('pinned:', ipldHash);
     });
     if(options.waitForPin) {
       await pinPromise;
