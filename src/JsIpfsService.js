@@ -255,7 +255,7 @@ module.exports = class JsIpfsService {
 
   addPin(hash) {
     return this.node.pin.add(hash).then(() => {
-      console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', result.id);
+      console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', hash);
     });
   }
 
