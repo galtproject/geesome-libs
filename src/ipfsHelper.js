@@ -23,6 +23,7 @@ const {Message} = require('libp2p-pubsub/src/message');
 const {SignPrefix} = require('libp2p-pubsub/src/message/sign');
 const {utils} = require('libp2p-pubsub');
 const multihash = require('multihashes');
+const dagCBOR = require('ipld-dag-cbor')
 // const {fromB58String} = require('multihashes');
 const ID_MULTIHASH_CODE = multihash.names.id;
 const bs58 = require('bs58')
@@ -147,6 +148,10 @@ const ipfsHelper = {
     const cid = await DAGUtil.cid(serialized, { cidVersion: 0 });
 
     return cid.toBaseEncodedString();
+  },
+
+  async getIpldHashFromObject(object) {
+    return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
   }
 };
 

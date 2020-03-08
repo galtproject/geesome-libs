@@ -69,7 +69,21 @@ describe('ipfs', function () {
       const content = '1';
       const savedText = await node.saveFileByData(content);
       const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
+      expect(ipfsHash).to.equals('QmWYddCPs7uR9EvHNCZzpguVFVNfHc6aM3hPVzPdAEESMc');
       expect(savedText.id).to.equals(ipfsHash);
+      done();
+    })();
+  });
+
+  it('should save object with correct ipld hash', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const content = {foo: 'bar'};
+      const savedIpld = await node.saveObject(content);
+      const savedIpldHash = await ipfsHelper.getIpldHashFromObject(content);
+      expect(savedIpld).to.equals('bafyreiblaotetvwobe7cu2uqvnddr6ew2q3cu75qsoweulzku2egca4dxq');
+      expect(savedIpld).to.equals(savedIpldHash);
 
       done();
     })();
