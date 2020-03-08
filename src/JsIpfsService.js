@@ -63,9 +63,7 @@ module.exports = class JsIpfsService {
   async saveFileByUrl(url, options = {}) {
     let result = await itFirst(this.node.add(urlSource(url)));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id).then(() => {
-      console.log('pinned:', result.id);
-    });
+    const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -75,9 +73,7 @@ module.exports = class JsIpfsService {
   async saveBrowserFile(fileObject, options = {}) {
     let result = await itFirst(this.node.add(fileObject));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id).then(() => {
-      console.log('pinned:', result.id);
-    });
+    const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -101,9 +97,7 @@ module.exports = class JsIpfsService {
   async saveFile(data, options = {}) {
     let result = await itFirst(this.node.add([data]));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id).then(() => {
-      console.log('pinned:', result.id);
-    });
+    const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -167,9 +161,7 @@ module.exports = class JsIpfsService {
     const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
 
-    const pinPromise = this.node.pin.add(ipldHash).then(() => {
-      console.log('pinned:', ipldHash);
-    });
+    const pinPromise = this.addPin(ipldHash);
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -259,6 +251,12 @@ module.exports = class JsIpfsService {
 
   async nodeAddressList() {
     return this.id().then(nodeId => nodeId.addresses);
+  }
+
+  addPin(hash) {
+    return this.node.pin.add(hash).then(() => {
+      console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', result.id);
+    });
   }
 
   getPins(hash) {
