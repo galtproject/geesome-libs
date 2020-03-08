@@ -63,7 +63,9 @@ module.exports = class JsIpfsService {
   async saveFileByUrl(url, options = {}) {
     let result = await itFirst(this.node.add(urlSource(url)));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id).then(() => {
+      console.log('pinned:', result.id);
+    });
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -73,14 +75,16 @@ module.exports = class JsIpfsService {
   async saveBrowserFile(fileObject, options = {}) {
     let result = await itFirst(this.node.add(fileObject));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id).then(() => {
+      console.log('pinned:', result.id);
+    });
     if(options.waitForPin) {
       await pinPromise;
     }
     return result;
   }
 
-  async saveFileByData(content) {
+  async saveFileByData(content, options = {}) {
     if (isString(content)) {
       content = Buffer.from(content, 'utf8');
     }
@@ -90,14 +94,16 @@ module.exports = class JsIpfsService {
         // TODO: figure out why its not working
         content.on('error', reject);
       }
-      this.saveFile({content}).then(resolve).catch(reject);
+      this.saveFile({content}, options).then(resolve).catch(reject);
     });
   }
 
   async saveFile(data, options = {}) {
     let result = await itFirst(this.node.add([data]));
     result = this.wrapIpfsItem(result);
-    const pinPromise = this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id).then(() => {
+      console.log('pinned:', result.id);
+    });
     if(options.waitForPin) {
       await pinPromise;
     }
@@ -161,7 +167,9 @@ module.exports = class JsIpfsService {
     const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
 
-    const pinPromise = this.node.pin.add(ipldHash);
+    const pinPromise = this.node.pin.add(ipldHash).then(() => {
+      console.log('pinned:', result.id);
+    });
     if(options.waitForPin) {
       await pinPromise;
     }
