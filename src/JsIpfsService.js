@@ -60,17 +60,23 @@ module.exports = class JsIpfsService {
     }
   }
 
-  async saveFileByUrl(url) {
+  async saveFileByUrl(url, options = {}) {
     let result = await itFirst(this.node.add(urlSource(url)));
     result = this.wrapIpfsItem(result);
-    await this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id);
+    if(options.waitForPin) {
+      await pinPromise;
+    }
     return result;
   }
 
-  async saveBrowserFile(fileObject) {
+  async saveBrowserFile(fileObject, options = {}) {
     let result = await itFirst(this.node.add(fileObject));
     result = this.wrapIpfsItem(result);
-    await this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id);
+    if(options.waitForPin) {
+      await pinPromise;
+    }
     return result;
   }
 
@@ -88,10 +94,13 @@ module.exports = class JsIpfsService {
     });
   }
 
-  async saveFile(options) {
-    let result = await itFirst(this.node.add([options]));
+  async saveFile(data, options = {}) {
+    let result = await itFirst(this.node.add([data]));
     result = this.wrapIpfsItem(result);
-    await this.node.pin.add(result.id);
+    const pinPromise = this.node.pin.add(result.id);
+    if(options.waitForPin) {
+      await pinPromise;
+    }
     return result;
   }
 
@@ -147,11 +156,15 @@ module.exports = class JsIpfsService {
     return itConcat(this.node.cat(filePath));
   }
 
-  async saveObject(objectData) {
+  async saveObject(objectData, options = {}) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
     const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
-    await this.node.pin.add(ipldHash);
+
+    const pinPromise = this.node.pin.add(ipldHash);
+    if(options.waitForPin) {
+      await pinPromise;
+    }
     return ipldHash;
   }
 
