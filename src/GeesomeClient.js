@@ -92,7 +92,7 @@ class GeesomeClient {
   }
 
   async decryptText(encryptedText) {
-    if(!this._privateKey) {
+    if (!this._privateKey) {
       await this.exportPrivateKey();
     }
     const pgpPrivateKey = await pgpHelper.transformKey(Buffer.from(this._privateKey));
@@ -120,7 +120,7 @@ class GeesomeClient {
     this.ipfsNode = ipfsNode;
     this.ipfsService = new JsIpfsService(this.ipfsNode);
     this.ipfsIddleTime = ipfsIddleTime;
-    if(!this.serverLessMode) {
+    if (!this.serverLessMode) {
       await this.connectToIpfsNodeToServer();
     }
   }
@@ -233,7 +233,7 @@ class GeesomeClient {
   }
 
   asyncResponseWrapper(res, params) {
-    if(!res.asyncOperationId){
+    if (!res.asyncOperationId) {
       return res;
     }
     return new Promise((resolve, reject) => {
@@ -241,14 +241,14 @@ class GeesomeClient {
       const waitingForFinish = () => {
         setTimeout(() => {
           this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
-            if(operation.inProcess){
-              if(params && params.onProcess) {
+            if (operation.inProcess) {
+              if (params && params.onProcess) {
                 params.onProcess(operation);
               }
               return waitingForFinish();
             }
 
-            if(operation.errorMessage) {
+            if (operation.errorMessage) {
               return reject({message: operation.errorMessage});
             }
 
@@ -284,7 +284,7 @@ class GeesomeClient {
       // TODO: filter by types
     } else {
       //TODO: get groups list directly from ipld?
-      groupsIds = await this.getRequest('/v1/user/member-in-groups', { params: {types: types.join(',')} }).then(groupData => groupData.list.map(g => g.manifestStorageId));
+      groupsIds = await this.getRequest('/v1/user/member-in-groups', {params: {types: types.join(',')}}).then(groupData => groupData.list.map(g => g.manifestStorageId));
     }
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
@@ -299,7 +299,7 @@ class GeesomeClient {
 
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
-    return this.getRequest('/v1/user/admin-in-groups', { params: {types: types.join(',')} }).then(groupData => {
+    return this.getRequest('/v1/user/admin-in-groups', {params: {types: types.join(',')}}).then(groupData => {
       return pIteration.map(groupData.list, (group) => this.getGroup(group.manifestStorageId))
     });
   }
@@ -368,7 +368,7 @@ class GeesomeClient {
     }
 
     if (manifest) {
-      if(previewType) {
+      if (previewType) {
         const previewObj = ((manifest.preview || {})[previewType] || {});
         //                                  TODO: delete deprecated content  field
         storageId = previewObj.storageId || previewObj.content || manifest.storageId || manifest.content;
@@ -409,10 +409,10 @@ class GeesomeClient {
   }
 
   async getContentData(contentHash) {
-    if(contentHash['/']) {
+    if (contentHash['/']) {
       contentHash = contentHash['/'];
     }
-    if(ipfsHelper.isIpldHash(contentHash)) {
+    if (ipfsHelper.isIpldHash(contentHash)) {
       contentHash = (await this.getObject(contentHash)).storageId;
     }
 
@@ -462,11 +462,11 @@ class GeesomeClient {
 
       const node = trie.getNode(group.posts, postNumber);
 
-      if(ipfsHelper.isCid(node)) {
+      if (ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
-      } else if(node['/']) {
+      } else if (node['/']) {
         post.manifestId = node['/'];
-      } else if(group.isEncrypted) {
+      } else if (group.isEncrypted) {
         const manifestId = await this.decryptText(post);
         post = await this.getPost(manifestId);
       }
@@ -497,21 +497,21 @@ class GeesomeClient {
     if (ipfsHelper.isIpldHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
-    } else if(isNumber(postId)) {
+    } else if (isNumber(postId)) {
       const postsPath = group.id + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
 
       const node = trie.getNode(group.posts, postId);
-      if(ipfsHelper.isCid(node)) {
+      if (ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
-      } else if(node['/']) {
+      } else if (node['/']) {
         post.manifestId = node['/'];
-      } else if(group.isEncrypted) {
+      } else if (group.isEncrypted) {
         const manifestId = await this.decryptText(post);
         post = await this.getGroupPost(groupId, manifestId);
       }
-    } else if(group.isEncrypted) {
+    } else if (group.isEncrypted) {
       const manifestId = await this.decryptText(postId);
       post = await this.getGroupPost(groupId, manifestId);
     }
@@ -533,7 +533,7 @@ class GeesomeClient {
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
     this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
-      if(includes(membersIpnsIds, event.keyIpns)) {
+      if (includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
       }
     });
@@ -686,7 +686,7 @@ class GeesomeClient {
   async getNodeAddress(_includesAddress = null) {
     let addresses = await this.getNodeAddressList();
 
-    if(_includesAddress) {
+    if (_includesAddress) {
       return find(addresses, (address) => {
         return includes(address, _includesAddress);
       });
@@ -704,7 +704,7 @@ class GeesomeClient {
   async connectToIpfsNodeToServer() {
     let address = await this.getNodeAddress(this.isLocalServer() ? '127.0.0.1' : null);
 
-    if(this.isLocalServer()) {
+    if (this.isLocalServer()) {
       address = address.replace('4002/ipfs', '4003/ws/ipfs')
     }
 
@@ -759,16 +759,12 @@ class GeesomeClient {
 
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
-      return new Promise((resolve, reject) => {
-        const ipfs = window['Ipfs'].createNode(merge({
-          EXPERIMENTAL: {
-            pubsub: true,
-            ipnsPubsub: true
-          }
-        }, options));
-        ipfs.once('ready', () => resolve(ipfs))
-        ipfs.once('error', err => reject(err))
-      })
+      return window['Ipfs'].create(merge({
+        EXPERIMENTAL: {
+          pubsub: true,
+          ipnsPubsub: true
+        }
+      }, options));
     }
 
     return this.setIpfsNode(await createIpfsNode({
