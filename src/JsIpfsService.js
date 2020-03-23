@@ -61,7 +61,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByUrl(url, options = {}) {
-    let result = await itFirst(this.node.add(urlSource(url)));
+    let result = await itFirst(this.node.add(urlSource(url), {pin: false}));
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
@@ -71,7 +71,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveBrowserFile(fileObject, options = {}) {
-    let result = await itFirst(this.node.add(fileObject));
+    let result = await itFirst(this.node.add(fileObject, {pin: false}));
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
@@ -95,7 +95,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFile(data, options = {}) {
-    let result = await itFirst(this.node.add([data]));
+    let result = await itFirst(this.node.add([data], {pin: false}));
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
