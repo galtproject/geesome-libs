@@ -277,6 +277,10 @@ class GeesomeClient {
     return this.getRequest('/v1/content/' + dbId);
   }
 
+  getDbContentByStorageId(storageId) {
+    return this.getRequest('/v1/content-by-storage-id/' + storageId);
+  }
+
   async getMemberInGroups(types) {
     let groupsIds;
     if (this.serverLessMode) {
