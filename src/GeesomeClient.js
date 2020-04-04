@@ -667,6 +667,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
+  adminGetCorePermissionList(userId) {
+    return this.postRequest(`/v1/admin/permissions/core/get_list`, {userId});
+  }
+
   adminAddUserApiKey(userId, data) {
     return this.postRequest(`/v1/admin/add-user-api-key`, {userId, ...data});
   }
