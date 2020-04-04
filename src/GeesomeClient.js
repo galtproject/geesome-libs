@@ -655,6 +655,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/set-user-limit`, limitData);
   }
 
+  adminGetUserLimit(userId, limitName) {
+    return this.getRequest(`/v1/admin/get-user/${userId}/limit/${limitName}`);
+  }
+
   adminIsHaveCorePermission(permissionName) {
     return this.getRequest(`v1/user/permissions/core/is-have/${permissionName}`).then(data => data.result);
   }
