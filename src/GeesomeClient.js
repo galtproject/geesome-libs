@@ -635,6 +635,10 @@ class GeesomeClient {
     return this.getRequest(`/v1/user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
 
+  getUserByApiKey(apiKey) {
+    return this.getRequest(`/v1/admin/get-user-by-api-key/` + apiKey);
+  }
+
   addUserApiKey(data) {
     return this.postRequest(`/v1/user/api-key/add`, data);
   }
