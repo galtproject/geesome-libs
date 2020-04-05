@@ -265,6 +265,22 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${postData.groupId}/create-post`, postData);
   }
 
+  getDbGroupPosts(groupId, params = null) {
+    return this.getRequest(`/v1/group/${groupId}/posts`, {params});
+  }
+
+  getDbCategoryPosts(categoryId, params = null) {
+    return this.getRequest(`/v1/category/${categoryId}/posts`, {params});
+  }
+
+  getDbCategoryByParams(params) {
+    return this.postRequest(`/v1/category/get`, params);
+  }
+
+  addGroupToCategory(groupId, categoryId) {
+    return this.postRequest(`/v1/user/category/${categoryId}/add-group`, {groupId});
+  }
+
   regenerateUserPreviews() {
     return this.postRequest(`/v1/user/regenerate-previews`);
   }
