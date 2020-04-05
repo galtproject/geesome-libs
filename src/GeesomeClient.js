@@ -281,6 +281,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/category/get`, params);
   }
 
+  getDbGroupByParams(params) {
+    return this.postRequest(`/v1/group/get`, params);
+  }
+
+  getDbPostByParams(params) {
+    return this.postRequest(`/v1/post/get`, params);
+  }
+
   addGroupToCategory(groupId, categoryId) {
     return this.postRequest(`/v1/user/category/${categoryId}/add-group`, {groupId});
   }
