@@ -261,8 +261,8 @@ class GeesomeClient {
     })
   }
 
-  createPost(contentsIds, params) {
-    return this.postRequest(`/v1/user/group/${params.groupId}/create-post`, extend({contentsIds}, params));
+  createPost(postData) {
+    return this.postRequest(`/v1/user/group/${postData.groupId}/create-post`, postData);
   }
 
   regenerateUserPreviews() {
