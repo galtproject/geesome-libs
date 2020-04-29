@@ -437,6 +437,10 @@ class GeesomeClient {
     }
     let responded = false;
 
+    if(!this.ipfsService) {
+      return this.getRequest(`/ipld/${ipldHash}`).then(wrapObject);
+    }
+
     return new Promise((resolve, reject) => {
       this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
 
