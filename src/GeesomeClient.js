@@ -313,7 +313,7 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/regenerate-previews`);
   }
 
-  getContentData(storageId) {
+  getContentDataByApi(storageId) {
     return this.getRequest('/v1/content-data/' + storageId);
   }
 
@@ -471,11 +471,14 @@ class GeesomeClient {
     let responded = false;
 
     return new Promise((resolve, reject) => {
+      if(!this.ipfsService) {
+        return this.getContentDataByApi(contentHash).then(wrap).then(resolve).catch(reject);
+      }
       this.ipfsService.getFileData(contentHash).then(wrap).then(resolve).catch(reject);
 
       setTimeout(() => {
         if (!responded) {
-          this.getRequest(`/v1/content-data/${contentHash}`).then(wrap).then(resolve).catch(reject);
+          this.getContentDataByApi(contentHash).then(wrap).then(resolve).catch(reject);
         }
       }, this.ipfsIddleTime);
     });
