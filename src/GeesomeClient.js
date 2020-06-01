@@ -277,6 +277,10 @@ class GeesomeClient {
     return this.getRequest(`/v1/category/${categoryId}/posts`, {params});
   }
 
+  getDbCategoryGroups(categoryId, params = null) {
+    return this.getRequest(`/v1/category/${categoryId}/groups`, {params});
+  }
+
   getDbCategoryByParams(params) {
     return this.postRequest(`/v1/category/get`, params);
   }
