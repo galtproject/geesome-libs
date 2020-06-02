@@ -444,13 +444,14 @@ class GeesomeClient {
       ipldHash = ipldHash['/'];
     }
     let responded = false;
-
-    if(!this.ipfsService) {
-      return this.getRequest(`/ipld/${ipldHash}`).then(wrapObject);
-    }
+    //TODO: enable on migrate to new version
+    //
+    // if(!this.ipfsService) {
+    //   return this.getRequest(`/ipld/${ipldHash}`).then(wrapObject);
+    // }
 
     return new Promise((resolve, reject) => {
-      this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
+      // this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
 
       setTimeout(() => {
         if (!responded) {
