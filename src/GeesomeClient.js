@@ -453,11 +453,11 @@ class GeesomeClient {
     return new Promise((resolve, reject) => {
       // this.ipfsService.getObject(ipldHash).then(wrapObject).then(resolve).catch(reject);
 
-      setTimeout(() => {
-        if (!responded) {
+      // setTimeout(() => {
+      //   if (!responded) {
           this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
-        }
-      }, this.ipfsIddleTime);
+        // }
+      // }, this.ipfsIddleTime);
     });
 
     function wrapObject(ipldData) {
