@@ -281,6 +281,18 @@ class GeesomeClient {
     return this.getRequest(`/v1/user/category/${categoryId}/groups`, {params});
   }
 
+  createGroupSection(groupSectionData) {
+    return this.postRequest(`/v1/user/group-section/create`, groupSectionData);
+  }
+
+  updateGroupSection(groupSectionId, groupSectionData) {
+    return this.postRequest(`/v1/user/group-section/${groupSectionId}/update`, groupSectionData);
+  }
+
+  getDbCategoryGroupSections(params = null) {
+    return this.getRequest(`/v1/user/group-sections`, {params});
+  }
+
   getDbCategoryByParams(params) {
     return this.postRequest(`/v1/category/get`, params);
   }
