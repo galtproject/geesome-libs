@@ -325,6 +325,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupId}/add-member`, {userId, permissions});
   }
 
+  setMembersOfGroup(groupId, userIds, permissions = []) {
+    return this.postRequest(`/v1/user/group/${groupId}/set-members`, {userIds, permissions});
+  }
+
   setMemberGroupPermissions(groupId, userId, permissions = []) {
     return this.postRequest(`/v1/user/group/${groupId}/set-permissions`, {userId, permissions});
   }
