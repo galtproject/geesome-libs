@@ -317,6 +317,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupId}/remove-admin`, {userId});
   }
 
+  setAdminsOfGroup(groupId, userIds) {
+    return this.postRequest(`/v1/user/group/${groupId}/set-admins`, {userIds});
+  }
+
   addMemberToGroup(groupId, userId, permissions = []) {
     return this.postRequest(`/v1/user/group/${groupId}/add-member`, {userId, permissions});
   }
