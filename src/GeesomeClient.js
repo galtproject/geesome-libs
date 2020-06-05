@@ -337,6 +337,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupId}/remove-member`, {userId});
   }
 
+  addMemberToCategory(categoryId, userId, permissions = []) {
+    return this.postRequest(`/v1/user/category/${categoryId}/add-member`, {userId, permissions});
+  }
+
+  removeMemberFromCategory(categoryId, userId) {
+    return this.postRequest(`/v1/user/category/${categoryId}/remove-member`, {userId});
+  }
+
   regenerateUserPreviews() {
     return this.postRequest(`/v1/user/regenerate-previews`);
   }
