@@ -185,6 +185,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${groupData.id}/update`, groupData);
   }
 
+  async isMemberOfCategory(categoryId) {
+    return this.postRequest(`/v1/user/category/${categoryId}/is-member`).then(data => data.result);
+  }
+
   async joinGroup(groupId) {
     if (this.serverLessMode) {
       return this.clientStorage.joinToGroup(groupId);
