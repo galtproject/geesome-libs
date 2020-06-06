@@ -269,6 +269,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/${postData.groupId}/create-post`, postData);
   }
 
+  getDbPost(postId) {
+    return this.getRequest(`/v1/user/post/${postId}`);
+  }
+
   getDbGroupPosts(groupId, params = null) {
     return this.getRequest(`/v1/group/${groupId}/posts`, {params});
   }
