@@ -46,7 +46,7 @@ class GeesomeClient {
     this.$http = axios.create({});
 
     this.ipfsService = null;
-    this.serverLessMode = true;
+    this.serverLessMode = isUndefined(config.serverLessMode) ? true : config.serverLessMode;
     // wait for respond of ipfs in miliseconds, until send request to server
     this.ipfsIddleTime = 1000;
   }
@@ -121,7 +121,9 @@ class GeesomeClient {
     this.ipfsService = new JsIpfsService(this.ipfsNode);
     this.ipfsIddleTime = ipfsIddleTime;
     if (!this.serverLessMode) {
-      await this.connectToIpfsNodeToServer();
+      await this.connectToIpfsNodeToServer().catch((e) => {
+        console.warn('connectToIpfsNodeToServer error', e);
+      });
     }
   }
 
