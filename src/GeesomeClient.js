@@ -280,7 +280,7 @@ class GeesomeClient {
   }
 
   setGroupRead(readData) {
-    return this.postRequest(`//v1/user/group/set-read`, readData);
+    return this.postRequest(`/v1/user/group/set-read`, readData);
   }
 
   getDbPost(postId) {
