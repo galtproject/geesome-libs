@@ -275,6 +275,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/group/update-post/${postData.id}`, postData);
   }
 
+  getGroupUnread(groupId) {
+    return this.getRequest(`/v1/user/group/unread/${groupId}`);
+  }
+
+  setGroupRead(readData) {
+    return this.postRequest(`//v1/user/group/set-read`, readData);
+  }
+
   getDbPost(postId) {
     return this.getRequest(`/v1/user/post/${postId}`);
   }
