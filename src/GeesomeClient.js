@@ -276,7 +276,7 @@ class GeesomeClient {
   }
 
   getGroupUnread(groupId) {
-    return this.getRequest(`/v1/user/group/unread/${groupId}`).then(res => res.result);
+    return this.getRequest(`/v1/user/group/unread/${groupId}`).then(res => parseInt(res.result));
   }
 
   setGroupRead(readData) {
