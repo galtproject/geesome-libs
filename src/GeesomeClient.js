@@ -912,8 +912,18 @@ class GeesomeClient {
 
     const createNode = async () => {
       return df.spawn({
-        exec: IPFS,
+        ipfsModule: IPFS,
+        ipfsOptions: {
+          pass: hat(),
+          libp2p: {
+            dialer: {
+              dialTimeout: 60e3 // increase timeout because travis is slow
+            }
+          }
+        },
         args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
+        type: 'proc',
+
         config: {
           Bootstrap: [],
           Discovery: {
