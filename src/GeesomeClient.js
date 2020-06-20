@@ -910,10 +910,8 @@ class GeesomeClient {
     const IPFS = require('ipfs');
     const df = createFactory({type: 'proc'});
 
-    const dfSpawn = promisify(df.spawn).bind(df);
-
     const createNode = async () => {
-      return dfSpawn({
+      return df.spawn({
         exec: IPFS,
         args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
         config: {
