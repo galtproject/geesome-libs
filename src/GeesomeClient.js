@@ -523,6 +523,9 @@ class GeesomeClient {
   }
 
   async getContentData(contentHash) {
+    if(isObject(contentHash) && contentHash.storageId) {
+      contentHash = contentHash.storageId;
+    }
     if (contentHash['/']) {
       contentHash = contentHash['/'];
     }
