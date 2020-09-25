@@ -574,7 +574,7 @@ class GeesomeClient {
       options.limit = postsCount - options.offset;
     }
 
-    const postsPath = group.id + '/posts/';
+    const postsPath = group.staticId + '/posts/';
     const posts = [];
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
       const postNumberPath = trie.getTreePath(postNumber).join('/');
