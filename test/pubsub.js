@@ -11,56 +11,33 @@
 /* eslint-env mocha */
 'use strict'
 
-const hat = require('hat')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
 
-const parallel = require('async/parallel')
-
-// const isNode = require('detect-node')
-const IPFS = require('ipfs')
 const JsIpfsService = require('../src/JsIpfsService')
 const ipfsHelper = require('../src/ipfsHelper')
-const waitFor = require('./utils/wait-for')
+const waitFor = require('./utils/wait-for');
+const factory = require('./utils/ipfsFactory');
 
-const Ctl = require('ipfsd-ctl');
-const factory = Ctl.createFactory({
-  ipfsModule: IPFS,
-  ipfsOptions: {
-    pass: hat(),
-    libp2p: {
-      dialer: {
-        dialTimeout: 60e3 // increase timeout because travis is slow
-      }
-    }
-  },
-  args: ['--enable-namesys-pubsub'],
-  type: 'proc',
-  test: true,
-  // disposable: true
-});
-
-describe('pubsub', function () {
-  // if (!isNode) {
-  //   return
-  // }
-
+describe.skip('pubsub', function () {
   let nodeA
   let nodeB
+  const pass = 'ipfs-is-awesome-software';
 
   const createNode = () => {
-    return factory.spawn({
-
-    }).then(node => node.api)
+    return factory.spawn({ipfsOptions: { pass }}).then(node => node.api)
   };
 
   before(function (done) {
+    console.log('before');
     this.timeout(40 * 1000);
 
     (async () => {
+      console.log('nodeA');
       nodeA = new JsIpfsService(await createNode());
+      console.log('nodeB');
       nodeB = new JsIpfsService(await createNode());
 
       const idB = await nodeB.id();
@@ -82,7 +59,7 @@ describe('pubsub', function () {
       console.log('testTopic')
       const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
       console.log('testAccountIpnsId')
-      const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId);
+      const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
       console.log('testAccountPeerId')
       
       let catchedEvents = 0;
@@ -117,7 +94,6 @@ describe('pubsub', function () {
         })
       });
 
-      console.log('publishEventByPeerId');
       await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
     })();
   })

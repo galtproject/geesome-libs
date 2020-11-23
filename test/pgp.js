@@ -11,30 +11,18 @@
 /* eslint-env mocha */
 'use strict';
 
-const hat = require('hat');
 const chai = require('chai');
 const dirtyChai = require('dirty-chai');
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const IPFS = require('ipfs');
 const {GeesomeClient} = require('../src/GeesomeClient');
 const pgpHelper = require('../src/pgpHelper');
-
-const Ctl = require('ipfsd-ctl');
-const factory = Ctl.createFactory({
-  ipfsModule: IPFS,
-  ipfsOptions: {
-    pass: hat(),
-  },
-  args: ['--enable-namesys-pubsub'],
-  type: 'proc',
-  test: true,
-  disposable: true
-});
+const factory = require('./utils/ipfsFactory');
 
 describe('pgp', function () {
   let geesomeClient;
+  const pass = 'ipfs-is-awesome-software';
 
   const createNode = () => {
     return factory.spawn({
@@ -49,6 +37,7 @@ describe('pgp', function () {
           }
         }
       },
+      ipfsOptions: { pass },
       preload: {enabled: false}
     }).then(node => node.api)
   };
@@ -76,8 +65,8 @@ describe('pgp', function () {
       const bobId = await geesomeClient.ipfsService.createAccountIfNotExists('bob');
       const aliceId = await geesomeClient.ipfsService.createAccountIfNotExists('alice');
 
-      const bobKey = await geesomeClient.ipfsService.keyLookup(bobId);
-      const aliceKey = await geesomeClient.ipfsService.keyLookup(aliceId);
+      const bobKey = await geesomeClient.ipfsService.keyLookup(bobId, pass);
+      const aliceKey = await geesomeClient.ipfsService.keyLookup(aliceId, pass);
 
       const bobPrivateKey = await pgpHelper.transformKey(bobKey.marshal());
       const alicePrivateKey = await pgpHelper.transformKey(aliceKey.marshal());

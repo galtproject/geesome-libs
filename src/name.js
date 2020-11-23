@@ -35,7 +35,7 @@ const name = {
   base64Ipns(ipnsId) {
     const multihash = fromB58String(ipnsId);
     const idKeys = ipns.getIdKeys(multihash);
-    return base64url.encode(idKeys.routingKey.toBuffer());
+    return base64url.encode(idKeys.routingKey._buf);
   }
 };
 
