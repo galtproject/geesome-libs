@@ -9,10 +9,8 @@
 
 const ipfsHelper = require('./ipfsHelper');
 
-const extend = require('lodash/extend');
 const trim = require('lodash/trim');
 const isObject = require('lodash/isObject');
-const last = require('lodash/last');
 const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
@@ -21,27 +19,28 @@ const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
+const libp2pGossip = require('libp2p-gossipsub');
 
-const ipns = require('ipns');
+const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
+const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
+
+
+const IPNS = require('ipns');
 
 const { getIpnsUpdatesTopic } = require('./name');
 
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-
-    if(node.pubsub) {
-      // this.fsub = node.libp2p._floodSub;
-
-      // ipfsImproves.improveFloodSub(this.fsub);
-      // ipfsImproves.improvePubSub(this.fsub);
-      this.fSubPublishByPeerId = node.pubsub.publishByPeerId.bind(node.pubsub);
-      this.fSubPublish = node.pubsub.publish.bind(node.pubsub);
-      this.pubSubSubscribe = node.pubsub.subscribe.bind(node.pubsub);
-    } else {
-      console.warn("[JsIpfsService] Warning: pubsub features disabled")
-    }
-
+    const {libp2p, peerId} = this.node;
+    // console.log('this.node.libp2p', this.node.libp2p);
+    console.log('this.node.libp2p.publishMessage', this.node.libp2p.publishMessage);
+    console.log('this.node.pubsub.publishMessage', this.node.pubsub.publishMessage);
+    console.log('this.node.pubsub.emit', this.node.pubsub.emit);
+    this.gossip = new libp2pGossip(libp2p);
+    const repo = {datastore: libp2p.datastore};
+    this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
+    this.ipnsResolver = new resolver(this.ipnsRouting)
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
@@ -95,7 +94,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFile(data, options = {}) {
-    let result = await itFirst(this.node.add([data], {pin: false}));
+    let result = await this.node.add([data], {pin: false});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
@@ -189,28 +188,24 @@ module.exports = class JsIpfsService {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
-    console.log('accountKey', accountKey)
     if(!options.lifetime) {
       options.lifetime = '1h';
     }
-    return this.node.name.publish(storageId, extend({ key: accountKey }, options)).then(response => response.name);
+    return this.node.name.publish(storageId, { key: accountKey, allowOffline: true, ...options }).then(response => response.name);
   }
 
   async resolveStaticId(staticStorageId) {
     //TODO: support more then 1 value
-    return itFirst(this.node.name.resolve(staticStorageId)).then(h => h.replace('/ipfs/', ''));
+    const name = '/ipns/' + staticStorageId;
+    return itFirst(this.node.name.resolve(name)).then(h => h.replace('/ipfs/', ''));
   }
 
   async resolveStaticIdEntry(staticStorageId) {
     const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
-    const { routingKey } = ipns.getIdKeys(peerId.toBytes());
-
-    const record = await this.node._ipns.routing.get(routingKey.toBuffer());
-    const ipnsEntry = ipns.unmarshal(record);
-
-    ipnsEntry.value = ipnsEntry.value.toString('utf8');
-
-    const valid = await this.node._ipns.resolver._validateRecord(peerId, ipnsEntry);
+    const { routingKey } = IPNS.getIdKeys(peerId.toBytes());
+    const record = await this.ipnsRouting.get(routingKey.uint8Array());
+    const ipnsEntry = IPNS.unmarshal(record);
+    const valid = await this.ipnsResolver._validateRecord(peerId, ipnsEntry);
     if(valid) {
       return ipnsEntry;
     } else {
@@ -276,18 +271,24 @@ module.exports = class JsIpfsService {
     return this.subscribeToEvent(topic, callback);
   }
 
-  publishEventByPeerId(peerId, topic, data) {
+  async publishEventByPrivateKey(privateKey, topic, data) {
     if(isObject(data)) {
       data = JSON.stringify(data);
     }
     if(isString(data)) {
-      data = new Buffer(data);
+      data = Buffer.from(data);
     }
-    return this.fSubPublishByPeerId(peerId, topic, data);
+    privateKey = privateKey.bytes || privateKey;
+    const message = await ipfsHelper.buildAndSignMessage(privateKey, [topic], data);
+    return this.node.pubsub.publishMessage(message);
   }
 
-  async publishEventByIpnsId(ipnsId, topic, data) {
-    return this.publishEventByPeerId(await this.getAccountPeerId(ipnsId), topic, data);
+  async publishEventByIpnsId(ipnsId, topic, data, pass) {
+    return this.publishEventByPrivateKey(await this.keyLookup(ipnsId, pass), topic, data);
+  }
+
+  async publishEventByPeerId(peerId, topic, data) {
+    return this.publishEventByPrivateKey(peerId._privKey, topic, data);
   }
 
   getIpnsPeers(ipnsId) {
@@ -308,14 +309,14 @@ module.exports = class JsIpfsService {
       data = JSON.stringify(data);
     }
     if(isString(data)) {
-      data = new Buffer(data);
+      data = Buffer.from(data);
     }
-    return this.fSubPublish(topic, data);
+    return this.node.pubsub.publish(topic, data);
   }
 
   subscribeToEvent(topic, callback) {
-    return this.pubSubSubscribe(topic, async (event) => {
-      console.log('pubSubSubscribe', event);
+    return this.node.pubsub.subscribe(topic, async (event) => {
+      console.log('subscribe', event);
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {
@@ -324,25 +325,22 @@ module.exports = class JsIpfsService {
     });
   }
 
-  async keyLookup(accountKey) {
+  async keyLookup(accountKey, pass) {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
-    return new Promise((resolve, reject) => {
-      ipfsHelper.keyLookup(this.node, accountKey, (err, res) => {
-        return err ? reject(err) : resolve(res);
-      })
-    });
+    return ipfsHelper.keyLookup(this.node, accountKey, pass);
   }
 
-  async getAccountPeerId(accountKey) {
-    const privateKey = await this.keyLookup(accountKey);
-    return ipfsHelper.createPeerIdFromPrivKey(privateKey.bytes);
-  }
-
-  async getAccountPublicKey(accountKey) {
+  async getAccountPeerId(accountKey, pass) {
     // TODO: find the more safety way
-    return (await this.keyLookup(accountKey)).public.marshal();
+    const privateKey = await this.keyLookup(accountKey, pass);
+    return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(privateKey.bytes));
+  }
+
+  async getAccountPublicKey(accountKey, pass) {
+    // TODO: find the more safety way
+    return (await this.keyLookup(accountKey, pass)).public.marshal();
   }
 
   async makeDir(path) {

@@ -17,19 +17,21 @@ const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 
 const crypto = require('libp2p-crypto');
-const errcode = require('err-code');
-const waterfall = require('async/waterfall');
+// const waterfall = require('async/waterfall');
 const {Message} = require('libp2p-pubsub/src/message');
 const {SignPrefix} = require('libp2p-pubsub/src/message/sign');
+const {normalizeOutRpcMessage} = require('libp2p-pubsub/src/utils');
 const {utils} = require('libp2p-pubsub');
-const multihash = require('multihashes');
+// const multihash = require('multihashes');
 const dagCBOR = require('ipld-dag-cbor')
+const PubsubInterface = require('libp2p-interfaces/src/pubsub')
 // const {fromB58String} = require('multihashes');
-const ID_MULTIHASH_CODE = multihash.names.id;
-const bs58 = require('bs58')
+// const ID_MULTIHASH_CODE = multihash.names.id;
+// const bs58 = require('bs58')
+const ensureArray = utils.ensureArray
+const {signMessage} = require('libp2p-pubsub/src/message/sign');
 
 const peerId = require('peer-id');
-const {promisify} = require('es6-promisify');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -63,26 +65,14 @@ const ipfsHelper = {
 
     return cid.toBaseEncodedString();
   },
-  async keyLookup(ipfsNode, kname, callback) {
-    if (kname === 'self') {
-      return callback(null, ipfsNode._peerInfo.id.privKey)
-    }
-    const pass = ipfsNode._options.pass
-
-    let privateKey;
-    try {
-      const pem = await ipfsNode.key.export(kname, pass);
-      privateKey = await crypto.keys.import(pem, pass);
-    } catch (e) {
-      console.error(e);
-      return callback(errcode(e, 'ERR_CANNOT_GET_KEY'));
-    }
-    return callback(null, privateKey);
+  async keyLookup(ipfsNode, kname, pass) {
+    const pem = await ipfsNode.key.export(kname, pass);
+    return crypto.keys.import(pem, pass);
   },
 
   createPeerIdFromPubKey: peerId.createFromPubKey.bind(peerId),
   createPeerIdFromPrivKey: peerId.createFromPrivKey.bind(peerId),
-  createPeerIdFromIpns: peerId.createFromB58String.bind(peerId),
+  createPeerIdFromIpns: peerId.createFromCID.bind(peerId),
 
   // extractPublicKeyFromId(peerId) {
   //   const decodedId = multihash.decode(peerId.id);
@@ -152,7 +142,19 @@ const ipfsHelper = {
 
   async getIpldHashFromObject(object) {
     return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
+  },
+
+  async buildAndSignMessage(privateKey, topics, data) {
+    const peerId = await ipfsHelper.createPeerIdFromPrivKey(privateKey);
+    const from = peerId.toB58String()
+    let msgObject = {
+      data,
+      from,
+      receivedFrom: from,
+      seqno: utils.randomSeqno(),
+      topicIDs: ensureArray(topics)
+    }
+    return signMessage(peerId, normalizeOutRpcMessage(msgObject));
   }
 };
-
 module.exports = ipfsHelper;
