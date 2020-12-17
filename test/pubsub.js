@@ -31,17 +31,13 @@ describe('pubsub', function () {
   };
 
   before(function (done) {
-    console.log('before');
     this.timeout(40 * 1000);
 
     (async () => {
-      console.log('nodeA');
       nodeA = new JsIpfsService(await createNode());
-      console.log('nodeB');
       nodeB = new JsIpfsService(await createNode());
 
       const idB = await nodeB.id();
-      console.log('idB.addresses[0]', idB.addresses[0])
       await nodeA.swarmConnect(idB.addresses[0]);
       done();
     })();
@@ -56,12 +52,9 @@ describe('pubsub', function () {
     const testTopic = 'test-topic';
 
     (async () => {
-      console.log('testTopic')
       const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
-      console.log('testAccountIpnsId')
       const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
-      console.log('testAccountPeerId')
-      
+
       let catchedEvents = 0;
       await nodeB.subscribeToEvent(testTopic, async (message) => {
         console.log('nodeB message', message);
