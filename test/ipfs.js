@@ -11,17 +11,13 @@
 /* eslint-env mocha */
 'use strict';
 
-const hat = require('hat');
 const chai = require('chai');
-const assert = require('assert');
 const dirtyChai = require('dirty-chai');
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const IPFS = require('ipfs');
 const JsIpfsService = require('../src/JsIpfsService');
 const ipfsHelper = require('../src/ipfsHelper');
-const waitFor = require('./utils/wait-for');
 const factory = require('./utils/ipfsFactory');
 
 describe('ipfs', function () {
