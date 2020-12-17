@@ -19,7 +19,6 @@ const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
-const libp2pGossip = require('libp2p-gossipsub');
 
 const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
@@ -33,11 +32,6 @@ module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
     const {libp2p, peerId} = this.node;
-    // console.log('this.node.libp2p', this.node.libp2p);
-    console.log('this.node.libp2p.publishMessage', this.node.libp2p.publishMessage);
-    console.log('this.node.pubsub.publishMessage', this.node.pubsub.publishMessage);
-    console.log('this.node.pubsub.emit', this.node.pubsub.emit);
-    this.gossip = new libp2pGossip(libp2p);
     const repo = {datastore: libp2p.datastore};
     this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
     this.ipnsResolver = new resolver(this.ipnsRouting)
@@ -49,7 +43,6 @@ module.exports = class JsIpfsService {
   wrapIpfsItem(ipfsItem) {
     if(!ipfsItem.hash) {
       ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
-      console.log('ipfsItem.hash', ipfsItem.hash);
     }
     return {
       id: ipfsItem.hash,
@@ -316,7 +309,6 @@ module.exports = class JsIpfsService {
 
   subscribeToEvent(topic, callback) {
     return this.node.pubsub.subscribe(topic, async (event) => {
-      console.log('subscribe', event);
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {

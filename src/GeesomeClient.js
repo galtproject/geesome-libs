@@ -884,8 +884,6 @@ class GeesomeClient {
       '/dns4/node1.preload.ipfs.io/tcp/443/wss/ipfs/Qmbut9Ywz9YEDrz8ySBSgWyJk41Uvm2QJPhwDJzJyGFsD6'
     ]);
 
-    console.log('preloadAddresses', preloadAddresses);
-
     return preloadAddresses;
   }
 
