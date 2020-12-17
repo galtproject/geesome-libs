@@ -21,7 +21,7 @@ const ipfsHelper = require('../src/ipfsHelper')
 const waitFor = require('./utils/wait-for');
 const factory = require('./utils/ipfsFactory');
 
-describe.skip('pubsub', function () {
+describe('pubsub', function () {
   let nodeA
   let nodeB
   const pass = 'ipfs-is-awesome-software';
@@ -93,6 +93,10 @@ describe.skip('pubsub', function () {
           callback(null, peers.length > 0);
         })
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      console.log('publishEventByPeerId');
 
       await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
     })();

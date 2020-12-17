@@ -9,10 +9,8 @@
 
 const ipfsHelper = require('./ipfsHelper');
 
-const extend = require('lodash/extend');
 const trim = require('lodash/trim');
 const isObject = require('lodash/isObject');
-const last = require('lodash/last');
 const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
@@ -23,8 +21,8 @@ const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
 const libp2pGossip = require('libp2p-gossipsub');
 
-const routingConfig = require('ipfs/src/core/ipns/routing/config')
-const resolver = require('ipfs/src/core/ipns/resolver')
+const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
+const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
 
 const IPNS = require('ipns');
@@ -35,13 +33,14 @@ module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
     const {libp2p, peerId} = this.node;
+    // console.log('this.node.libp2p', this.node.libp2p);
+    console.log('this.node.libp2p.publishMessage', this.node.libp2p.publishMessage);
+    console.log('this.node.pubsub.publishMessage', this.node.pubsub.publishMessage);
+    console.log('this.node.pubsub.emit', this.node.pubsub.emit);
     this.gossip = new libp2pGossip(libp2p);
     const repo = {datastore: libp2p.datastore};
     this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
-// const {keychain} = libp2p;
     this.ipnsResolver = new resolver(this.ipnsRouting)
-// this.ipns = new IPNS(ipnsRouting, repo.datastore, peerId, keychain, { pass: '' })
-
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
@@ -281,7 +280,7 @@ module.exports = class JsIpfsService {
     }
     privateKey = privateKey.bytes || privateKey;
     const message = await ipfsHelper.buildAndSignMessage(privateKey, [topic], data);
-    return this.gossip.emitMessage(message);
+    return this.node.pubsub.publishMessage(message);
   }
 
   async publishEventByIpnsId(ipnsId, topic, data, pass) {
@@ -317,6 +316,7 @@ module.exports = class JsIpfsService {
 
   subscribeToEvent(topic, callback) {
     return this.node.pubsub.subscribe(topic, async (event) => {
+      console.log('subscribe', event);
       ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {

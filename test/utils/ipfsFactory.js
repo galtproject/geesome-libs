@@ -1,4 +1,5 @@
 const Ctl = require('ipfsd-ctl');
+console.log('require(\'ipfs\')', Object.keys(require('ipfs')))
 module.exports = Ctl.createFactory(  {
     type: 'proc',
     test: true,
