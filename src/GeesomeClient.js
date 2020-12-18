@@ -36,7 +36,7 @@ const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
-  constructor(config) {
+  constructor(config = {}) {
     this.server = config.server;
     this.apiKey = config.apiKey;
     this.ipfsNode = config.ipfsNode;
@@ -906,28 +906,7 @@ class GeesomeClient {
   }
 
   async initRuntimeIpfsNode(options = {}, pass = null) {
-    const hat = require('hat');
-    const {createFactory} = require('ipfsd-ctl');
-
-    const factory = createFactory({
-      type: 'proc', // or 'js' to run in a separate process
-      // type: 'js',
-      ipfsHttpModule: require('ipfs-http-client'),
-      ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
-      ...options
-    })
-
-    const node = await factory.spawn({
-      ipfsOptions: {
-        pass: pass || hat(),
-        EXPERIMENTAL: {ipnsPubsub: true},
-        init: true,
-        start: true,
-      },
-      // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
-    });
-
-    return this.setIpfsNode(node.api);
+    return this.setIpfsNode(await createDaemonNode(options, pass));
   }
 }
 
@@ -995,10 +974,36 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
+async function createDaemonNode(options = {}, pass = null) {
+  const hat = require('hat');
+  const {createFactory} = require('ipfsd-ctl');
+
+  const factory = createFactory({
+    type: 'proc', // or 'js' to run in a separate process
+    // type: 'js',
+    ipfsHttpModule: require('ipfs-http-client'),
+    ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
+    ...options
+  })
+
+  const node = await factory.spawn({
+    ipfsOptions: {
+      pass: pass || hat(),
+      EXPERIMENTAL: {ipnsPubsub: true},
+      init: true,
+      start: true,
+    },
+    // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
+  });
+
+  return node.api;
+}
+
 
 module.exports = {
   GeesomeClient,
   AbstractClientStorage,
   SimpleClientStorage,
-  BrowserLocalClientStorage
+  BrowserLocalClientStorage,
+  createDaemonNode
 };
