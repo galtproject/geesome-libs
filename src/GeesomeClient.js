@@ -905,8 +905,8 @@ class GeesomeClient {
     }));
   }
 
-  async initRuntimeIpfsNode(options = {}, pass = null) {
-    return this.setIpfsNode(await createDaemonNode(options, pass));
+  async initRuntimeIpfsNode(options = {}, ipfsOptions = {}) {
+    return this.setIpfsNode(await createDaemonNode(options, ipfsOptions));
   }
 }
 
@@ -974,7 +974,7 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
-async function createDaemonNode(options = {}, pass = null) {
+async function createDaemonNode(options = {}, ipfsOptions = {}) {
   const hat = require('hat');
   const {createFactory} = require('ipfsd-ctl');
 
@@ -988,10 +988,10 @@ async function createDaemonNode(options = {}, pass = null) {
 
   const node = await factory.spawn({
     ipfsOptions: {
-      pass: pass || hat(),
-      EXPERIMENTAL: {ipnsPubsub: true},
+      pass: hat(),
       init: true,
       start: true,
+      ...ipfsOptions
     },
     // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
   });
