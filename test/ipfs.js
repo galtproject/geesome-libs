@@ -18,25 +18,23 @@ chai.use(dirtyChai);
 
 const JsIpfsService = require('../src/JsIpfsService');
 const ipfsHelper = require('../src/ipfsHelper');
-const factory = require('./utils/ipfsFactory');
 
 describe('ipfs', function () {
   let node;
 
-  const createNode = () => {
-    return factory.spawn().then(node => node.api)
-  };
-
-  before(function (done) {
+  beforeEach(function (done) {
     this.timeout(40 * 1000);
 
     (async () => {
-      node = new JsIpfsService(await createNode());
+      node = new JsIpfsService(await ipfsHelper.createDaemonNode({
+        test: true,
+        disposable: true,
+      }));
       done();
     })();
   });
 
-  after((done) => {factory.clean().then(() => done())})
+  afterEach((done) => {node.stop().then(() => done())})
 
   it('should save file with correct ipfs hash', function (done) {
     this.timeout(80 * 1000);
