@@ -1,4 +1,4 @@
-module.exports = {
+const Web3Manager = {
     currentAccountAddress: null,
     accountAddressInterval: null,
     onAccountAddressChangeCallbacks: [],
@@ -85,4 +85,6 @@ module.exports = {
             }
         }, 1000);
     }
-}
+};
+
+module.exports = Web3Manager;
