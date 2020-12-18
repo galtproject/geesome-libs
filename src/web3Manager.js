@@ -1,3 +1,6 @@
+const Ethereum = require('./ethereum');
+const EthCrypto = require('eth-crypto');
+
 const Web3Manager = {
     currentAccountAddress: null,
     accountAddressInterval: null,
@@ -29,7 +32,7 @@ const Web3Manager = {
                     return console.error(response.error.message)
                 }
                 // const recovered = Web3Manager.clientWeb3.eth.accounts.recover(EthData.stringToHex(message), response.result);
-                const recovered = sigUtil.recoverTypedSignatureLegacy({data: messageParams, sig: response.result})
+                const recovered = EthCrypto.recover(response.result, Ethereum.typedSignatureHash(messageParams));
                 if (recovered.toLowerCase() === address.toLowerCase()) {
                     resolve(response.result);
                 } else {
