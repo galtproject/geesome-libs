@@ -1,18 +1,18 @@
-module.exports = class Web3Manager {
-    static currentAccountAddress;
-    static accountAddressInterval;
-    static onAccountAddressChangeCallbacks = [];
+module.exports = {
+    currentAccountAddress: null,
+    accountAddressInterval: null,
+    onAccountAddressChangeCallbacks: [],
 
-    static onAccountAddressChange(callback) {
+    onAccountAddressChange(callback) {
         this.onAccountAddressChangeCallbacks.push(callback);
-    }
+    },
 
-    static triggerOnAccountAddressChange(newAccountAddress) {
+    triggerOnAccountAddressChange(newAccountAddress) {
         this.currentAccountAddress = newAccountAddress;
         this.onAccountAddressChangeCallbacks.forEach((callback) => callback(newAccountAddress))
-    }
+    },
 
-    static signMessage(message, address, fieldName, provider = null) {
+    signMessage(message, address, fieldName, provider = null) {
         const messageParams = [{type: 'string', name: fieldName, value: message}];
 
         if (!provider) {
@@ -37,13 +37,13 @@ module.exports = class Web3Manager {
                 }
             })
         })
-    }
+    },
 
-    static getClientProvider() {
+    getClientProvider() {
         return window['ethereum'] ? window['ethereum'] : (window['web3'] || {}).currentProvider;
-    }
+    },
 
-    static async getClientProviderAccounts(provider = null) {
+    async getClientProviderAccounts(provider = null) {
         let accounts;
         if (provider) {
             accounts = await provider.eth.getAccounts();
@@ -62,9 +62,9 @@ module.exports = class Web3Manager {
             accounts = await window['web3'].eth.getAccounts();
         }
         return accounts;
-    }
+    },
 
-    static async initClientWeb3(provider = null) {
+    async initClientWeb3(provider = null) {
         if (this.accountAddressInterval) {
             clearInterval(this.accountAddressInterval);
         }
