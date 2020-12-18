@@ -905,42 +905,29 @@ class GeesomeClient {
     }));
   }
 
-  async initRuntimeIpfsNode() {
+  async initRuntimeIpfsNode(options = {}, pass = null) {
     const hat = require('hat');
     const {createFactory} = require('ipfsd-ctl');
-    const IPFS = require('ipfs');
-    const df = createFactory({type: 'proc'});
 
-    const createNode = async () => {
-      return df.spawn({
-        ipfsModule: IPFS,
-        ipfsOptions: {
-          pass: hat(),
-          libp2p: {
-            dialer: {
-              dialTimeout: 60e3 // increase timeout because travis is slow
-            }
-          }
-        },
-        args: [`--pass ${hat()}`, '--enable-namesys-pubsub'],
-        type: 'proc',
+    const factory = createFactory({
+      type: 'proc', // or 'js' to run in a separate process
+      // type: 'js',
+      ipfsHttpModule: require('ipfs-http-client'),
+      ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
+      ...options
+    })
 
-        config: {
-          Bootstrap: [],
-          Discovery: {
-            MDNS: {
-              Enabled: false
-            },
-            webRTCStar: {
-              Enabled: false
-            }
-          }
-        },
-        preload: {enabled: false, addresses: await this.getPreloadAddresses()}
-      }).then(node => node.api)
-    };
+    const node = await factory.spawn({
+      ipfsOptions: {
+        pass: pass || hat(),
+        EXPERIMENTAL: {ipnsPubsub: true},
+        init: true,
+        start: true,
+      },
+      // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
+    });
 
-    return this.setIpfsNode(await createNode());
+    return this.setIpfsNode(node.api);
   }
 }
 
