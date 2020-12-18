@@ -16,7 +16,7 @@ const dirtyChai = require('dirty-chai');
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const Ethereum = require('../src/ethreum');
+const Ethereum = require('../src/ethereum');
 
 describe('ethereum', function () {
     it('should handle signed event and validate signature', function (done) {
