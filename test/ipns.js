@@ -20,7 +20,7 @@ chai.use(dirtyChai);
 const JsIpfsService = require('../src/JsIpfsService');
 const {getIpnsUpdatesTopic} = require('../src/name');
 const waitFor = require('./utils/wait-for');
-const factory = require('./utils/ipfsFactory');
+const ipfsHelper = require('../src/ipfsHelper');
 
 describe('ipns', function () {
   let nodeA;
@@ -28,10 +28,13 @@ describe('ipns', function () {
   const pass = 'ipfs-is-awesome-software';
 
   const createNode = () => {
-    return factory.spawn({ ipfsOptions: { pass, EXPERIMENTAL: {ipnsPubsub: true} } }).then(node => node.api)
+    return ipfsHelper.createDaemonNode({
+      test: true,
+      disposable: true,
+    }, { pass, EXPERIMENTAL: {ipnsPubsub: true} });
   };
 
-  before(function (done) {
+  beforeEach(function (done) {
     this.timeout(40 * 1000);
 
     (async () => {
@@ -48,7 +51,7 @@ describe('ipns', function () {
     })();
   });
 
-  after((done) => {factory.clean().then(() => done())})
+  afterEach((done) => {Promise.all([nodeA.stop(), nodeB.stop()]).then(() => done())})
 
   it('should handle signed event and validate signature', function (done) {
     this.timeout(80 * 1000);

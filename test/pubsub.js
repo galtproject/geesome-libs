@@ -19,15 +19,14 @@ chai.use(dirtyChai)
 const JsIpfsService = require('../src/JsIpfsService')
 const ipfsHelper = require('../src/ipfsHelper')
 const waitFor = require('./utils/wait-for');
-const factory = require('./utils/ipfsFactory');
 
 describe('pubsub', function () {
   let nodeA
   let nodeB
   const pass = 'ipfs-is-awesome-software';
 
-  const createNode = () => {
-    return factory.spawn({ipfsOptions: { pass }}).then(node => node.api)
+  const createNode = (ipfsOptions) => {
+    return ipfsHelper.createDaemonNode({}, { pass, ...ipfsOptions });
   };
 
   before(function (done) {
@@ -35,7 +34,7 @@ describe('pubsub', function () {
 
     (async () => {
       nodeA = new JsIpfsService(await createNode());
-      nodeB = new JsIpfsService(await createNode());
+      nodeB = new JsIpfsService(await createNode({config: {Addresses: {Swarm: ["/ip4/0.0.0.0/tcp/4004", "/ip4/127.0.0.1/tcp/4005/ws"]}}}));
 
       const idB = await nodeB.id();
       await nodeA.swarmConnect(idB.addresses[0]);
@@ -43,7 +42,7 @@ describe('pubsub', function () {
     })();
   });
 
-  after((done) => {factory.clean().then(() => done())})
+  after((done) => {Promise.all([nodeA.stop(), nodeB.stop()]).then(() => done())})
 
   it('should handle signed event and validate signature', function (done) {
     this.timeout(80 * 1000)

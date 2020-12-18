@@ -906,7 +906,7 @@ class GeesomeClient {
   }
 
   async initRuntimeIpfsNode(options = {}, ipfsOptions = {}) {
-    return this.setIpfsNode(await createDaemonNode(options, ipfsOptions));
+    return this.setIpfsNode(await ipfsHelper.createDaemonNode(options, ipfsOptions));
   }
 }
 
@@ -974,36 +974,9 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
-async function createDaemonNode(options = {}, ipfsOptions = {}) {
-  const hat = require('hat');
-  const {createFactory} = require('ipfsd-ctl');
-
-  const factory = createFactory({
-    type: 'proc', // or 'js' to run in a separate process
-    // type: 'js',
-    ipfsHttpModule: require('ipfs-http-client'),
-    ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
-    ...options
-  })
-
-  const node = await factory.spawn({
-    ipfsOptions: {
-      pass: hat(),
-      init: true,
-      start: true,
-      ...ipfsOptions
-    },
-    // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
-  });
-
-  return node.api;
-}
-
-
 module.exports = {
   GeesomeClient,
   AbstractClientStorage,
   SimpleClientStorage,
-  BrowserLocalClientStorage,
-  createDaemonNode
+  BrowserLocalClientStorage
 };

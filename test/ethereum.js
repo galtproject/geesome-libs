@@ -18,7 +18,7 @@ chai.use(dirtyChai);
 
 const Ethereum = require('../src/ethreum');
 
-describe.only('ethereum', function () {
+describe('ethereum', function () {
     it('should handle signed event and validate signature', function (done) {
         expect(
             Ethereum.getAccountAddressBySignature(

@@ -18,14 +18,14 @@ chai.use(dirtyChai);
 
 const {GeesomeClient} = require('../src/GeesomeClient');
 const pgpHelper = require('../src/pgpHelper');
-const factory = require('./utils/ipfsFactory');
+const ipfsHelper = require('../src/ipfsHelper');
 
 describe('pgp', function () {
   let geesomeClient;
   const pass = 'ipfs-is-awesome-software';
 
   const createNode = () => {
-    return factory.spawn({
+    return ipfsHelper.createDaemonNode({
       config: {
         Bootstrap: [],
         Discovery: {
@@ -37,9 +37,8 @@ describe('pgp', function () {
           }
         }
       },
-      ipfsOptions: { pass },
-      preload: {enabled: false}
-    }).then(node => node.api)
+      preload: {enabled: false},
+    }, { pass });
   };
 
   before(function (done) {
@@ -55,7 +54,7 @@ describe('pgp', function () {
     })();
   });
 
-  after((done) => {factory.clean().then(() => done())});
+  after((done) => {geesomeClient.ipfsNode.stop().then(() => done())});
 
   it('should handle signed event and validate signature', function (done) {
 
