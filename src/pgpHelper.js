@@ -12,6 +12,9 @@ const forge = require('node-forge');
 const BN = require('bn.js');
 const extend = require('lodash/extend');
 
+// https://github.com/openpgpjs/openpgpjs/issues/1126
+openpgp.config.allow_insecure_decryption_with_signing_keys = true;
+
 const pgpHelper = {
   async encrypt(privateKeys, publicKeys, text) {
     const encryptOptions = {
