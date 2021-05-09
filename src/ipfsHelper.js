@@ -11,27 +11,17 @@ const CID = require('cids');
 
 const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
-const pick = require('lodash/pick');
 
 const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
+const uint8ArrayConcat = require('uint8arrays/concat')
 
 const crypto = require('libp2p-crypto');
-// const waterfall = require('async/waterfall');
-const {Message} = require('libp2p-pubsub/src/message');
-const {SignPrefix} = require('libp2p-pubsub/src/message/sign');
-const {normalizeOutRpcMessage} = require('libp2p-pubsub/src/utils');
-const {utils} = require('libp2p-pubsub');
-// const multihash = require('multihashes');
+const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
+const {SignPrefix, signMessage} = require('libp2p-interfaces/src/pubsub/message/sign');
+const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
 const dagCBOR = require('ipld-dag-cbor')
-const PubsubInterface = require('libp2p-interfaces/src/pubsub')
-// const {fromB58String} = require('multihashes');
-// const ID_MULTIHASH_CODE = multihash.names.id;
-// const bs58 = require('bs58')
-const ensureArray = utils.ensureArray
-const {signMessage} = require('libp2p-pubsub/src/message/sign');
-
-const peerId = require('peer-id');
+const PeerId = require('peer-id');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -70,9 +60,9 @@ const ipfsHelper = {
     return crypto.keys.import(pem, pass);
   },
 
-  createPeerIdFromPubKey: peerId.createFromPubKey.bind(peerId),
-  createPeerIdFromPrivKey: peerId.createFromPrivKey.bind(peerId),
-  createPeerIdFromIpns: peerId.createFromCID.bind(peerId),
+  createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
+  createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
+  createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId),
 
   // extractPublicKeyFromId(peerId) {
   //   const decodedId = multihash.decode(peerId.id);
@@ -116,21 +106,27 @@ const ipfsHelper = {
   },
 
   checkPubSubSignature(pubKey, message) {
-    const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
-    
-    // const msg = utils.normalizeOutRpcMessage(checkMessage);
+    // const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
 
-    const bytes = Buffer.concat([
+    // Get message sans the signature
+    const bytes = uint8ArrayConcat([
       SignPrefix,
-      Message.encode(utils.normalizeOutRpcMessage(checkMessage))
-    ]);
+      RPC.Message.encode({
+        ...message,
+        // @ts-ignore message.from needs to exist
+        from: PeerId.createFromCID(message.from).toBytes(),
+        signature: undefined,
+        key: undefined
+      }).finish()
+    ])
 
-    return pubKey.verify(bytes, message.signature);
+    // verify the base message
+    return pubKey.verify(bytes, message.signature)
   },
   
   async getIpfsHashFromString(string) {
-    const Unixfs = require('ipfs-unixfs');
-    const unixFsFile = new Unixfs('file', Buffer.from(string));
+    const { UnixFS } = require('ipfs-unixfs');
+    const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
     const buffer = unixFsFile.marshal();
 
     const node = new DAGNode(buffer);
@@ -151,7 +147,7 @@ const ipfsHelper = {
       data,
       from,
       receivedFrom: from,
-      seqno: utils.randomSeqno(),
+      seqno: randomSeqno(),
       topicIDs: ensureArray(topics)
     }
     return signMessage(peerId, normalizeOutRpcMessage(msgObject));
