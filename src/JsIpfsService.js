@@ -8,6 +8,7 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
+const common = require('./common');
 
 const trim = require('lodash/trim');
 const isObject = require('lodash/isObject');
@@ -151,6 +152,8 @@ module.exports = class JsIpfsService {
 
   async saveObject(objectData, options = {}) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
+
+    objectData = common.sortObject(objectData);
     const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
 

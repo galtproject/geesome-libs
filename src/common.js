@@ -9,7 +9,10 @@
 
 const isNaN = require('lodash/isNaN');
 const isString = require('lodash/isString');
+const isObject = require('lodash/isObject');
+const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
+const stableSort = require('stable');
 
 module.exports.isNumber = (str) => {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {
@@ -45,10 +48,21 @@ module.exports.moveDate = (value, unit) => {
   return module.exports.moveFromDate(new Date(), value, unit);
 };
 
-
 module.exports.extractHostname = (url) => {
   return (new URL(url)).hostname;
 };
+
+function sortObject (objectData) {
+  return Object.fromEntries(stableSort(Object.entries(objectData)).map((arr) => {
+    if(isArray(arr[1]) && isObject(arr[1][0])) {
+      arr[1] = arr[1].map(obj => sortObject(obj))
+    } else if(isObject(arr[1])) {
+      arr[1] = sortObject(arr[1]);
+    }
+    return arr;
+  }))
+}
+module.exports.sortObject = sortObject;
 
 module.exports.isIpAddress = (str) => {
   return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
