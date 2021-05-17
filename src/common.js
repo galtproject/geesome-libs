@@ -56,7 +56,7 @@ function sortObject (objectData) {
   return Object.fromEntries(stableSort(Object.entries(objectData)).map((arr) => {
     if(isArray(arr[1]) && isObject(arr[1][0])) {
       arr[1] = arr[1].map(obj => sortObject(obj))
-    } else if(isObject(arr[1])) {
+    } else if(isObject(arr[1]) && !isArray(arr[1])) {
       arr[1] = sortObject(arr[1]);
     }
     return arr;
