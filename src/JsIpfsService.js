@@ -150,6 +150,10 @@ module.exports = class JsIpfsService {
     return itConcat(this.node.cat(filePath));
   }
 
+  getFileDataText(filePath) {
+    return this.getFileData(filePath).then(response => response.toString());
+  }
+
   async saveObject(objectData, options = {}) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
 
