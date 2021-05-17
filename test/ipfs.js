@@ -58,6 +58,9 @@ describe('ipfs', function () {
       const savedIpldHash = await ipfsHelper.getIpldHashFromObject(content);
       expect(savedIpld).to.equals('bafyreiblaotetvwobe7cu2uqvnddr6ew2q3cu75qsoweulzku2egca4dxq');
       expect(savedIpld).to.equals(savedIpldHash);
+
+      const gotObject = await node.getObject(savedIpld);
+      expect(gotObject.foo).to.equals('bar');
       done();
     })();
   });

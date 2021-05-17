@@ -19,6 +19,7 @@ const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
+const CID = require('cids');
 
 const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
@@ -161,8 +162,8 @@ module.exports = class JsIpfsService {
   }
 
   async getObject(storageId) {
-    if (ipfsHelper.isCid(storageId)) {
-      storageId = ipfsHelper.cidToHash(storageId);
+    if (!ipfsHelper.isCid(storageId)) {
+      storageId = new CID(storageId)
     }
     return this.node.dag.get(storageId).then(response => response.value);
   }
