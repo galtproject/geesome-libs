@@ -53,6 +53,12 @@ module.exports.extractHostname = (url) => {
 };
 
 function sortObject (objectData) {
+  if(isArray(objectData)) {
+    return objectData.map(i => sortObject(i));
+  }
+  if(!isObject(objectData)) {
+    return objectData;
+  }
   return Object.fromEntries(stableSort(Object.entries(objectData)).map((arr) => {
     if(isArray(arr[1]) && isObject(arr[1][0])) {
       arr[1] = arr[1].map(obj => sortObject(obj))
