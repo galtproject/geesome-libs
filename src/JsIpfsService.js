@@ -8,6 +8,7 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
+const common = require('./common');
 
 const trim = require('lodash/trim');
 const isObject = require('lodash/isObject');
@@ -19,6 +20,7 @@ const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
+const CID = require('cids');
 
 const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
@@ -148,8 +150,14 @@ module.exports = class JsIpfsService {
     return itConcat(this.node.cat(filePath));
   }
 
+  getFileDataText(filePath) {
+    return this.getFileData(filePath).then(response => response.toString());
+  }
+
   async saveObject(objectData, options = {}) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
+
+    objectData = common.sortObject(objectData);
     const savedObj = await this.node.dag.put(objectData, {format: 'dag-cbor', hashAlg: 'sha2-256'});
     const ipldHash = ipfsHelper.cidToHash(savedObj);
 
@@ -161,14 +169,17 @@ module.exports = class JsIpfsService {
   }
 
   async getObject(storageId) {
-    if (ipfsHelper.isCid(storageId)) {
-      storageId = ipfsHelper.cidToHash(storageId);
+    if (!ipfsHelper.isCid(storageId)) {
+      storageId = new CID(storageId)
     }
     return this.node.dag.get(storageId).then(response => response.value);
   }
 
   async getObjectProp(storageId, propName) {
-    return this.node.dag.get(storageId + '/' + propName).then(response => response.value);
+    if (!ipfsHelper.isCid(storageId)) {
+      storageId = new CID(storageId)
+    }
+    return this.node.dag.get(storageId, {path: propName}).then(response => response.value);
   }
 
   getObjectRef(storageId) {
