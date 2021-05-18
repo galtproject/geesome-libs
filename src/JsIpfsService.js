@@ -176,7 +176,10 @@ module.exports = class JsIpfsService {
   }
 
   async getObjectProp(storageId, propName) {
-    return this.node.dag.get(storageId + '/' + propName).then(response => response.value);
+    if (!ipfsHelper.isCid(storageId)) {
+      storageId = new CID(storageId)
+    }
+    return this.node.dag.get(storageId, {path: propName}).then(response => response.value);
   }
 
   getObjectRef(storageId) {
