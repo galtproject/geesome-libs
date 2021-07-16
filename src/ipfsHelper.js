@@ -76,6 +76,10 @@ const ipfsHelper = {
     return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(base64, 'base64'));
   },
 
+  async base64ToPublicKey(base64) {
+    return Buffer.from(base64, 'base64');
+  },
+
   createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
