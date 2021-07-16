@@ -70,7 +70,13 @@ describe('ipfs', function () {
 
     (async () => {
       const peerId = await ipfsHelper.createPeerId();
+
       expect(ipfsHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
+      expect(ipfsHelper.peerIdToPrivateBase64(peerId).length).to.equals(1596);
+
+      expect(ipfsHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
+      expect(ipfsHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
+
       done();
     })();
   });
