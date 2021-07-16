@@ -16,6 +16,7 @@ const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
 const isString = require('lodash/isString');
+const isBuffer = require('lodash/isBuffer');
 const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
@@ -270,8 +271,8 @@ module.exports = class JsIpfsService {
     return this.node.files.rm('/ipfs/' + hash, options);
   }
 
-  subscribeToIpnsUpdates(ipnsId, callback) {
-    const topic = getIpnsUpdatesTopic(ipnsId);
+  subscribeToStaticIdUpdates(staticId, callback) {
+    const topic = getIpnsUpdatesTopic(staticId);
     return this.subscribeToEvent(topic, callback);
   }
 
@@ -287,16 +288,16 @@ module.exports = class JsIpfsService {
     return this.node.pubsub.publishMessage(message);
   }
 
-  async publishEventByIpnsId(ipnsId, topic, data, pass) {
-    return this.publishEventByPrivateKey(await this.keyLookup(ipnsId, pass), topic, data);
+  async publishEventByStaticId(staticId, topic, data, pass) {
+    return this.publishEventByPrivateKey(await this.keyLookup(staticId, pass), topic, data);
   }
 
   async publishEventByPeerId(peerId, topic, data) {
     return this.publishEventByPrivateKey(peerId._privKey, topic, data);
   }
 
-  getIpnsPeers(ipnsId) {
-    const topic = getIpnsUpdatesTopic(ipnsId);
+  getStaticIdPeers(staticId) {
+    const topic = getIpnsUpdatesTopic(staticId);
     return this.getPeers(topic);
   }
 
@@ -343,7 +344,8 @@ module.exports = class JsIpfsService {
 
   async getAccountPublicKey(accountKey, pass) {
     // TODO: find the more safety way
-    return (await this.keyLookup(accountKey, pass)).public.marshal();
+    const key = (await this.keyLookup(accountKey, pass)).public.marshal();
+    return isBuffer(key) ? key : Buffer.from(key);
   }
 
   async makeDir(path) {

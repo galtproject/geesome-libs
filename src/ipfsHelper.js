@@ -60,6 +60,27 @@ const ipfsHelper = {
     return crypto.keys.import(pem, pass);
   },
 
+  peerIdToPrivateBase64(peerId) {
+    return peerId.marshalPrivKey().toString('base64');
+  },
+
+  peerIdToPublicBase64(peerId) {
+    return peerId.marshalPubKey().toString('base64');
+  },
+
+  peerIdToPublicBase58(peerId) {
+    return peerId.toB58String();
+  },
+
+  async createPeerIdFromPrivateBase64(base64) {
+    return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(base64, 'base64'));
+  },
+
+  async base64ToPublicKey(base64) {
+    return Buffer.from(base64, 'base64');
+  },
+
+  createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
   createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId),
