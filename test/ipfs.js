@@ -64,4 +64,14 @@ describe('ipfs', function () {
       done();
     })();
   });
+
+  it('should save object with correct ipld hash', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const peerId = await ipfsHelper.createPeerId();
+      expect(ipfsHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
+      done();
+    })();
+  });
 });
