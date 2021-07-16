@@ -60,6 +60,7 @@ const ipfsHelper = {
     return crypto.keys.import(pem, pass);
   },
 
+  createPrivateKey: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
   createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId),
