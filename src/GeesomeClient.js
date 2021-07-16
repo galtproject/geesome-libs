@@ -670,8 +670,8 @@ class GeesomeClient {
     return this.ipfsService.getPeers(storageId);
   }
 
-  getIpnsPeers(storageId) {
-    return this.ipfsService.getIpnsPeers(storageId);
+  getStaticIdPeers(storageId) {
+    return this.ipfsService.getStaticIdPeers(storageId);
   }
 
   getCanCreatePost(groupId) {

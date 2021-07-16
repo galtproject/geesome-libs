@@ -63,7 +63,7 @@ describe('ipns', function () {
       const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
       const testAccountKey = await nodeA.keyLookup(testAccountIpnsId, pass);
       
-      await nodeB.subscribeToIpnsUpdates(testAccountIpnsId, async (message) => {
+      await nodeB.subscribeToStaticIdUpdates(testAccountIpnsId, async (message) => {
         assert.equal(message.data.valueStr, '/ipfs/' + testHash);
         assert.equal(message.from, await nodeA.getAccountIdByName('self'));
         assert.notEqual(message.from, testAccountIpnsId);
