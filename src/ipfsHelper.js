@@ -68,6 +68,10 @@ const ipfsHelper = {
     return peerId.marshalPubKey().toString('base64');
   },
 
+  peerIdToPublicBase58(peerId) {
+    return peerId.toB58String();
+  },
+
   createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
