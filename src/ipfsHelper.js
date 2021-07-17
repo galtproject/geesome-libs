@@ -146,7 +146,7 @@ const ipfsHelper = {
   },
   
   async getIpfsHashFromString(string) {
-    const { UnixFS } = require('ipfs-unixfs');
+    const UnixFS = require('ipfs-unixfs');
     const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
     const buffer = unixFsFile.marshal();
 

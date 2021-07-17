@@ -23,8 +23,8 @@ const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
 const CID = require('cids');
 
-const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
-const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
+// const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
+// const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
 
 const IPNS = require('ipns');
@@ -36,8 +36,8 @@ module.exports = class JsIpfsService {
     this.node = node;
     const {libp2p, peerId} = this.node;
     const repo = {datastore: libp2p.datastore};
-    this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
-    this.ipnsResolver = new resolver(this.ipnsRouting)
+    // this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
+    // this.ipnsResolver = new resolver(this.ipnsRouting)
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
