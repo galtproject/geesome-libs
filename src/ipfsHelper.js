@@ -60,6 +60,14 @@ const ipfsHelper = {
     return crypto.keys.import(pem, pass);
   },
 
+  async encryptPrivateBase64WithPass(privateBase64, pass) {
+    return (await this.createPeerIdFromPrivateBase64(privateBase64)).privKey.export(pass)
+  },
+
+  async decryptPrivateBase64WithPass(encryptedPrivateKey, pass) {
+    return Buffer.from((await crypto.keys.import(encryptedPrivateKey, pass)).bytes).toString('base64');
+  },
+
   peerIdToPrivateBase64(peerId) {
     return peerId.marshalPrivKey().toString('base64');
   },

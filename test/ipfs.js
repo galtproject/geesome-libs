@@ -18,6 +18,7 @@ chai.use(dirtyChai);
 
 const JsIpfsService = require('../src/JsIpfsService');
 const ipfsHelper = require('../src/ipfsHelper');
+const common = require('../src/common');
 
 describe('ipfs', function () {
   let node;
@@ -79,6 +80,24 @@ describe('ipfs', function () {
 
       expect(ipfsHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(ipfsHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
+
+      done();
+    })();
+  });
+
+  it('encrypt and decrypt base64 private key', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const pass = await common.random('words');
+      const peerId = await ipfsHelper.createPeerId();
+      const privateKey = ipfsHelper.peerIdToPrivateBase64(peerId);
+
+      const encryptedPrivateKey = await ipfsHelper.encryptPrivateBase64WithPass(privateKey, pass);
+      expect(encryptedPrivateKey.indexOf('-----BEGIN ENCRYPTED PRIVATE KEY-----')).to.equals(0);
+
+      const decryptedPrivateKey = await ipfsHelper.decryptPrivateBase64WithPass(encryptedPrivateKey, pass);
+      expect(decryptedPrivateKey).to.equals(privateKey);
 
       done();
     })();
