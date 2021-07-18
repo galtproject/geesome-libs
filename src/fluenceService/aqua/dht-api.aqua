@@ -117,14 +117,21 @@ func sendToSubscribers(relay: PeerId, topic: string, message: string):
 
 data Event:
     value: string
+    key: string
     signature: string
 
 service ClientAPI("api"):
     receive_event(topic: string, e: Event)
     get_data(key: string) -> string
 
-func fanout_event(relay: string, topic: string, event: Event):
+func fanout_event(relay: string, topic: string, event: Event, call: string -> ()):
+    call("start")
     subs <- findSubscribers(relay, topic)
+    call("subs")
     for r <- subs par:
+        call(r.peer_id)
+        call(r.relay_id!)
         on r.peer_id via r.relay_id!:
+            call("receive_event")
+            call(topic)
             co ClientAPI.receive_event(topic, event)

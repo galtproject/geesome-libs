@@ -1,6 +1,9 @@
 const dhtApi = require('./dht-api');
 const startsWith = require('lodash/startsWith');
-import { subscribeToEvent } from '@fluencelabs/fluence';
+const isObject = require('lodash/isObject');
+const isString = require('lodash/isString');
+const ipfsHelper = require('../ipfsHelper');
+const { subscribeToEvent } = require('@fluencelabs/fluence');
 
 module.exports = class FluenceService {
     constructor(accStorage, client) {
@@ -81,25 +84,39 @@ module.exports = class FluenceService {
         return null;
     }
 
+    async publishEventByPeerId(peerId, topic, data) {
+        return this.publishEventByPrivateKey(peerId._privKey, topic, data);
+    }
+
     async publishEvent(topic, data) {
-        return dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, {
-            value: data,
-            signature: 'test'
-        });
+        await this.accStorage.getOrCreateAccountStaticId('self');
+        const selfPeerId = await this.accStorage.getAccountPeerId('self');
+        return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
-            let topic = args[0];
-            let event = args[1];
-            if (ipnsId === topic) {
-                callback(event);
-            }
+
+    }
+    async publishEventByPrivateKey(privateKey, topic, data) {
+        if(isObject(data)) {
+            data = JSON.stringify(data);
+        }
+        if(isString(data)) {
+            data = Buffer.from(data);
+        }
+        privateKey = privateKey.bytes || privateKey;
+        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, [topic], data);
+        console.log('fanout_event', this.client.relayPeerId, topic, event);
+        return dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (log) => {
+            console.log(log);
         });
     }
 
-    subscribeToEvent(_topic, _callback) {
+    async subscribeToEvent(_topic, _callback) {
+        console.log('initTopicAndSubscribe', this.client.relayPeerId, _topic, this.client.relayPeerId);
+        await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, _topic, _topic, this.client.relayPeerId, null, () => {});
         subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
+            console.log('subscribeToEvent', args, _tetraplets);
             let topic = args[0];
             let event = args[1];
             if (topic === _topic) {
@@ -117,6 +134,10 @@ module.exports = class FluenceService {
     }
 
     async getPeers(topic) {
-        return [null];
+        if (!topic) {
+            return [];
+        }
+        console.log('findSubscribers', this.client.relayPeerId, topic);
+        return dhtApi.findSubscribers(this.client, this.client.relayPeerId, topic);
     }
 }

@@ -15,13 +15,15 @@ const isString = require('lodash/isString');
 const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 const uint8ArrayConcat = require('uint8arrays/concat')
+const uint8ArrayFromString = require('uint8arrays/from-string')
 
 const crypto = require('libp2p-crypto');
 const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
-const {SignPrefix, signMessage} = require('libp2p-interfaces/src/pubsub/message/sign');
+const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
 const dagCBOR = require('ipld-dag-cbor')
 const PeerId = require('peer-id');
+const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -139,7 +141,7 @@ const ipfsHelper = {
 
     // Get message sans the signature
     const bytes = uint8ArrayConcat([
-      SignPrefix,
+      Libp2pSignPrefix,
       RPC.Message.encode({
         ...message,
         // @ts-ignore message.from needs to exist
@@ -169,9 +171,9 @@ const ipfsHelper = {
     return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
   },
 
-  async buildAndSignMessage(privateKey, topics, data) {
+  async buildAndSignPubSubMessage(privateKey, topics, data) {
     const peerId = await ipfsHelper.createPeerIdFromPrivKey(privateKey);
-    const from = peerId.toB58String()
+    const from = peerId.toB58String();
     let msgObject = {
       data,
       from,
@@ -180,6 +182,23 @@ const ipfsHelper = {
       topicIDs: ensureArray(topics)
     }
     return signMessage(peerId, normalizeOutRpcMessage(msgObject));
+  },
+
+  async buildAndSignFluenceMessage(privateKeyBase64, data) {
+    const peerId = await ipfsHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
+    const from = peerId.toB58String();
+    const message = {
+      data,
+      from,
+      seqno: randomSeqno()
+    };
+    const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
+    const signature = await peerId.privKey.sign(bytes);
+    return {
+      value: data,
+      key: ipfsHelper.peerIdToPublicBase64(peerId),
+      signature: signature.toString('base64'),
+    }
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {

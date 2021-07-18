@@ -284,7 +284,7 @@ module.exports = class JsIpfsService {
       data = Buffer.from(data);
     }
     privateKey = privateKey.bytes || privateKey;
-    const message = await ipfsHelper.buildAndSignMessage(privateKey, [topic], data);
+    const message = await ipfsHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
     return this.node.pubsub.publishMessage(message);
   }
 
