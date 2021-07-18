@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var api_unstable_1 = require("@fluencelabs/fluence/dist/api.unstable");
-function removeSubscriber(client, node_id, topic, config) {
+function fanout_event(client, relay, topic, event, config) {
     return __awaiter(this, void 0, void 0, function () {
         var request, promise;
         return __generator(this, function (_a) {
@@ -46,13 +46,14 @@ function removeSubscriber(client, node_id, topic, config) {
                     promise = new Promise(function (resolve, reject) {
                         var r = new api_unstable_1.RequestFlowBuilder()
                             .disableInjections()
-                            .withRawScript("\n(xor\n (seq\n  (seq\n   (seq\n    (seq\n     (call %init_peer_id% (\"getDataSrv\" \"-relay-\") [] -relay-)\n     (call %init_peer_id% (\"getDataSrv\" \"node_id\") [] node_id)\n    )\n    (call %init_peer_id% (\"getDataSrv\" \"topic\") [] topic)\n   )\n   (call -relay- (\"op\" \"noop\") [])\n  )\n  (xor\n   (seq\n    (call node_id (\"peer\" \"timestamp_sec\") [] t)\n    (call node_id (\"aqua-dht\" \"clear_host_value\") [topic t])\n   )\n   (seq\n    (call -relay- (\"op\" \"noop\") [])\n    (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 1])\n   )\n  )\n )\n (seq\n  (call -relay- (\"op\" \"noop\") [])\n  (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 2])\n )\n)\n\n            ")
+                            .withRawScript("\n(xor\n (seq\n  (seq\n   (seq\n    (seq\n     (seq\n      (seq\n       (seq\n        (seq\n         (seq\n          (seq\n           (call %init_peer_id% (\"getDataSrv\" \"-relay-\") [] -relay-)\n           (call %init_peer_id% (\"getDataSrv\" \"relay\") [] relay)\n          )\n          (call %init_peer_id% (\"getDataSrv\" \"topic\") [] topic)\n         )\n         (call %init_peer_id% (\"getDataSrv\" \"event\") [] event)\n        )\n        (call -relay- (\"op\" \"noop\") [])\n       )\n       (xor\n        (seq\n         (call relay (\"op\" \"string_to_b58\") [topic] k)\n         (call relay (\"kad\" \"neighborhood\") [k $nil $nil] nodes)\n        )\n        (seq\n         (seq\n          (call -relay- (\"op\" \"noop\") [])\n          (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 1])\n         )\n         (call -relay- (\"op\" \"noop\") [])\n        )\n       )\n      )\n      (call -relay- (\"op\" \"noop\") [])\n     )\n     (fold nodes n\n      (par\n       (seq\n        (xor\n         (seq\n          (call n (\"peer\" \"timestamp_sec\") [] t)\n          (call n (\"aqua-dht\" \"get_values\") [topic t] $res)\n         )\n         (null)\n        )\n        (call relay (\"op\" \"noop\") [])\n       )\n       (seq\n        (call -relay- (\"op\" \"noop\") [])\n        (next n)\n       )\n      )\n     )\n    )\n    (xor\n     (call relay (\"aqua-dht\" \"merge_two\") [$res.$.[0].result! $res.$.[1].result!] v)\n     (seq\n      (call -relay- (\"op\" \"noop\") [])\n      (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 2])\n     )\n    )\n   )\n   (call -relay- (\"op\" \"noop\") [])\n  )\n  (fold v.$.result! r\n   (par\n    (seq\n     (call r.$.relay_id.[0]! (\"op\" \"noop\") [])\n     (xor\n      (par\n       (seq\n        (call r.$.relay_id.[0]! (\"op\" \"noop\") [])\n        (call r.$.peer_id! (\"api\" \"receive_event\") [topic event])\n       )\n       (null)\n      )\n      (seq\n       (seq\n        (call r.$.relay_id.[0]! (\"op\" \"noop\") [])\n        (call -relay- (\"op\" \"noop\") [])\n       )\n       (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 3])\n      )\n     )\n    )\n    (seq\n     (call -relay- (\"op\" \"noop\") [])\n     (next r)\n    )\n   )\n  )\n )\n (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 4])\n)\n\n            ")
                             .configHandler(function (h) {
                             h.on('getDataSrv', '-relay-', function () {
                                 return client.relayPeerId;
                             });
-                            h.on('getDataSrv', 'node_id', function () { return node_id; });
+                            h.on('getDataSrv', 'relay', function () { return relay; });
                             h.on('getDataSrv', 'topic', function () { return topic; });
+                            h.on('getDataSrv', 'event', function () { return event; });
                             h.onEvent('errorHandlingSrv', 'error', function (args) {
                                 // assuming error is the single argument
                                 var err = args[0];
@@ -61,7 +62,7 @@ function removeSubscriber(client, node_id, topic, config) {
                         })
                             .handleScriptError(reject)
                             .handleTimeout(function () {
-                            reject('Request timed out for removeSubscriber');
+                            reject('Request timed out for fanout_event');
                         });
                         if (config && config.ttl) {
                             r.withTTL(config.ttl);
@@ -76,7 +77,7 @@ function removeSubscriber(client, node_id, topic, config) {
         });
     });
 }
-exports.removeSubscriber = removeSubscriber;
+exports.fanout_event = fanout_event;
 function subscribeNode(client, subscriber_node_id, topic, value, service_id, config) {
     return __awaiter(this, void 0, void 0, function () {
         var request, promise;
@@ -421,3 +422,84 @@ function initTopicAndSubscribe(client, node_id, topic, value, relay_id, service_
     });
 }
 exports.initTopicAndSubscribe = initTopicAndSubscribe;
+function sendToSubscribers(client, relay, topic, message, config) {
+    return __awaiter(this, void 0, void 0, function () {
+        var request, promise;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    promise = new Promise(function (resolve, reject) {
+                        var r = new api_unstable_1.RequestFlowBuilder()
+                            .disableInjections()
+                            .withRawScript("\n(xor\n (seq\n  (seq\n   (seq\n    (seq\n     (seq\n      (seq\n       (seq\n        (seq\n         (seq\n          (seq\n           (call %init_peer_id% (\"getDataSrv\" \"-relay-\") [] -relay-)\n           (call %init_peer_id% (\"getDataSrv\" \"relay\") [] relay)\n          )\n          (call %init_peer_id% (\"getDataSrv\" \"topic\") [] topic)\n         )\n         (call %init_peer_id% (\"getDataSrv\" \"message\") [] message)\n        )\n        (call -relay- (\"op\" \"noop\") [])\n       )\n       (xor\n        (seq\n         (call relay (\"op\" \"string_to_b58\") [topic] k)\n         (call relay (\"kad\" \"neighborhood\") [k $nil $nil] nodes)\n        )\n        (seq\n         (seq\n          (call -relay- (\"op\" \"noop\") [])\n          (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 1])\n         )\n         (call -relay- (\"op\" \"noop\") [])\n        )\n       )\n      )\n      (call -relay- (\"op\" \"noop\") [])\n     )\n     (fold nodes n\n      (par\n       (seq\n        (xor\n         (seq\n          (call n (\"peer\" \"timestamp_sec\") [] t)\n          (call n (\"aqua-dht\" \"get_values\") [topic t] $res)\n         )\n         (null)\n        )\n        (call relay (\"op\" \"noop\") [])\n       )\n       (seq\n        (call -relay- (\"op\" \"noop\") [])\n        (next n)\n       )\n      )\n     )\n    )\n    (xor\n     (call relay (\"aqua-dht\" \"merge_two\") [$res.$.[0].result! $res.$.[1].result!] v)\n     (seq\n      (seq\n       (call -relay- (\"op\" \"noop\") [])\n       (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 2])\n      )\n      (call -relay- (\"op\" \"noop\") [])\n     )\n    )\n   )\n   (call -relay- (\"op\" \"noop\") [])\n  )\n  (fold v.$.result! sub\n   (seq\n    (seq\n     (seq\n      (seq\n       (fold sub.$.relay_id! -via-peer-\n        (seq\n         (call -via-peer- (\"op\" \"noop\") [])\n         (next -via-peer-)\n        )\n       )\n       (xor\n        (seq\n         (fold sub.$.relay_id! -via-peer-\n          (seq\n           (call -via-peer- (\"op\" \"noop\") [])\n           (next -via-peer-)\n          )\n         )\n         (call sub.$.set_by! (sub.$.service_id.[0]! \"send_event\") [message])\n        )\n        (seq\n         (seq\n          (seq\n           (fold sub.$.relay_id! -via-peer-\n            (seq\n             (call -via-peer- (\"op\" \"noop\") [])\n             (next -via-peer-)\n            )\n           )\n           (call -relay- (\"op\" \"noop\") [])\n          )\n          (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 3])\n         )\n         (call -relay- (\"op\" \"noop\") [])\n        )\n       )\n      )\n      (fold sub.$.relay_id! -via-peer-\n       (seq\n        (call -via-peer- (\"op\" \"noop\") [])\n        (next -via-peer-)\n       )\n      )\n     )\n     (call -relay- (\"op\" \"noop\") [])\n    )\n    (next sub)\n   )\n  )\n )\n (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 4])\n)\n\n            ")
+                            .configHandler(function (h) {
+                            h.on('getDataSrv', '-relay-', function () {
+                                return client.relayPeerId;
+                            });
+                            h.on('getDataSrv', 'relay', function () { return relay; });
+                            h.on('getDataSrv', 'topic', function () { return topic; });
+                            h.on('getDataSrv', 'message', function () { return message; });
+                            h.onEvent('errorHandlingSrv', 'error', function (args) {
+                                // assuming error is the single argument
+                                var err = args[0];
+                                reject(err);
+                            });
+                        })
+                            .handleScriptError(reject)
+                            .handleTimeout(function () {
+                            reject('Request timed out for sendToSubscribers');
+                        });
+                        if (config && config.ttl) {
+                            r.withTTL(config.ttl);
+                        }
+                        request = r.build();
+                    });
+                    return [4 /*yield*/, client.initiateFlow(request)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/, Promise.race([promise, Promise.resolve()])];
+            }
+        });
+    });
+}
+exports.sendToSubscribers = sendToSubscribers;
+function removeSubscriber(client, node_id, topic, config) {
+    return __awaiter(this, void 0, void 0, function () {
+        var request, promise;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    promise = new Promise(function (resolve, reject) {
+                        var r = new api_unstable_1.RequestFlowBuilder()
+                            .disableInjections()
+                            .withRawScript("\n(xor\n (seq\n  (seq\n   (seq\n    (seq\n     (call %init_peer_id% (\"getDataSrv\" \"-relay-\") [] -relay-)\n     (call %init_peer_id% (\"getDataSrv\" \"node_id\") [] node_id)\n    )\n    (call %init_peer_id% (\"getDataSrv\" \"topic\") [] topic)\n   )\n   (call -relay- (\"op\" \"noop\") [])\n  )\n  (xor\n   (seq\n    (call node_id (\"peer\" \"timestamp_sec\") [] t)\n    (call node_id (\"aqua-dht\" \"clear_host_value\") [topic t])\n   )\n   (seq\n    (call -relay- (\"op\" \"noop\") [])\n    (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 1])\n   )\n  )\n )\n (seq\n  (call -relay- (\"op\" \"noop\") [])\n  (call %init_peer_id% (\"errorHandlingSrv\" \"error\") [%last_error% 2])\n )\n)\n\n            ")
+                            .configHandler(function (h) {
+                            h.on('getDataSrv', '-relay-', function () {
+                                return client.relayPeerId;
+                            });
+                            h.on('getDataSrv', 'node_id', function () { return node_id; });
+                            h.on('getDataSrv', 'topic', function () { return topic; });
+                            h.onEvent('errorHandlingSrv', 'error', function (args) {
+                                // assuming error is the single argument
+                                var err = args[0];
+                                reject(err);
+                            });
+                        })
+                            .handleScriptError(reject)
+                            .handleTimeout(function () {
+                            reject('Request timed out for removeSubscriber');
+                        });
+                        if (config && config.ttl) {
+                            r.withTTL(config.ttl);
+                        }
+                        request = r.build();
+                    });
+                    return [4 /*yield*/, client.initiateFlow(request)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/, Promise.race([promise, Promise.resolve()])];
+            }
+        });
+    });
+}
+exports.removeSubscriber = removeSubscriber;

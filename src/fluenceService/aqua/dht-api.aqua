@@ -104,3 +104,27 @@ func executeOnSubscribers(node_id: PeerId, topic: string, call: Record -> ()):
   for r <- subs par:
     on r.peer_id via r.relay_id:
       call(r)
+
+service SubscriberService:
+  send_event(e: string)
+
+func sendToSubscribers(relay: PeerId, topic: string, message: string):
+  subscribers <- findSubscribers(relay, topic)
+  for sub <- subscribers:
+    on sub.set_by via sub.relay_id:
+      SubscriberService sub.service_id!
+      SubscriberService.send_event(message)
+
+data Event:
+    value: string
+    signature: string
+
+service ClientAPI("api"):
+    receive_event(topic: string, e: Event)
+    get_data(key: string) -> string
+
+func fanout_event(relay: string, topic: string, event: Event):
+    subs <- findSubscribers(relay, topic)
+    for r <- subs par:
+        on r.peer_id via r.relay_id!:
+            co ClientAPI.receive_event(topic, event)

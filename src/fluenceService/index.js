@@ -1,5 +1,6 @@
 const dhtApi = require('./dht-api');
 const startsWith = require('lodash/startsWith');
+import { subscribeToEvent } from '@fluencelabs/fluence';
 
 module.exports = class FluenceService {
     constructor(accStorage, client) {
@@ -14,13 +15,10 @@ module.exports = class FluenceService {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
         }
-        console.log('bindToStaticId', storageId, accountKey);
-
         await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, accountKey, storageId, this.client.relayPeerId, null, () => {});
         return accountKey;
     }
     async resolveStaticId(staticStorageId) {
-        console.log('resolveStaticId', staticStorageId);
         if (!startsWith(staticStorageId, 'Qm')) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
@@ -84,15 +82,30 @@ module.exports = class FluenceService {
     }
 
     async publishEvent(topic, data) {
-        return null;
+        return dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, {
+            value: data,
+            signature: 'test'
+        });
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return null;
+        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
+            let topic = args[0];
+            let event = args[1];
+            if (ipnsId === topic) {
+                callback(event);
+            }
+        });
     }
 
-    subscribeToEvent(topic, callback) {
-        return dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, topic, null, this.client.relayPeerId, null, callback);
+    subscribeToEvent(_topic, _callback) {
+        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
+            let topic = args[0];
+            let event = args[1];
+            if (topic === _topic) {
+                _callback(event);
+            }
+        });
     }
 
     async getStaticIdPeers(ipnsId) {
