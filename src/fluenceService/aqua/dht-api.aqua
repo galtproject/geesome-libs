@@ -116,8 +116,9 @@ func sendToSubscribers(relay: PeerId, topic: string, message: string):
       SubscriberService.send_event(message)
 
 data Event:
-    value: string
-    key: string
+    data: string
+    from: string
+    seqno: string
     signature: string
 
 service ClientAPI("api"):

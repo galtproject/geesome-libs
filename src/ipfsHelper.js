@@ -86,6 +86,10 @@ const ipfsHelper = {
     return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(base64, 'base64'));
   },
 
+  async createPeerIdFromPublicBase64(base64) {
+    return ipfsHelper.createPeerIdFromPubKey(Buffer.from(base64, 'base64'));
+  },
+
   async base64ToPublicKey(base64) {
     return Buffer.from(base64, 'base64');
   },
@@ -186,7 +190,7 @@ const ipfsHelper = {
 
   async buildAndSignFluenceMessage(privateKeyBase64, data) {
     const peerId = await ipfsHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
-    const from = peerId.toB58String();
+    const from = ipfsHelper.peerIdToPublicBase64(peerId);
     const message = {
       data,
       from,
@@ -195,10 +199,49 @@ const ipfsHelper = {
     const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
     const signature = await peerId.privKey.sign(bytes);
     return {
-      value: data,
-      key: ipfsHelper.peerIdToPublicBase64(peerId),
+      ...message,
       signature: signature.toString('base64'),
     }
+  },
+
+  async parseFluenceEvent(event) {
+    event.data = Buffer.from(event.data.data);
+    event.seqno = Buffer.from(event.seqno.data);
+    event.signature = Buffer.from(event.signature, 'base64');
+
+    const fromPeerId = await ipfsHelper.createPeerIdFromPublicBase64(event.from);
+    const pubSubSignatureValid = await ipfsHelper.checkFluenceSignature(fromPeerId.pubKey, event);
+    if (!pubSubSignatureValid) {
+      throw "pubsub_signature_invalid";
+    }
+
+    if (event.from) {
+      event.fromPeerId = fromPeerId;
+      event.from = event.fromPeerId.pubKey;
+      event.fromIpns = event.fromPeerId.toB58String();
+    }
+
+    try {
+      event.dataStr = event.data.toString('utf8');
+    } catch (e) {}
+
+    try {
+      if (event.dataStr) {
+        event.dataJson = JSON.parse(event.dataStr);
+      }
+    } catch (e) {}
+    return event;
+  },
+
+  checkFluenceSignature(pubKey, event) {
+    const message = {
+      data: event.data,
+      from: event.from,
+      seqno: event.seqno
+    };
+    const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
+
+    return pubKey.verify(bytes, event.signature)
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {

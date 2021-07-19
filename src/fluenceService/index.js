@@ -105,22 +105,22 @@ module.exports = class FluenceService {
             data = Buffer.from(data);
         }
         privateKey = privateKey.bytes || privateKey;
-        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, [topic], data);
-        console.log('fanout_event', this.client.relayPeerId, topic, event);
+        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
+        // console.log('fanout_event', this.client.relayPeerId, topic, event);
         return dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (log) => {
             console.log(log);
         });
     }
 
     async subscribeToEvent(_topic, _callback) {
-        console.log('initTopicAndSubscribe', this.client.relayPeerId, _topic, this.client.relayPeerId);
+        // console.log('initTopicAndSubscribe', this.client.relayPeerId, _topic, this.client.relayPeerId);
         await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, _topic, _topic, this.client.relayPeerId, null, () => {});
-        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
-            console.log('subscribeToEvent', args, _tetraplets);
+        subscribeToEvent(this.client, 'api', 'receive_event', async (args, _tetraplets) => {
+            // console.log('subscribeToEvent', args, _tetraplets);
             let topic = args[0];
             let event = args[1];
             if (topic === _topic) {
-                _callback(event);
+                _callback(await ipfsHelper.parseFluenceEvent(event));
             }
         });
     }
@@ -137,7 +137,6 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        console.log('findSubscribers', this.client.relayPeerId, topic);
         return dhtApi.findSubscribers(this.client, this.client.relayPeerId, topic);
     }
 }
