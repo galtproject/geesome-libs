@@ -34,8 +34,8 @@ const { getIpnsUpdatesTopic } = require('./name');
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    const {libp2p, peerId} = this.node;
-    const repo = {datastore: libp2p.datastore};
+    // const {libp2p, peerId} = this.node;
+    // const repo = {datastore: libp2p.datastore};
     // this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
     // this.ipnsResolver = new resolver(this.ipnsRouting)
     this.id = node.id.bind(node);
