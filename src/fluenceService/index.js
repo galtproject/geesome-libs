@@ -2,6 +2,7 @@ const dhtApi = require('./dht-api');
 const startsWith = require('lodash/startsWith');
 const isObject = require('lodash/isObject');
 const isString = require('lodash/isString');
+const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
 const { subscribeToEvent } = require('@fluencelabs/fluence');
 
@@ -9,6 +10,23 @@ module.exports = class FluenceService {
     constructor(accStorage, client) {
         this.accStorage = accStorage;
         this.client = client;
+        this.subscribesByTopics = {};
+
+        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
+            return this.emitTopicSubscribers(args[0], args[1]);
+        });
+    }
+    addTopicSubscriber(topic, callback) {
+        if (!this.subscribesByTopics[topic]) {
+            this.subscribesByTopics[topic] = [];
+        }
+        this.subscribesByTopics[topic].push(callback);
+    }
+    emitTopicSubscribers(topic, event) {
+        return pIteration.forEach(this.subscribesByTopics[topic] || [], async callback => {
+            const parsedEvent = await ipfsHelper.parseFluenceEvent(topic, event);
+            return parsedEvent && callback(parsedEvent);
+        });
     }
     async bindToStaticId(storageId, accountKey, options = null) {
         if (!startsWith(accountKey, 'Qm')) {
@@ -95,7 +113,7 @@ module.exports = class FluenceService {
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-
+        return this.subscribeToEvent(ipnsId + '/update', callback);
     }
     async publishEventByPrivateKey(privateKey, topic, data) {
         if(isObject(data)) {
@@ -113,16 +131,8 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback) {
-        // console.log('initTopicAndSubscribe', this.client.relayPeerId, _topic, this.client.relayPeerId);
         await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, _topic, _topic, this.client.relayPeerId, null, () => {});
-        subscribeToEvent(this.client, 'api', 'receive_event', async (args, _tetraplets) => {
-            // console.log('subscribeToEvent', args, _tetraplets);
-            let topic = args[0];
-            let event = args[1];
-            if (topic === _topic) {
-                _callback(await ipfsHelper.parseFluenceEvent(event));
-            }
-        });
+        return this.addTopicSubscriber(_topic, _callback);
     }
 
     async getStaticIdPeers(ipnsId) {

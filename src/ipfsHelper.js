@@ -204,15 +204,27 @@ const ipfsHelper = {
     }
   },
 
-  async parseFluenceEvent(event) {
+  async parseFluenceEvent(topic, event) {
     event.data = Buffer.from(event.data.data);
     event.seqno = Buffer.from(event.seqno.data);
     event.signature = Buffer.from(event.signature, 'base64');
 
     const fromPeerId = await ipfsHelper.createPeerIdFromPublicBase64(event.from);
-    const pubSubSignatureValid = await ipfsHelper.checkFluenceSignature(fromPeerId.pubKey, event);
-    if (!pubSubSignatureValid) {
-      throw "pubsub_signature_invalid";
+    const signatureValid = await ipfsHelper.checkFluenceSignature(fromPeerId.pubKey, event);
+    if (!signatureValid) {
+      console.log('signature_not_valid');
+      return null;
+    }
+
+    if (startsWith(topic, 'Qm')) {
+      const split = topic.split('/');
+      const staticBase58 = split[0];
+      const fromBase58 = ipfsHelper.peerIdToPublicBase58(fromPeerId);
+      if (staticBase58 !== fromBase58) {
+        console.log('static_id_not_match');
+        return null;
+      }
+      event.staticType = split[1];
     }
 
     if (event.from) {
@@ -230,6 +242,7 @@ const ipfsHelper = {
         event.dataJson = JSON.parse(event.dataStr);
       }
     } catch (e) {}
+
     return event;
   },
 

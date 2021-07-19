@@ -54,6 +54,7 @@ describe.only('pubsub', function () {
           await nodeB.subscribeToEvent(testTopic, async (message) => {
             console.log('nodeB message', message);
             expect(message.fromPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
+            expect(message.staticType, 'update');
 
             // const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
             // expect(isValid).to.equal(true);
@@ -69,6 +70,7 @@ describe.only('pubsub', function () {
           await nodeA.subscribeToEvent(testTopic, async (message) => {
             console.log('nodeA message', message);
             expect(message.fromPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
+            expect(message.staticType, 'update');
 
             // const isValid = await ipfsHelper.checkPubSubSignature(message.key, message);
             // expect(isValid).to.equal(true);
