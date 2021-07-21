@@ -151,6 +151,10 @@ class GeesomeClient {
     //TODO: send request to server for disable api key
   }
 
+  isNodeEmpty() {
+    return this.getRequest(`/v1/is-empty`);
+  }
+
   setup(setupData) {
     return this.postRequest(`/v1/setup`, setupData).then(data => {
       this.setApiKey(data.apiKey);
