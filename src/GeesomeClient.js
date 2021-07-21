@@ -152,7 +152,7 @@ class GeesomeClient {
   }
 
   isNodeEmpty() {
-    return this.getRequest(`/v1/is-empty`);
+    return this.getRequest(`/v1/is-empty`).then(r => r.result);
   }
 
   setup(setupData) {
