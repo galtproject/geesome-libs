@@ -8,6 +8,7 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
+const peerIdHelper = require('./peerIdHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
@@ -206,7 +207,7 @@ module.exports = class JsIpfsService {
   }
 
   async resolveStaticIdEntry(staticStorageId) {
-    const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
+    const peerId = peerIdHelper.createPeerIdFromIpns(staticStorageId);
     const { routingKey } = IPNS.getIdKeys(peerId.toBytes());
     const record = await this.ipnsRouting.get(routingKey.uint8Array());
     const ipnsEntry = IPNS.unmarshal(record);
@@ -339,7 +340,7 @@ module.exports = class JsIpfsService {
   async getAccountPeerId(accountKey, pass) {
     // TODO: find the more safety way
     const privateKey = await this.keyLookup(accountKey, pass);
-    return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(privateKey.bytes));
+    return peerIdHelper.createPeerIdFromPrivKey(Buffer.from(privateKey.bytes));
   }
 
   async getAccountPublicKey(accountKey, pass) {

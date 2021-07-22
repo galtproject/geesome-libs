@@ -1,4 +1,4 @@
-const ipfsHelper = require('./ipfsHelper');
+const peerIdHelper = require('./peerIdHelper');
 const find = require('lodash/find');
 
 module.exports = class SimpleAccountStorage {
@@ -33,7 +33,7 @@ module.exports = class SimpleAccountStorage {
     }
     async getAccountPeerId(name) {
         const account = this.getAccount(name);
-        return ipfsHelper.createPeerIdFromPrivateBase64(account.privateBase64);
+        return peerIdHelper.createPeerIdFromPrivateBase64(account.privateBase64);
     }
     async getAccountStaticId(name) {
         const account = this.getAccount(name);
@@ -41,13 +41,13 @@ module.exports = class SimpleAccountStorage {
     }
     async getAccountPublicKey(name) {
         const account = this.getAccount(name);
-        return ipfsHelper.base64ToPublicKey(account.publicBase64);
+        return peerIdHelper.base64ToPublicKey(account.publicBase64);
     }
     async createAccount(name) {
-        const peerId = await ipfsHelper.createPeerId();
-        const privateBase64 = ipfsHelper.peerIdToPrivateBase64(peerId);
-        const publicBase64 = ipfsHelper.peerIdToPublicBase64(peerId);
-        const publicBase58 = ipfsHelper.peerIdToPublicBase58(peerId);
+        const peerId = await peerIdHelper.createPeerId();
+        const privateBase64 = peerIdHelper.peerIdToPrivateBase64(peerId);
+        const publicBase64 = peerIdHelper.peerIdToPublicBase64(peerId);
+        const publicBase58 = peerIdHelper.peerIdToPublicBase58(peerId);
         return this.setAccount(name, { privateBase64, publicBase64, publicBase58 });
     }
     async getOrCreateAccountStaticId(name) {

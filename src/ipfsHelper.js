@@ -24,6 +24,7 @@ const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-inter
 const dagCBOR = require('ipld-dag-cbor')
 const PeerId = require('peer-id');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
+const peerIdHelper = require('./peerIdHelper.js');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -62,62 +63,9 @@ const ipfsHelper = {
     return crypto.keys.import(pem, pass);
   },
 
-  async encryptPrivateBase64WithPass(privateBase64, pass) {
-    return (await this.createPeerIdFromPrivateBase64(privateBase64)).privKey.export(pass)
-  },
-
-  async decryptPrivateBase64WithPass(encryptedPrivateKey, pass) {
-    return Buffer.from((await crypto.keys.import(encryptedPrivateKey, pass)).bytes).toString('base64');
-  },
-
-  peerIdToPrivateBase64(peerId) {
-    return peerId.marshalPrivKey().toString('base64');
-  },
-
-  peerIdToPublicBase64(peerId) {
-    return peerId.marshalPubKey().toString('base64');
-  },
-
-  peerIdToPublicBase58(peerId) {
-    return peerId.toB58String();
-  },
-
-  async createPeerIdFromPrivateBase64(base64) {
-    return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(base64, 'base64'));
-  },
-
-  async createPeerIdFromPublicBase64(base64) {
-    return ipfsHelper.createPeerIdFromPubKey(Buffer.from(base64, 'base64'));
-  },
-
-  base64ToPublicKey(base64) {
-    return Buffer.from(base64, 'base64');
-  },
-
-  publicKeyToBase64(publicKey) {
-    return publicKey.toString('base64');
-  },
-
-  createPeerId: PeerId.create.bind(PeerId),
-  createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
-  createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
-  createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId),
-
-  // extractPublicKeyFromId(peerId) {
-  //   const decodedId = multihash.decode(peerId.id);
-  //  
-  //   console.log('decodedId', decodedId);
-  //
-  //   if (decodedId.code !== ID_MULTIHASH_CODE) {
-  //     return null
-  //   }
-  //
-  //   return crypto.keys.unmarshalPublicKey(decodedId.digest)
-  // },
-
   async parsePubSubEvent(event) {
     if(event.key) {
-      event.keyPeerId = await ipfsHelper.createPeerIdFromPubKey(event.key);
+      event.keyPeerId = await peerIdHelper.createPeerIdFromPubKey(event.key);
       event.key = event.keyPeerId._pubKey;
       event.keyIpns = event.keyPeerId.toB58String();
 
@@ -130,7 +78,7 @@ const ipfsHelper = {
     try {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
-      event.data.peerId = await ipfsHelper.createPeerIdFromPubKey(event.data.pubKey);
+      event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
       
       const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
     } catch (e) {
@@ -180,7 +128,7 @@ const ipfsHelper = {
   },
 
   async buildAndSignPubSubMessage(privateKey, topics, data) {
-    const peerId = await ipfsHelper.createPeerIdFromPrivKey(privateKey);
+    const peerId = await peerIdHelper.createPeerIdFromPrivKey(privateKey);
     const from = peerId.toB58String();
     let msgObject = {
       data,
@@ -193,8 +141,8 @@ const ipfsHelper = {
   },
 
   async buildAndSignFluenceMessage(privateKeyBase64, data) {
-    const peerId = await ipfsHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
-    const from = ipfsHelper.peerIdToPublicBase64(peerId);
+    const peerId = await peerIdHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
+    const from = peerIdHelper.peerIdToPublicBase64(peerId);
     const message = {
       data,
       from,
@@ -213,7 +161,7 @@ const ipfsHelper = {
     event.seqno = Buffer.from(event.seqno.data);
     event.signature = Buffer.from(event.signature, 'base64');
 
-    const fromPeerId = await ipfsHelper.createPeerIdFromPublicBase64(event.from);
+    const fromPeerId = await peerIdHelper.createPeerIdFromPublicBase64(event.from);
     const signatureValid = await ipfsHelper.checkFluenceSignature(fromPeerId.pubKey, event);
     if (!signatureValid) {
       console.log('signature_not_valid');
@@ -223,7 +171,7 @@ const ipfsHelper = {
     if (startsWith(topic, 'Qm')) {
       const split = topic.split('/');
       const staticBase58 = split[0];
-      const fromBase58 = ipfsHelper.peerIdToPublicBase58(fromPeerId);
+      const fromBase58 = peerIdHelper.peerIdToPublicBase58(fromPeerId);
       if (staticBase58 !== fromBase58) {
         console.log('static_id_not_match');
         return null;
