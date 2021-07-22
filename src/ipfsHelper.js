@@ -172,8 +172,7 @@ const ipfsHelper = {
     event.seqno = Buffer.from(event.seqno, 'base64');
     event.signature = Buffer.from(event.signature, 'base64');
 
-    const fromPeerId = await peerIdHelper.createPeerIdFromPublicBase64(event.from);
-    const signatureValid = await ipfsHelper.checkFluenceSignature(fromPeerId.pubKey, event);
+    const signatureValid = await ipfsHelper.checkFluenceSignature(event.from, event.data, event.seqno, event.signature);
     if (!signatureValid) {
       console.log('signature_not_valid');
       return null;
@@ -191,6 +190,7 @@ const ipfsHelper = {
     }
 
     if (event.from) {
+      const fromPeerId = await peerIdHelper.createPeerIdFromPublicBase64(event.from);
       event.fromPeerId = fromPeerId;
       event.fromPubKey = peerIdHelper.publicKeyToBase64(fromPeerId.pubKey);
       event.fromIpns = event.fromPeerId.toB58String();
@@ -209,15 +209,16 @@ const ipfsHelper = {
     return event;
   },
 
-  checkFluenceSignature(pubKey, event) {
+  checkFluenceSignature(from, data, seqno, signature) {
+    const pubKey = peerIdHelper.base64ToPublicKey(from);
     const message = {
-      data: event.data,
-      from: event.from,
-      seqno: event.seqno
+      data,
+      from,
+      seqno
     };
     const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
 
-    return pubKey.verify(bytes, event.signature)
+    return pubKey.verify(bytes, signature)
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {

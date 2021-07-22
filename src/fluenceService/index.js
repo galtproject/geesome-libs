@@ -15,9 +15,11 @@ module.exports = class FluenceService {
             return this.emitTopicSubscribers(args[0], args[1]);
         });
 
-        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', (args, _tetraplets) => {
-            const [pubkey, bytes, signature] = args
-            return this.emitTopicSubscribers(args[0], args[1]);
+        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', async (args, _tetraplets) => {
+            const [from, data, seqno, signature] = args;
+            console.log('from, data, seqno, signature', from, data, seqno, signature);
+            console.log('checkFluenceSignature', await ipfsHelper.checkFluenceSignature(from, data, seqno, signature));
+            return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
         });
     }
     addTopicSubscriber(topic, callback) {
@@ -127,8 +129,16 @@ module.exports = class FluenceService {
         privateKey = privateKey.bytes || privateKey;
         const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
-        return dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (log) => {
-            console.log(log);
+        return this.publishEventByData(topic, event);
+    }
+
+    async publishEventByData(topic, event) {
+        // console.log('fanout_event', this.client.relayPeerId, topic, event);
+        return new Promise((resolve, reject) => {
+            dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (res, log) => {
+                console.log('log', res, log);
+                // return log === 'signature_not_valid' ? reject(log) : resolve();
+            });
         });
     }
 

@@ -9,6 +9,7 @@
 
 const crypto = require('libp2p-crypto');
 const PeerId = require('peer-id');
+const cryptoKeys = require('libp2p-crypto/src/keys')
 
 const peerIdHelper = {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
@@ -40,11 +41,11 @@ const peerIdHelper = {
   },
 
   base64ToPublicKey(base64) {
-    return Buffer.from(base64, 'base64');
+    return cryptoKeys.unmarshalPublicKey(new Uint8Array(Buffer.from(base64, 'base64')))
   },
 
   publicKeyToBase64(publicKey) {
-    return publicKey.toString('base64');
+    return (publicKey.bytes ? Buffer.from(publicKey.bytes) : publicKey).toString('base64');
   },
 
   createPeerId: PeerId.create.bind(PeerId),

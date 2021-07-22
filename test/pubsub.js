@@ -16,10 +16,12 @@ const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
 
-const ipfsHelper = require('../src/ipfsHelper')
-const commonHelper = require('../src/common')
+const commonHelper = require('../src/common');
+const ipfsHelper = require('../src/ipfsHelper');
+const peerIdHelper = require('../src/peerIdHelper');
 const waitFor = require('./utils/wait-for');
 const createNodes = require('./utils/createNodes');
+const {randomSeqno} = require('libp2p-interfaces/src/pubsub/utils');
 
 describe('pubsub', function () {
   let nodeA
@@ -44,7 +46,7 @@ describe('pubsub', function () {
         this.timeout(80 * 1000);
 
         (async () => {
-          const testAccountName = 'test-account';
+          const testAccountName = await commonHelper.random('words');
           const testTopic = await commonHelper.random('words');
 
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
@@ -52,7 +54,7 @@ describe('pubsub', function () {
 
           let catchedEvents = 0;
           await nodeB.subscribeToEvent(testTopic, async (message) => {
-            console.log('nodeB message', message);
+            // console.log('nodeB message', message);
             expect(message.fromPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
             expect(message.staticType, 'update');
 
@@ -68,7 +70,7 @@ describe('pubsub', function () {
           // console.log('await nodeA.getPeers(\'test\')', await nodeA.getPeers('test'));
 
           await nodeA.subscribeToEvent(testTopic, async (message) => {
-            console.log('nodeA message', message);
+            // console.log('nodeA message', message);
             expect(message.fromPeerId.toB58String()).to.equal(testAccountPeerId.toB58String());
             expect(message.staticType, 'update');
 
@@ -92,7 +94,22 @@ describe('pubsub', function () {
 
           await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
         })();
-      })
+      });
+
+      it.only('should handle signed event and validate signature', function (done) {
+        this.timeout(80 * 1000);
+
+        (async () => {
+          const testAccountName = await commonHelper.random('words');
+          const testTopic = await commonHelper.random('words');
+          const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
+          const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
+
+          const event = await ipfsHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
+          event.seqno = randomSeqno().toString('base64');
+          await nodeA.publishEventByData(testTopic, event);
+        })();
+      });
     });
   });
 })
