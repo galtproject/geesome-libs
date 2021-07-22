@@ -90,8 +90,12 @@ const ipfsHelper = {
     return ipfsHelper.createPeerIdFromPubKey(Buffer.from(base64, 'base64'));
   },
 
-  async base64ToPublicKey(base64) {
+  base64ToPublicKey(base64) {
     return Buffer.from(base64, 'base64');
+  },
+
+  publicKeyToBase64(publicKey) {
+    return publicKey.toString('base64');
   },
 
   createPeerId: PeerId.create.bind(PeerId),

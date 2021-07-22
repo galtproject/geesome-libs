@@ -78,6 +78,11 @@ describe('ipfs', function () {
       expect(ipfsHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
       expect(ipfsHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
 
+      const pubKey = ipfsHelper.base64ToPublicKey(ipfsHelper.peerIdToPublicBase64(peerId));
+      const peerIdFromPubKey = await ipfsHelper.createPeerIdFromPubKey(pubKey);
+      expect(ipfsHelper.peerIdToPublicBase58(peerId)).to.equals(ipfsHelper.peerIdToPublicBase58(peerIdFromPubKey));
+      expect(ipfsHelper.publicKeyToBase64(pubKey)).to.equals(ipfsHelper.peerIdToPublicBase64(peerId));
+
       expect(ipfsHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(ipfsHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
 

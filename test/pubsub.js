@@ -21,7 +21,7 @@ const commonHelper = require('../src/common')
 const waitFor = require('./utils/wait-for');
 const createNodes = require('./utils/createNodes');
 
-describe.only('pubsub', function () {
+describe('pubsub', function () {
   let nodeA
   let nodeB
   const pass = 'ipfs-is-awesome-software';
