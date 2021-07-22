@@ -48,6 +48,10 @@ const peerIdHelper = {
     return (publicKey.bytes ? Buffer.from(publicKey.bytes) : publicKey).toString('base64');
   },
 
+  privateKeyToBase64(privateKey) {
+    return (privateKey.bytes ? Buffer.from(privateKey.bytes) : privateKey).toString('base64');
+  },
+
   createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),

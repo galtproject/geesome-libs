@@ -96,7 +96,7 @@ describe('pubsub', function () {
         })();
       });
 
-      it.only('should handle signed event and validate signature', function (done) {
+      it('should handle signed event and validate signature', function (done) {
         this.timeout(80 * 1000);
 
         (async () => {
@@ -107,7 +107,13 @@ describe('pubsub', function () {
 
           const event = await ipfsHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
           event.seqno = randomSeqno().toString('base64');
-          await nodeA.publishEventByData(testTopic, event);
+          try {
+            await nodeA.publishEventByData(testTopic, event);
+            expect(true, false);
+          } catch (e) {
+            expect(e.message, 'signature_not_valid');
+          }
+          done();
         })();
       });
     });

@@ -15,10 +15,8 @@ module.exports = class FluenceService {
             return this.emitTopicSubscribers(args[0], args[1]);
         });
 
-        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', async (args, _tetraplets) => {
+        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', (args, _tetraplets) => {
             const [from, data, seqno, signature] = args;
-            console.log('from, data, seqno, signature', from, data, seqno, signature);
-            console.log('checkFluenceSignature', await ipfsHelper.checkFluenceSignature(from, data, seqno, signature));
             return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
         });
     }
@@ -135,9 +133,8 @@ module.exports = class FluenceService {
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (res, log) => {
-                console.log('log', res, log);
-                // return log === 'signature_not_valid' ? reject(log) : resolve();
+            dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (res) => {
+                return res === 'done' ? resolve() : reject(res);
             });
         });
     }

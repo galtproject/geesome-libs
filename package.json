@@ -37,6 +37,7 @@
     "libp2p-crypto": "^0.18.0",
     "libp2p-gossipsub": "0.9.2",
     "libp2p-interfaces": "0.10.4",
+    "pem-jwk": "^2.0.0",
     "lodash": "^4.17.11",
     "multicodec": "^3.0.1",
     "multihashes": "^4.0.2",

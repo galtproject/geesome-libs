@@ -80,7 +80,7 @@ describe('ipfs', function () {
       expect(peerIdHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
 
       const pubKey = peerIdHelper.base64ToPublicKey(peerIdHelper.peerIdToPublicBase64(peerId));
-      const peerIdFromPubKey = await peerIdHelper.createPeerIdFromPubKey(pubKey);
+      const peerIdFromPubKey = await peerIdHelper.createPeerIdFromPubKey(pubKey.bytes);
       expect(peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
       expect(peerIdHelper.publicKeyToBase64(pubKey)).to.equals(peerIdHelper.peerIdToPublicBase64(peerId));
 

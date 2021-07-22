@@ -13,13 +13,17 @@ const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
 const isBuffer = require('lodash/isBuffer');
 const isObject = require('lodash/isObject');
+const jwkToPem = require('pem-jwk').jwk2pem
 
 const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayFromString = require('uint8arrays/from-string')
 
-const crypto = require('libp2p-crypto');
+const libp2pCrypto = require('libp2p-crypto');
+const libp2pKeys = require('libp2p-crypto/src/keys');
+const RsaClass = require('libp2p-crypto/src/keys/rsa-class');
+const crypto = require('crypto')
 const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
 const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
@@ -62,7 +66,7 @@ const ipfsHelper = {
   },
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);
-    return crypto.keys.import(pem, pass);
+    return libp2pCrypto.keys.import(pem, pass);
   },
 
   async parsePubSubEvent(event) {
@@ -172,7 +176,7 @@ const ipfsHelper = {
     event.seqno = Buffer.from(event.seqno, 'base64');
     event.signature = Buffer.from(event.signature, 'base64');
 
-    const signatureValid = await ipfsHelper.checkFluenceSignature(event.from, event.data, event.seqno, event.signature);
+    const signatureValid = ipfsHelper.checkFluenceSignature(event.from, event.data, event.seqno, event.signature);
     if (!signatureValid) {
       console.log('signature_not_valid');
       return null;
@@ -210,6 +214,9 @@ const ipfsHelper = {
   },
 
   checkFluenceSignature(from, data, seqno, signature) {
+    if (isString(signature)) {
+      signature = Buffer.from(signature, 'base64');
+    }
     const pubKey = peerIdHelper.base64ToPublicKey(from);
     const message = {
       data,
@@ -217,8 +224,11 @@ const ipfsHelper = {
       seqno
     };
     const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
-
-    return pubKey.verify(bytes, signature)
+    const rsaPubKey = libp2pKeys.unmarshalPublicKey(pubKey.bytes);
+    const verify = crypto.createVerify('RSA-SHA256');
+    verify.update(bytes);
+    const pem = jwkToPem(rsaPubKey._key);
+    return verify.verify(pem, signature)
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {

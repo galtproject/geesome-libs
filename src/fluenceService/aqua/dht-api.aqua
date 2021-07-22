@@ -128,15 +128,14 @@ service ClientAPI("api"):
     receive_event(topic: string, e: Event)
     get_data(key: string) -> string
 
-func fanout_event(relay: string, topic: string, event: Event, call: bool, string -> ()):
+func fanout_event(relay: string, topic: string, event: Event, call: string -> ()):
     sigValid <- GeesomeCrypto.checkSignature(event.from, event.data, event.seqno, event.signature)
-    call(sigValid, "sigValid")
     if sigValid == false:
-        call(false, "signature_not_valid")
+        call("signature_not_valid")
+    else:
+        subs <- findSubscribers(relay, topic)
+        for r <- subs par:
+            on r.peer_id via r.relay_id!:
+                co ClientAPI.receive_event(topic, event)
 
-    subs <- findSubscribers(relay, topic)
-    for r <- subs par:
-        on r.peer_id via r.relay_id!:
-            co ClientAPI.receive_event(topic, event)
-
-    call(true, "done")
+        call("done")
