@@ -1,10 +1,9 @@
 const dhtApi = require('./dht-api');
 const startsWith = require('lodash/startsWith');
-const isObject = require('lodash/isObject');
-const isString = require('lodash/isString');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
-const { subscribeToEvent } = require('@fluencelabs/fluence');
+const {getIpnsUpdatesTopic} = require('../name');
+const { subscribeToEvent, registerServiceFunction } = require('@fluencelabs/fluence');
 
 module.exports = class FluenceService {
     constructor(accStorage, client) {
@@ -13,6 +12,11 @@ module.exports = class FluenceService {
         this.subscribesByTopics = {};
 
         subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
+            return this.emitTopicSubscribers(args[0], args[1]);
+        });
+
+        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', (args, _tetraplets) => {
+            const [pubkey, bytes, signature] = args
             return this.emitTopicSubscribers(args[0], args[1]);
         });
     }
@@ -37,6 +41,7 @@ module.exports = class FluenceService {
             }
         }
         await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, accountKey, storageId, this.client.relayPeerId, null, () => {});
+        await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
         return accountKey;
     }
     async resolveStaticId(staticStorageId) {
@@ -71,7 +76,9 @@ module.exports = class FluenceService {
     }
 
     async resolveStaticIdEntry(staticStorageId) {
-        return this.resolveStaticId(staticStorageId).then(async r => ({pubKey: await this.accStorage.getAccountPublicKey(r)}))
+        // TODO: implement
+        return null;
+        // return this.resolveStaticId(staticStorageId).then(async r => ({pubKey: await this.accStorage.getAccountPublicKey(r)}))
     }
 
     async keyLookup(ipnsId) {
@@ -99,7 +106,8 @@ module.exports = class FluenceService {
     }
 
     async publishEventByStaticId(ipnsId, topic, data) {
-        return null;
+        const peerId = await this.accStorage.getAccountPeerId(ipnsId);
+        return this.publishEventByPeerId(peerId, topic, data);
     }
 
     async publishEventByPeerId(peerId, topic, data) {
@@ -113,15 +121,9 @@ module.exports = class FluenceService {
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(ipnsId + '/update', callback);
+        return this.subscribeToEvent(getIpnsUpdatesTopic(ipnsId), callback);
     }
     async publishEventByPrivateKey(privateKey, topic, data) {
-        if(isObject(data)) {
-            data = JSON.stringify(data);
-        }
-        if(isString(data)) {
-            data = Buffer.from(data);
-        }
         privateKey = privateKey.bytes || privateKey;
         const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
@@ -136,7 +138,7 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        return [null];
+        return dhtApi.findSubscribers(this.client, this.client.relayPeerId, getIpnsUpdatesTopic(ipnsId));
     }
 
     async getPubSubLs() {

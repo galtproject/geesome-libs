@@ -11,6 +11,8 @@ const CID = require('cids');
 
 const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
+const isBuffer = require('lodash/isBuffer');
+const isObject = require('lodash/isObject');
 
 const ipns = require('ipns');
 const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
@@ -141,12 +143,21 @@ const ipfsHelper = {
   },
 
   async buildAndSignFluenceMessage(privateKeyBase64, data) {
+    if (isObject(data)) {
+      data = JSON.stringify(data);
+    }
+    if (isString(data)) {
+      data = Buffer.from(data);
+    }
+    if (isBuffer(data)) {
+      data = data.toString('base64');
+    }
     const peerId = await peerIdHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
     const from = peerIdHelper.peerIdToPublicBase64(peerId);
     const message = {
       data,
       from,
-      seqno: randomSeqno()
+      seqno: randomSeqno().toString('base64')
     };
     const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
     const signature = await peerId.privKey.sign(bytes);
@@ -157,8 +168,8 @@ const ipfsHelper = {
   },
 
   async parseFluenceEvent(topic, event) {
-    event.data = Buffer.from(event.data.data);
-    event.seqno = Buffer.from(event.seqno.data);
+    event.dataBuffer = Buffer.from(event.data, 'base64');
+    event.seqno = Buffer.from(event.seqno, 'base64');
     event.signature = Buffer.from(event.signature, 'base64');
 
     const fromPeerId = await peerIdHelper.createPeerIdFromPublicBase64(event.from);
@@ -181,12 +192,12 @@ const ipfsHelper = {
 
     if (event.from) {
       event.fromPeerId = fromPeerId;
-      event.from = event.fromPeerId.pubKey;
+      event.fromPubKey = peerIdHelper.publicKeyToBase64(fromPeerId.pubKey);
       event.fromIpns = event.fromPeerId.toB58String();
     }
 
     try {
-      event.dataStr = event.data.toString('utf8');
+      event.dataStr = event.dataBuffer.toString('utf8');
     } catch (e) {}
 
     try {
