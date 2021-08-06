@@ -20,7 +20,6 @@ const includes = require('lodash/includes');
 const merge = require('lodash/merge');
 const find = require('lodash/find');
 const filter = require('lodash/filter');
-const last = require('lodash/last');
 const startsWith = require('lodash/startsWith');
 
 const pIteration = require('p-iteration');
@@ -28,8 +27,6 @@ const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
-// const PeerId = require('peer-id');
-// const PeerInfo = require('peer-info');
 
 const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
@@ -113,6 +110,10 @@ class GeesomeClient {
     if (!apiKey) {
       this.serverLessMode = true;
     }
+  }
+
+  setCommunicator(communicator) {
+    this.communicator = communicator;
   }
 
   async setIpfsNode(ipfsNode, ipfsIddleTime = 1000) {
@@ -651,11 +652,11 @@ class GeesomeClient {
   }
 
   subscribeToGroupUpdates(groupId, callback) {
-    this.ipfsService.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
+    this.communicator.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
   }
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
-    this.ipfsService.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
+    this.communicator.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
       if (includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
       }
@@ -663,19 +664,19 @@ class GeesomeClient {
   }
 
   getStorageIdStat(storageId) {
-    return this.ipfsService.getFileStat(storageId);
+    return this.communicator.getFileStat(storageId);
   }
 
   getStorageIdPins(storageId) {
-    return this.ipfsService.getPins(storageId);
+    return this.communicator.getPins(storageId);
   }
 
   getPeers(storageId) {
-    return this.ipfsService.getPeers(storageId);
+    return this.communicator.getPeers(storageId);
   }
 
   getStaticIdPeers(storageId) {
-    return this.ipfsService.getStaticIdPeers(storageId);
+    return this.communicator.getStaticIdPeers(storageId);
   }
 
   getCanCreatePost(groupId) {
@@ -845,6 +846,8 @@ class GeesomeClient {
 
     // prevent Error: Dial is currently blacklisted for this peer on swarm connect
     // this.ipfsNode.libp2p._switch.dialer.clearBlacklist(new PeerInfo(PeerId.createFromB58String(last(address.split('/')))));
+
+    await this.communicator.addBootNode(address);
 
     return this.ipfsService.addBootNode(address).then(() => console.log('successful connect to ', address)).catch((e) => console.warn('failed connect to ', address, e));
   }
