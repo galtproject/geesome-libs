@@ -880,7 +880,7 @@ class GeesomeClient {
       preloadAddresses.push(await this.getNodeAddress('127.0.0.1'));
     }
 
-    preloadAddresses = preloadAddresses.map(address => {
+    preloadAddresses = preloadAddresses.filter(a => a).map(address => {
       return address.replace('/p2p-circuit', '').replace('4002', '5002').replace(/\/ipfs\/.+/, '/');
     });
 
