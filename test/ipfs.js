@@ -91,11 +91,11 @@ describe('ipfs', function () {
     })();
   });
 
-  it('encrypt and decrypt base64 private key', function (done) {
+  it.only('encrypt and decrypt base64 private key', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
-      const pass = await common.random('words');
+      const pass = common.random('words');
       const peerId = await peerIdHelper.createPeerId();
       const privateKey = peerIdHelper.peerIdToPrivateBase64(peerId);
 

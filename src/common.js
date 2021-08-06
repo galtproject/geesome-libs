@@ -13,8 +13,9 @@ const isObject = require('lodash/isObject');
 const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
 const stableSort = require('stable');
-const xkcdPassword = require('xkcd-password')();
 const uuidv4 = require('uuid/v4');
+const bip39 = require("ethereum-cryptography/bip39");
+const bip39Wordlist = require("ethereum-cryptography/bip39/wordlists/english").wordlist;
 
 module.exports.isNumber = (str) => {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {
@@ -76,9 +77,9 @@ module.exports.isIpAddress = (str) => {
   return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
 };
 
-module.exports.random = async (mode = 'hash') => {
+module.exports.random = (mode = 'hash') => {
   if (mode === 'words') {
-    return (await xkcdPassword.generate({numWords: 8, minLength: 5, maxLength: 8})).join(' ');
+    return bip39.generateMnemonic(bip39Wordlist);
   } else {
     return uuidv4();
   }

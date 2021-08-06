@@ -46,8 +46,8 @@ describe('pubsub', function () {
         this.timeout(80 * 1000);
 
         (async () => {
-          const testAccountName = await commonHelper.random('words');
-          const testTopic = await commonHelper.random('words');
+          const testAccountName = commonHelper.random('words');
+          const testTopic = commonHelper.random('words');
 
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
           const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
@@ -100,8 +100,8 @@ describe('pubsub', function () {
         this.timeout(80 * 1000);
 
         (async () => {
-          const testAccountName = await commonHelper.random('words');
-          const testTopic = await commonHelper.random('words');
+          const testAccountName = commonHelper.random('words');
+          const testTopic = commonHelper.random('words');
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
           const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
 

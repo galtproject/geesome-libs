@@ -46,7 +46,7 @@ describe('ipns', function () {
         this.timeout(80 * 1000);
 
         (async () => {
-          const testAccountName = await commonHelper.random('words');
+          const testAccountName = commonHelper.random('words');
           const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
@@ -83,7 +83,7 @@ describe('ipns', function () {
         this.timeout(80 * 1000);
 
         (async () => {
-          const testAccountName = await commonHelper.random('words');
+          const testAccountName = commonHelper.random('words');
           const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
           const staticId = await nodeA.createAccountIfNotExists(testAccountName);
