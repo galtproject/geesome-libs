@@ -44,6 +44,10 @@ module.exports = class JsIpfsService {
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
   }
 
+  isStreamAddSupport() {
+    return true;
+  }
+
   wrapIpfsItem(ipfsItem) {
     if(!ipfsItem.hash) {
       ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
