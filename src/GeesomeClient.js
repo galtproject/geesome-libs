@@ -799,16 +799,16 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/add-user-api-key`, {userId, ...data});
   }
 
-  adminGetBootNodes() {
-    return this.getRequest(`/v1/admin/boot-nodes`);
+  adminGetBootNodes(type = 'ipfs') {
+    return this.getRequest(`/v1/admin/boot-nodes`, {type});
   }
 
-  adminAddBootNode(address) {
-    return this.postRequest(`/v1/admin/boot-nodes/add`, {address});
+  adminAddBootNode(address, type = 'ipfs') {
+    return this.postRequest(`/v1/admin/boot-nodes/add`, {address, type});
   }
 
-  adminRemoveBootNode(address) {
-    return this.postRequest(`/v1/admin/boot-nodes/remove`, {address});
+  adminRemoveBootNode(address, type = 'ipfs') {
+    return this.postRequest(`/v1/admin/boot-nodes/remove`, {address, type});
   }
 
   adminGetUserAccount(provider, address) {
