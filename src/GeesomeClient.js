@@ -815,8 +815,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/get-user-account`, {provider, address});
   }
 
-  getNodeAddressList() {
-    return this.getRequest(`/v1/node-address-list`).then(data => data.result);
+  getNodeAddressList(type = 'ipfs') {
+    return this.getRequest(`/v1/node-address-list`, {type}).then(data => data.result);
   }
 
   async getNodeAddress(_includesAddress = null) {
