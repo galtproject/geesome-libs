@@ -816,7 +816,7 @@ class GeesomeClient {
   }
 
   getNodeAddressList(type = 'ipfs') {
-    return this.getRequest(`/v1/node-address-list`, {type}).then(data => data.result);
+    return this.getRequest(`/v1/node-address-list`, {params: {type}}).then(data => data.result);
   }
 
   async getNodeAddress(_includesAddress = null) {
