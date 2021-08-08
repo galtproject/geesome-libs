@@ -234,7 +234,7 @@ module.exports = class JsIpfsService {
       }, 1000);
       this.node.bootstrap.list().then(res => {
         responded = true;
-        return res.Peers
+        resolve(res.Peers);
       });
     });
   }
