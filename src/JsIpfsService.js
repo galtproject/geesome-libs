@@ -8,6 +8,7 @@
  */
 
 const ipfsHelper = require('./ipfsHelper');
+const peerIdHelper = require('./peerIdHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
@@ -23,8 +24,8 @@ const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
 const CID = require('cids');
 
-const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
-const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
+// const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
+// const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
 
 const IPNS = require('ipns');
@@ -34,13 +35,17 @@ const { getIpnsUpdatesTopic } = require('./name');
 module.exports = class JsIpfsService {
   constructor(node) {
     this.node = node;
-    const {libp2p, peerId} = this.node;
-    const repo = {datastore: libp2p.datastore};
-    this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
-    this.ipnsResolver = new resolver(this.ipnsRouting)
+    // const {libp2p, peerId} = this.node;
+    // const repo = {datastore: libp2p.datastore};
+    // this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
+    // this.ipnsResolver = new resolver(this.ipnsRouting)
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
+  }
+
+  isStreamAddSupport() {
+    return true;
   }
 
   wrapIpfsItem(ipfsItem) {
@@ -206,7 +211,7 @@ module.exports = class JsIpfsService {
   }
 
   async resolveStaticIdEntry(staticStorageId) {
-    const peerId = ipfsHelper.createPeerIdFromIpns(staticStorageId);
+    const peerId = peerIdHelper.createPeerIdFromIpns(staticStorageId);
     const { routingKey } = IPNS.getIdKeys(peerId.toBytes());
     const record = await this.ipnsRouting.get(routingKey.uint8Array());
     const ipnsEntry = IPNS.unmarshal(record);
@@ -284,7 +289,7 @@ module.exports = class JsIpfsService {
       data = Buffer.from(data);
     }
     privateKey = privateKey.bytes || privateKey;
-    const message = await ipfsHelper.buildAndSignMessage(privateKey, [topic], data);
+    const message = await ipfsHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
     return this.node.pubsub.publishMessage(message);
   }
 
@@ -339,7 +344,7 @@ module.exports = class JsIpfsService {
   async getAccountPeerId(accountKey, pass) {
     // TODO: find the more safety way
     const privateKey = await this.keyLookup(accountKey, pass);
-    return ipfsHelper.createPeerIdFromPrivKey(Buffer.from(privateKey.bytes));
+    return peerIdHelper.createPeerIdFromPrivKey(Buffer.from(privateKey.bytes));
   }
 
   async getAccountPublicKey(accountKey, pass) {

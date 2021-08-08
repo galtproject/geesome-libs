@@ -18,6 +18,8 @@ chai.use(dirtyChai);
 
 const JsIpfsService = require('../src/JsIpfsService');
 const ipfsHelper = require('../src/ipfsHelper');
+const peerIdHelper = require('../src/peerIdHelper');
+const common = require('../src/common');
 
 describe('ipfs', function () {
   let node;
@@ -69,16 +71,39 @@ describe('ipfs', function () {
     this.timeout(80 * 1000);
 
     (async () => {
-      const peerId = await ipfsHelper.createPeerId();
+      const peerId = await peerIdHelper.createPeerId();
 
-      expect(ipfsHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
-      expect(ipfsHelper.peerIdToPrivateBase64(peerId).length).to.equals(1596);
+      expect(peerIdHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
+      expect(peerIdHelper.peerIdToPrivateBase64(peerId).length).to.equals(1596);
 
-      expect(ipfsHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
-      expect(ipfsHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
+      expect(peerIdHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
+      expect(peerIdHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
 
-      expect(ipfsHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
-      expect(ipfsHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
+      const pubKey = peerIdHelper.base64ToPublicKey(peerIdHelper.peerIdToPublicBase64(peerId));
+      const peerIdFromPubKey = await peerIdHelper.createPeerIdFromPubKey(pubKey.bytes);
+      expect(peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
+      expect(peerIdHelper.publicKeyToBase64(pubKey)).to.equals(peerIdHelper.peerIdToPublicBase64(peerId));
+
+      expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
+      expect(peerIdHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
+
+      done();
+    })();
+  });
+
+  it.only('encrypt and decrypt base64 private key', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const pass = common.random('words');
+      const peerId = await peerIdHelper.createPeerId();
+      const privateKey = peerIdHelper.peerIdToPrivateBase64(peerId);
+
+      const encryptedPrivateKey = await peerIdHelper.encryptPrivateBase64WithPass(privateKey, pass);
+      expect(encryptedPrivateKey.indexOf('-----BEGIN ENCRYPTED PRIVATE KEY-----')).to.equals(0);
+
+      const decryptedPrivateKey = await peerIdHelper.decryptPrivateBase64WithPass(encryptedPrivateKey, pass);
+      expect(decryptedPrivateKey).to.equals(privateKey);
 
       done();
     })();
