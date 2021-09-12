@@ -142,7 +142,9 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback) {
+        console.log('initTopicAndSubscribe client', this.client);
         await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, _topic, _topic, this.client.relayPeerId, null, () => {});
+        console.log('addTopicSubscriber')
         return this.addTopicSubscriber(_topic, _callback);
     }
 
