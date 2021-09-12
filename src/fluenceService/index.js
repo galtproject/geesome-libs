@@ -22,6 +22,9 @@ module.exports = class FluenceService {
             }
         });
     }
+    getClientRelayId() {
+        return this.client.getStatus().relayPeerId;
+    }
     addTopicSubscriber(topic, callback) {
         if (!this.subscribesByTopics[topic]) {
             this.subscribesByTopics[topic] = [];
@@ -42,7 +45,7 @@ module.exports = class FluenceService {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
         }
-        await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, accountKey, storageId, this.client.relayPeerId, null, () => {});
+        await dhtApi.initTopicAndSubscribe(this.client, this.getClientRelayId(), accountKey, storageId, this.getClientRelayId(), null, () => {});
         await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
         return accountKey;
     }
@@ -50,7 +53,7 @@ module.exports = class FluenceService {
         if (!startsWith(staticStorageId, 'Qm')) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
-        return dhtApi.findSubscribers(this.client, this.client.relayPeerId, staticStorageId).then(results => {
+        return dhtApi.findSubscribers(this.client, this.getClientRelayId(), staticStorageId).then(results => {
             console.log("subscriber", results[0]);
             return results[0] && results[0].value;
         });
@@ -135,21 +138,21 @@ module.exports = class FluenceService {
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            dhtApi.fanout_event(this.client, this.client.relayPeerId, topic, event, (res) => {
+            dhtApi.fanout_event(this.client, this.getClientRelayId(), topic, event, (res) => {
                 return res === 'done' ? resolve() : reject(res);
             });
         });
     }
 
     async subscribeToEvent(_topic, _callback) {
-        console.log('initTopicAndSubscribe client', this.client);
-        await dhtApi.initTopicAndSubscribe(this.client, this.client.relayPeerId, _topic, _topic, this.client.relayPeerId, null, () => {});
+        console.log('initTopicAndSubscribe client', this.client, this.getClientRelayId(), _topic, _topic, this.getClientRelayId());
+        await dhtApi.initTopicAndSubscribe(this.client, this.getClientRelayId(), _topic, _topic, this.getClientRelayId(), null, () => {});
         console.log('addTopicSubscriber')
         return this.addTopicSubscriber(_topic, _callback);
     }
 
     async getStaticIdPeers(ipnsId) {
-        return dhtApi.findSubscribers(this.client, this.client.relayPeerId, getIpnsUpdatesTopic(ipnsId));
+        return dhtApi.findSubscribers(this.client, this.getClientRelayId(), getIpnsUpdatesTopic(ipnsId));
     }
 
     async getPubSubLs() {
@@ -160,6 +163,6 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        return dhtApi.findSubscribers(this.client, this.client.relayPeerId, topic);
+        return dhtApi.findSubscribers(this.client, this.getClientRelayId(), topic);
     }
 }
