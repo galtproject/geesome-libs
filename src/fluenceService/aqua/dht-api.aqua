@@ -126,7 +126,6 @@ data Event:
 
 service ClientAPI("api"):
     receive_event(topic: string, e: Event)
-    get_data(key: string) -> string
 
 func fanout_event(relay: string, topic: string, event: Event, call: string -> ()):
     sigValid <- GeesomeCrypto.checkSignature(event.from, event.data, event.seqno, event.signature)

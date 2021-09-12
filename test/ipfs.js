@@ -91,7 +91,7 @@ describe('ipfs', function () {
     })();
   });
 
-  it.only('encrypt and decrypt base64 private key', function (done) {
+  it('encrypt and decrypt base64 private key', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {

@@ -3,7 +3,6 @@ const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
 const {getIpnsUpdatesTopic} = require('../name');
-const { subscribeToEvent, registerServiceFunction } = require('@fluencelabs/fluence');
 
 module.exports = class FluenceService {
     constructor(accStorage, client) {
@@ -11,13 +10,16 @@ module.exports = class FluenceService {
         this.client = client;
         this.subscribesByTopics = {};
 
-        subscribeToEvent(this.client, 'api', 'receive_event', (args, _tetraplets) => {
-            return this.emitTopicSubscribers(args[0], args[1]);
+        dhtApi.registerClientAPI(this.client, 'api', {
+            receive_event: (topic, e) => {
+                this.emitTopicSubscribers(topic, e);
+            }
         });
 
-        registerServiceFunction(this.client, 'GeesomeCrypto', 'checkSignature', (args, _tetraplets) => {
-            const [from, data, seqno, signature] = args;
-            return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+        dhtApi.registerClientAPI(this.client, 'GeesomeCrypto', {
+            checkSignature: (from, data, seqno, signature) => {
+                return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+            }
         });
     }
     addTopicSubscriber(topic, callback) {
