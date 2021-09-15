@@ -721,22 +721,22 @@
     unique-filename "^1.1.1"
     which "^1.3.1"
 
-"@fluencelabs/aqua-dht@^0.1.38":
-  version "0.1.38"
-  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua-dht/-/aqua-dht-0.1.38.tgz#eab9e07dc2fbc9ae81469159774ea8bd691bbfba"
-  integrity sha512-rJkBmI0NFeNKiOJe+mUoz3uSjbB79LP7VpcC4yuHuDPC449gpALSubZHdVAlXTD7KVCS/2Phhh8WwEOyvlyN6g==
+"@fluencelabs/aqua-dht@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua-dht/-/aqua-dht-0.2.1.tgz#3aa9a40c7c22c8cd824840d502711ae9b864771e"
+  integrity sha512-9FtBnOAL2pbbxFVs/77d+PgB614FxRWaqZshbQkx6O0gfMWhSe4QV52GgkDrFtjbUyJ4+T+EmEMU4hST4wetdw==
   dependencies:
     "@fluencelabs/aqua-lib" "^0.1.14"
 
-"@fluencelabs/aqua-lib@^0.1.14":
+"@fluencelabs/aqua-lib@0.1.14", "@fluencelabs/aqua-lib@^0.1.14":
   version "0.1.14"
   resolved "https://registry.yarnpkg.com/@fluencelabs/aqua-lib/-/aqua-lib-0.1.14.tgz#55b9624f173b570b306d36de01006eef27b2fb9a"
   integrity sha512-H2Q4gIvociUxc4J2mwmH0D+mrU2N2Z+enKCHgBCanMVEE2wZDsZ80GTbDKsQjEq+gpqbnJIk8lJBYW6lyvLJTg==
 
-"@fluencelabs/aqua@^0.3.0-226":
-  version "0.3.0-226"
-  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua/-/aqua-0.3.0-226.tgz#b082f1c7f805613f00e39f6d3aa8c021fdc72793"
-  integrity sha512-9o0TdgsVNcBvifqo7VqIkN62P9EReE0LUxgWG1rGHi9yxJiGElvEBvrVUzqShffF66Ene7VGEe85lhFIGCfDgg==
+"@fluencelabs/aqua@0.3.1-228":
+  version "0.3.1-228"
+  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua/-/aqua-0.3.1-228.tgz#83bde0823491a6b6f9b6dd0267864bc361eab808"
+  integrity sha512-uTgCNa+tBhUyl18Ejq0CpoJxxD3CsOI4+BU64Hdkm9LNE9nu94k8JDYtTKKIAJdhk4kQ3qHy6HHtwVSWTPDPHQ==
 
 "@fluencelabs/avm@0.14.4":
   version "0.14.4"
