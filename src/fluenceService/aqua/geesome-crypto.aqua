@@ -22,6 +22,7 @@ func fanout_event(topic: string, event: Event, call: string -> ()):
         subs <- findSubscribers(topic)
         for r <- subs par:
             on r.peer_id via r.relay_id!:
-                co ClientAPI.receive_event(topic, event)
+                ClientAPI.receive_event(topic, event)
+                call("receive_event")
 
         call("done")
