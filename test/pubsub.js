@@ -93,6 +93,7 @@ describe('pubsub', function () {
           console.log('publishEventByPeerId');
 
           await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
+          console.log('published!');
         })();
       });
 

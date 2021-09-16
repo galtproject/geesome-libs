@@ -34,6 +34,7 @@ module.exports = {
             await peer.start({
                 connectTo: krasnodar[1],
             });
+            console.log("connected");
             return new FluenceService(accStorage, peer);
         };
 

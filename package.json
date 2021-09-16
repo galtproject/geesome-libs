@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/mocha",
-    "compile-fluence": "npx aqua -i ./src/fluenceService/aqua -o ./src/fluenceService && tsc src/fluenceService/*.ts --esModuleInterop"
+    "compile-fluence": "npx aqua -i ./src/fluenceService/aqua -o ./src/fluenceService/generated && tsc src/fluenceService/generated/*.ts --esModuleInterop"
   },
   "author": "",
   "license": "ISC",

@@ -1,6 +1,4 @@
-import "@fluencelabs/aqua-dht/dht.aqua"
-import "@fluencelabs/aqua-lib/builtin.aqua"
-import "@fluencelabs/aqua-dht/pubsub.aqua"
+import findSubscribers from "@fluencelabs/aqua-dht/pubsub.aqua"
 
 service GeesomeCrypto("GeesomeCrypto"):
   checkSignature(from: string, data: string, seqno: string, signature: string) -> bool
@@ -15,14 +13,20 @@ service ClientAPI("api"):
     receive_event(topic: string, e: Event)
 
 func fanout_event(topic: string, event: Event, call: string -> ()):
-    sigValid <- GeesomeCrypto.checkSignature(event.from, event.data, event.seqno, event.signature)
+    call("will check signature")
+    try:
+        sigValid <- GeesomeCrypto.checkSignature(event.from, event.data, event.seqno, event.signature)
+    catch e:
+        call("checkSignature failed")
+    call("did check signature")
     if sigValid == false:
         call("signature_not_valid")
     else:
+        call("signature is valid")
         subs <- findSubscribers(topic)
         for r <- subs par:
             on r.peer_id via r.relay_id!:
                 ClientAPI.receive_event(topic, event)
-                call("receive_event")
+                co call("receive_event")
 
-        call("done")
+        co call("done")
