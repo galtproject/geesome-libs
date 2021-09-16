@@ -1,4 +1,5 @@
-const dhtApi = require('./dht-api');
+const dhtApi = require('./generated/dht-api');
+const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
@@ -10,15 +11,22 @@ module.exports = class FluenceService {
         this.client = client;
         this.subscribesByTopics = {};
 
-        dhtApi.registerClientAPI(this.client, 'api', {
+        geesomeCrypto.registerClientAPI(this.client, 'api', {
             receive_event: (topic, e) => {
                 this.emitTopicSubscribers(topic, e);
             }
         });
 
-        dhtApi.registerClientAPI(this.client, 'GeesomeCrypto', {
+        geesomeCrypto.registerGeesomeCrypto(this.client, 'GeesomeCrypto', {
             checkSignature: (from, data, seqno, signature) => {
-                return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+                console.log("checking signature in JS");
+                try {
+                    let result = ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+                    console.log("checking signature finished. valid?", result);
+                    return result;
+                } catch (e) {
+                    console.error("checking signature failed:", e);
+                }
             }
         });
     }
@@ -138,21 +146,27 @@ module.exports = class FluenceService {
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            dhtApi.fanout_event(this.client, topic, event, (res) => {
-                return res === 'done' ? resolve() : reject(res);
+            geesomeCrypto.fanout_event(this.client, topic, event, (res) => {
+                console.log("fanout_event", res);
+                if (res === 'done') {
+                    return resolve();
+                } else if (res === 'signature_not_valid') {
+                    return reject('fanout_event failed: signature isnt valid');
+                }
             });
         });
     }
 
     async subscribeToEvent(_topic, _callback) {
-        console.log('initTopicAndSubscribe client', this.client, _topic, _topic, this.getClientRelayId());
-        await dhtApi.initTopicAndSubscribe(this.client, _topic, _topic, this.getClientRelayId(), null, () => {});
+        console.log('initTopicAndSubscribe client', _topic, _topic, this.getClientRelayId());
+        await dhtApi.initTopicAndSubscribeBlocking(this.client, _topic, _topic, this.getClientRelayId(), null, () => {});
         console.log('addTopicSubscriber')
         return this.addTopicSubscriber(_topic, _callback);
     }
 
     async getStaticIdPeers(ipnsId) {
-        return dhtApi.findSubscribers(this.client, getIpnsUpdatesTopic(ipnsId));
+        let subs = await dhtApi.findSubscribers(this.client, getIpnsUpdatesTopic(ipnsId));
+        return subs;
     }
 
     async getPubSubLs() {
@@ -163,6 +177,7 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        return dhtApi.findSubscribers(this.client, topic);
+        let subs = await dhtApi.findSubscribers(this.client, topic);
+        return subs;
     }
 }
