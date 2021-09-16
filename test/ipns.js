@@ -23,7 +23,7 @@ const createNodes = require('./utils/createNodes');
 const peerIdHelper = require('../src/peerIdHelper');
 const commonHelper = require('../src/common');
 
-describe.only('ipns', function () {
+describe('ipns', function () {
   let nodeA;
   let nodeB;
   const pass = 'geesome-is-awesome-software';

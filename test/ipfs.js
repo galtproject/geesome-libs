@@ -67,7 +67,7 @@ describe('ipfs', function () {
     })();
   });
 
-  it('should correctly convert peerId to string representations', function (done) {
+  it.only('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
