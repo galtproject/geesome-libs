@@ -19,13 +19,12 @@ module.exports = class FluenceService {
 
         geesomeCrypto.registerGeesomeCrypto(this.client, 'GeesomeCrypto', {
             checkSignature: (from, data, seqno, signature) => {
-                console.log("checking signature in JS");
+                // console.log("checking signature in JS");
                 try {
-                    let result = ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
-                    console.log("checking signature finished. valid?", result);
-                    return result;
+                    // console.log("checking signature finished. valid?", result);
+                    return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
                 } catch (e) {
-                    console.error("checking signature failed:", e);
+                    // console.error("checking signature failed:", e);
                 }
             }
         });
@@ -62,7 +61,7 @@ module.exports = class FluenceService {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
         return dhtApi.findSubscribers(this.client, staticStorageId).then(results => {
-            console.log("subscriber", results[0]);
+            // console.log("subscriber", results[0]);
             return results[0] && results[0].value;
         });
     }
@@ -147,7 +146,7 @@ module.exports = class FluenceService {
         // console.log('fanout_event', this.client.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
             geesomeCrypto.fanout_event(this.client, topic, event, (res) => {
-                console.log("fanout_event", res);
+                // console.log("fanout_event", res);
                 if (res === 'done') {
                     return resolve();
                 } else if (res === 'signature_not_valid') {
@@ -158,9 +157,9 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback) {
-        console.log('initTopicAndSubscribe client', _topic, _topic, this.getClientRelayId());
-        await dhtApi.initTopicAndSubscribeBlocking(this.client, _topic, _topic, this.getClientRelayId(), null, () => {});
-        console.log('addTopicSubscriber')
+        console.log('initTopicAndSubscribeBlocking start');
+        await dhtApi.initTopicAndSubscribeBlocking(this.client, _topic, _topic, this.getClientRelayId(), null, () => {}, {ttl: 20000});
+        console.log('initTopicAndSubscribeBlocking end');
         return this.addTopicSubscriber(_topic, _callback);
     }
 

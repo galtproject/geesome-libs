@@ -67,14 +67,14 @@ describe('ipfs', function () {
     })();
   });
 
-  it.only('should correctly convert peerId to string representations', function (done) {
+  it('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
       const peerId = await peerIdHelper.createPeerId();
 
       expect(peerIdHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
-      expect(peerIdHelper.peerIdToPrivateBase64(peerId).length).to.equals(1596);
+      expect(peerIdHelper.peerIdToPrivateBase64(peerId).length === 1596 || peerIdHelper.peerIdToPrivateBase64(peerId).length === 1600).to.equals(true);
 
       expect(peerIdHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase64(peerId).length).to.equals(400);

@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const CID = require('cids');
+const { CID } = require('multiformats/cid');
 
 const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
@@ -22,7 +22,6 @@ const uint8ArrayFromString = require('uint8arrays/from-string')
 
 const libp2pCrypto = require('libp2p-crypto');
 const libp2pKeys = require('libp2p-crypto/src/keys');
-const RsaClass = require('libp2p-crypto/src/keys/rsa-class');
 const crypto = require('crypto')
 const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
 const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
@@ -46,23 +45,16 @@ const ipfsHelper = {
     return startsWith(value.codec, 'dag-') || (isString(value) && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
   },
   isCid(value) {
-    return CID.isCID(value);
+    const cid = CID.asCID(value);
+    return !!cid;
   },
   cidToHash(cid) {
-    const cidsResult = new CID(1, 'dag-cbor', cid.multihash || Buffer.from(cid.hash.data));
-    return cidsResult.toBaseEncodedString();
+    // const cidsResult = new CID(1, 'dag-cbor', cid.multihash || Buffer.from(cid.hash.data));
+    return cid.toString();
   },
   cidToIpfsHash(cid) {
-    if (!CID.isCID(cid)) {
-      cid = new CID(cid)
-    }
-
-    // if (cid.version === 0 && options.base && options.base !== 'base58btc') {
-    //   if (!options.upgrade) return cid.toString();
-    //   cid = cid.toV1()
-    // }
-
-    return cid.toBaseEncodedString();
+    cid = CID.asCID(cid);
+    return cid.toString();
   },
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);
@@ -118,7 +110,7 @@ const ipfsHelper = {
   },
   
   async getIpfsHashFromString(string) {
-    const UnixFS = require('ipfs-unixfs');
+    const { UnixFS } = require('ipfs-unixfs');
     const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
     const buffer = unixFsFile.marshal();
 
