@@ -734,10 +734,10 @@
     unique-filename "^1.1.1"
     which "^1.3.1"
 
-"@fluencelabs/aqua-dht@0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua-dht/-/aqua-dht-0.2.1.tgz#3aa9a40c7c22c8cd824840d502711ae9b864771e"
-  integrity sha512-9FtBnOAL2pbbxFVs/77d+PgB614FxRWaqZshbQkx6O0gfMWhSe4QV52GgkDrFtjbUyJ4+T+EmEMU4hST4wetdw==
+"@fluencelabs/aqua-dht@0.2.3":
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@fluencelabs/aqua-dht/-/aqua-dht-0.2.3.tgz#a58ecdd57a4ad5ae539b46d106f26f5f317ed090"
+  integrity sha512-MgEzBWzU9ZbZ4Hn+RbDkWSGb9x7n2n8C8DFXv7uU9OPNqN6AGOx9cz9QcWdUxuAD/4c2hgbikcEbcqphlWGZNg==
   dependencies:
     "@fluencelabs/aqua-lib" "^0.1.14"
 

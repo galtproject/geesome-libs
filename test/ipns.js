@@ -23,7 +23,7 @@ const createNodes = require('./utils/createNodes');
 const peerIdHelper = require('../src/peerIdHelper');
 const commonHelper = require('../src/common');
 
-describe.only('ipns', function () {
+describe('ipns', function () {
   let nodeA;
   let nodeB;
   const pass = 'geesome-is-awesome-software';
@@ -50,12 +50,10 @@ describe.only('ipns', function () {
           const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
-          console.log('testAccountIpnsId', testAccountIpnsId);
           const testAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey(testAccountIpnsId));
           await nodeA.createAccountIfNotExists('self');
           const selfAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey('self'));
 
-          console.log('subscribeToStaticIdUpdates', testAccountIpnsId);
           await nodeB.subscribeToStaticIdUpdates(testAccountIpnsId, async (message) => {
             assert.equal(message.dataStr, '/ipfs/' + testHash);
             assert.equal(message.from, testAccountPublicKey);

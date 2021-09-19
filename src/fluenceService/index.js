@@ -52,7 +52,7 @@ module.exports = class FluenceService {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
         }
-        await dhtApi.initTopicAndSubscribe(this.peer, accountKey, storageId, this.getClientRelayId(), null, () => {});
+        await this.initTopicAndSubscribeBlocking(accountKey, storageId);
         await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
         return accountKey;
     }
@@ -157,20 +157,18 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback) {
-        console.log('initTopicAndSubscribeBlocking start');
-        await this.initTopicAndSubscribeBlocking(_topic);
-        console.log('initTopicAndSubscribeBlocking end');
+        await this.initTopicAndSubscribeBlocking(_topic, _topic);
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic) {
+    async initTopicAndSubscribeBlocking(_topic, _value) {
         try {
-            await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _topic, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
+            await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _value, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
         } catch (e) {
             console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
             await this.peer.stop().catch(e => console.warn('peer.stop failed', e));
             await this.peer.start();
-            return this.initTopicAndSubscribeBlocking(_topic);
+            return this.initTopicAndSubscribeBlocking(_topic, _value);
         }
     }
 
