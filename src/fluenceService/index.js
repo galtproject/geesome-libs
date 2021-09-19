@@ -158,9 +158,18 @@ module.exports = class FluenceService {
 
     async subscribeToEvent(_topic, _callback) {
         console.log('initTopicAndSubscribeBlocking start');
-        await dhtApi.initTopicAndSubscribeBlocking(this.client, _topic, _topic, this.getClientRelayId(), null, () => {}, {ttl: 20000});
+        await this.initTopicAndSubscribeBlocking(_topic);
         console.log('initTopicAndSubscribeBlocking end');
         return this.addTopicSubscriber(_topic, _callback);
+    }
+
+    async initTopicAndSubscribeBlocking(_topic) {
+        try {
+            await dhtApi.initTopicAndSubscribeBlocking(this.client, _topic, _topic, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
+        } catch (e) {
+            console.warn('initTopicAndSubscribeBlocking failed, try again...', e.message);
+            return this.initTopicAndSubscribeBlocking(_topic);
+        }
     }
 
     async getStaticIdPeers(ipnsId) {
