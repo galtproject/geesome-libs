@@ -15,6 +15,7 @@
     "@fluencelabs/aqua-lib": "0.1.14",
     "@fluencelabs/fluence": "^0.12.0",
     "@fluencelabs/fluence-network-environment": "^1.0.10",
+    "@ipld/dag-cbor": "^6.0.10",
     "axios": "^0.21.1",
     "base64url": "^3.0.1",
     "bn.js": "^4.0.0",

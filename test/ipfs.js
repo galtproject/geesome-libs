@@ -67,6 +67,23 @@ describe('ipfs', function () {
     })();
   });
 
+  it('should resolve object props', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const array = ['bar1', 'bar2'];
+      const arrayId = await node.saveObject(array);
+
+      const obj = {
+        foo: 'bar',
+        fooArray: arrayId
+      };
+      const objectId = await node.saveObject(obj);
+      expect(await node.getObjectProp(objectId, 'fooArray')).to.deep.equal(array);
+      done();
+    })();
+  });
+
   it('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 

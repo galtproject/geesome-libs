@@ -8,6 +8,7 @@
  */
 
 const { CID } = require('multiformats/cid');
+const { sha256 } = require('multiformats/hashes/sha2');
 
 const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
@@ -26,7 +27,7 @@ const crypto = require('crypto')
 const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
 const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-const dagCBOR = require('ipld-dag-cbor')
+const dagCBOR = require('@ipld/dag-cbor')
 const PeerId = require('peer-id');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 const peerIdHelper = require('./peerIdHelper.js');
@@ -56,6 +57,9 @@ const ipfsHelper = {
     cid = CID.asCID(cid);
     return cid.toString();
   },
+  ipfsHashToCid(hash) {
+    return CID.parse(hash);
+  },
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);
     return libp2pCrypto.keys.import(pem, pass);
@@ -72,12 +76,12 @@ const ipfsHelper = {
         throw "pubsub_signature_invalid";
       }
     }
-    
+
     try {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
       event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
-      
+
       const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
     } catch (e) {
       // not ipns event
@@ -108,7 +112,7 @@ const ipfsHelper = {
     // verify the base message
     return pubKey.verify(bytes, message.signature)
   },
-  
+
   async getIpfsHashFromString(string) {
     const { UnixFS } = require('ipfs-unixfs');
     const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
@@ -122,7 +126,8 @@ const ipfsHelper = {
   },
 
   async getIpldHashFromObject(object) {
-    return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
+    //TODO: find more efficient way
+    return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
   },
 
   async buildAndSignPubSubMessage(privateKey, topics, data) {

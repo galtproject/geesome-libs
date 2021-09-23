@@ -1065,7 +1065,7 @@
     multiformats "^9.0.0"
     varint "^6.0.0"
 
-"@ipld/dag-cbor@^6.0.0", "@ipld/dag-cbor@^6.0.4", "@ipld/dag-cbor@^6.0.5":
+"@ipld/dag-cbor@^6.0.0", "@ipld/dag-cbor@^6.0.10", "@ipld/dag-cbor@^6.0.4", "@ipld/dag-cbor@^6.0.5":
   version "6.0.10"
   resolved "https://registry.yarnpkg.com/@ipld/dag-cbor/-/dag-cbor-6.0.10.tgz#b757579bd497483932bd291779cea80caa693a5b"
   integrity sha512-dGinQkyDKQ5vkgX8JxbXBX2fl2GB+cn6u6a6cm/pTub1WeB/PMoDJ9pU7VSBvHUtGO+ZoueeQ06TgEnO+t9esg==
