@@ -28,6 +28,10 @@ describe('pubsub', function () {
   let nodeB
   const pass = 'ipfs-is-awesome-software';
 
+  after(() => {
+    process.exit();
+  });
+
   ['fluence'].forEach(service => {
     describe(service, function () {
 
@@ -89,9 +93,6 @@ describe('pubsub', function () {
           });
 
           await new Promise((resolve) => setTimeout(resolve, 5000));
-
-          console.log('publishEventByPeerId');
-
           await nodeA.publishEventByPeerId(testAccountPeerId, testTopic, "test-message");
         })();
       });

@@ -50,7 +50,6 @@ describe('ipns', function () {
           const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
-          console.log('testAccountIpnsId', testAccountIpnsId);
           const testAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey(testAccountIpnsId));
           await nodeA.createAccountIfNotExists('self');
           const selfAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey('self'));

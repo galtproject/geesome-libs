@@ -7,7 +7,8 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const CID = require('cids');
+const { CID } = require('multiformats/cid');
+const { sha256 } = require('multiformats/hashes/sha2');
 
 const startsWith = require('lodash/startsWith');
 const isString = require('lodash/isString');
@@ -22,13 +23,15 @@ const uint8ArrayFromString = require('uint8arrays/from-string')
 
 const libp2pCrypto = require('libp2p-crypto');
 const libp2pKeys = require('libp2p-crypto/src/keys');
-const RsaClass = require('libp2p-crypto/src/keys/rsa-class');
 const crypto = require('crypto')
 const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
 const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-const dagCBOR = require('ipld-dag-cbor')
+const dagCBOR = require('@ipld/dag-cbor')
 const PeerId = require('peer-id');
+const pick = require('lodash/pick');
+const isUndefined = require('lodash/isUndefined');
+const isDate = require('lodash/isDate');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 const peerIdHelper = require('./peerIdHelper.js');
 
@@ -43,26 +46,34 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return startsWith(value.codec, 'dag-') || (isString(value) && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
+    return startsWith(value.codec, 'dag-') || (isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
   },
   isCid(value) {
-    return CID.isCID(value);
+    const cid = CID.asCID(value);
+    return !!cid;
   },
   cidToHash(cid) {
-    const cidsResult = new CID(1, 'dag-cbor', cid.multihash || Buffer.from(cid.hash.data));
-    return cidsResult.toBaseEncodedString();
+    // const cidsResult = new CID(1, 'dag-cbor', cid.multihash || Buffer.from(cid.hash.data));
+    return cid.toString();
   },
   cidToIpfsHash(cid) {
-    if (!CID.isCID(cid)) {
-      cid = new CID(cid)
-    }
-
-    // if (cid.version === 0 && options.base && options.base !== 'base58btc') {
-    //   if (!options.upgrade) return cid.toString();
-    //   cid = cid.toV1()
-    // }
-
-    return cid.toBaseEncodedString();
+    cid = CID.asCID(cid);
+    return cid.toString();
+  },
+  ipfsHashToCid(hash) {
+    return CID.parse(hash);
+  },
+  pickObjectFields(object, fields) {
+    object = pick(object, fields);
+    fields.forEach(f => {
+      if (isUndefined(object[f])) {
+        object[f] = null;
+      }
+      if (isDate(object[f])) {
+        object[f] = object[f].getTime() / 1000;
+      }
+    });
+    return object;
   },
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);
@@ -80,12 +91,12 @@ const ipfsHelper = {
         throw "pubsub_signature_invalid";
       }
     }
-    
+
     try {
       event.data = ipns.unmarshal(event.data);
       event.data.valueStr = event.data.value.toString('utf8');
       event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
-      
+
       const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
     } catch (e) {
       // not ipns event
@@ -116,9 +127,9 @@ const ipfsHelper = {
     // verify the base message
     return pubKey.verify(bytes, message.signature)
   },
-  
+
   async getIpfsHashFromString(string) {
-    const UnixFS = require('ipfs-unixfs');
+    const { UnixFS } = require('ipfs-unixfs');
     const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
     const buffer = unixFsFile.marshal();
 
@@ -130,7 +141,8 @@ const ipfsHelper = {
   },
 
   async getIpldHashFromObject(object) {
-    return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
+    //TODO: find more efficient way
+    return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
   },
 
   async buildAndSignPubSubMessage(privateKey, topics, data) {

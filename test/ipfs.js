@@ -67,6 +67,53 @@ describe('ipfs', function () {
     })();
   });
 
+  it('should resolve object props', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const array = ['bar1', 'bar2'];
+      const arrayId = await node.saveObject(array);
+
+      const obj = {
+        foo: 'bar',
+        fooArray: arrayId
+      };
+      const objectId = await node.saveObject(obj);
+      expect(await node.getObjectProp(objectId, 'fooArray')).to.deep.equal(array);
+      done();
+    })();
+  });
+
+  it('should resolve object props', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const userObj = {
+        name: 'admin',
+        title: undefined,
+        email: 'admin@admin.com',
+        description: undefined,
+        updatedAt: new Date(Date.parse('2021-09-23T16:44:34.483Z')),
+        createdAt: new Date(Date.parse('2021-09-23T16:44:34.483Z')),
+        staticId: 'QmRxqZjNRMFoQxKXhBRMDDJupm9KXXHmQgTcwQ83G7PRdc',
+        publicKey: 'CAASpgIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDgArr1MKM1YgNcZLMV303XO4wvQ621/yODb921mB8UT03RBjiTBpGCzfKjJ1Ud/g4uZFHRYV9kJl6t8bUOPG1BhpM84shRX1uDIdlLHBVPwaJJLmlQbbor03bKFYP9r3YIyPPDM9EF5hzet3uiMqj9d3j6QMUiWO5xTaCuvVfUHszurk96RDfpCENd2ImpAte0geOwdTBhlajghZWqGjW9t93YJSUyaqjJNpS3pJ5j95ENCnofXPs909xGNc9XcVM8D2yqPqaVjHz0RXSP7dVg1+Yb6H2R1EYLdCftB/S+LeqKP5NmiXPLwHtnrsyf1A2K62HdtqPTsOCl2ve8uLTVAgMBAAE=',
+        accounts: [],
+        _version: '0.1',
+        _source: 'geesome-node',
+        _protocol: 'geesome-ipsp',
+        _type: 'user-manifest'
+      };
+      console.log('userObj', userObj);
+
+      const storageId = await ipfsHelper.getIpldHashFromObject(
+          ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
+      );
+      expect(storageId).to.equals('bafyreidbolvs64moiamhoq4xol5jmrzpgi27wgxgwseiopr7nrkgn4pemu');
+      done();
+    })();
+  });
+
+
   it('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 
@@ -74,7 +121,7 @@ describe('ipfs', function () {
       const peerId = await peerIdHelper.createPeerId();
 
       expect(peerIdHelper.peerIdToPrivateBase64(peerId).indexOf('CAAS')).to.equals(0);
-      expect(peerIdHelper.peerIdToPrivateBase64(peerId).length).to.equals(1596);
+      expect(peerIdHelper.peerIdToPrivateBase64(peerId).length === 1596 || peerIdHelper.peerIdToPrivateBase64(peerId).length === 1600).to.equals(true);
 
       expect(peerIdHelper.peerIdToPublicBase64(peerId).indexOf('CAAS')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase64(peerId).length).to.equals(400);
@@ -91,7 +138,7 @@ describe('ipfs', function () {
     })();
   });
 
-  it.only('encrypt and decrypt base64 private key', function (done) {
+  it('encrypt and decrypt base64 private key', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {

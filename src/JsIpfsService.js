@@ -185,7 +185,9 @@ module.exports = class JsIpfsService {
     if (!ipfsHelper.isCid(storageId)) {
       storageId = new CID(storageId)
     }
-    return this.node.dag.get(storageId, {path: propName}).then(response => response.value);
+    const path = '/' + propName + '/';
+    const result = await this.node.dag.get(storageId, {path}).then(response => response.value);
+    return ipfsHelper.isIpldHash(result) ? this.node.dag.get(ipfsHelper.ipfsHashToCid(result)).then(response => response.value) : result;
   }
 
   getObjectRef(storageId) {
@@ -374,7 +376,7 @@ module.exports = class JsIpfsService {
 
   async getDirectoryId(path) {
     let {hash, cid} = await this.node.files.stat(path, {hash: true});
-    if(!hash) {
+    if (!hash) {
       hash = ipfsHelper.cidToIpfsHash(cid);
     }
     return hash;
