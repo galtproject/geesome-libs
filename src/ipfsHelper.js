@@ -43,7 +43,7 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return startsWith(value.codec, 'dag-') || (isString(value) && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
+    return startsWith(value.codec, 'dag-') || (isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
   },
   isCid(value) {
     const cid = CID.asCID(value);
