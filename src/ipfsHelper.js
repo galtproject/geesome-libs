@@ -31,6 +31,7 @@ const dagCBOR = require('@ipld/dag-cbor')
 const PeerId = require('peer-id');
 const pick = require('lodash/pick');
 const isUndefined = require('lodash/isUndefined');
+const isDate = require('lodash/isDate');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 const peerIdHelper = require('./peerIdHelper.js');
 
@@ -67,6 +68,9 @@ const ipfsHelper = {
     fields.forEach(f => {
       if (isUndefined(object[f])) {
         object[f] = null;
+      }
+      if (isDate(object[f])) {
+        object[f] = object[f].getTime() / 1000;
       }
     });
     return object;
