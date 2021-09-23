@@ -29,6 +29,8 @@ const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/s
 const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
 const dagCBOR = require('@ipld/dag-cbor')
 const PeerId = require('peer-id');
+const pick = require('lodash/pick');
+const isUndefined = require('lodash/isUndefined');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 const peerIdHelper = require('./peerIdHelper.js');
 
@@ -59,6 +61,15 @@ const ipfsHelper = {
   },
   ipfsHashToCid(hash) {
     return CID.parse(hash);
+  },
+  pickObjectFields(object, fields) {
+    object = pick(object, fields);
+    fields.forEach(f => {
+      if (isUndefined(object[f])) {
+        object[f] = null;
+      }
+    });
+    return object;
   },
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);

@@ -84,6 +84,35 @@ describe('ipfs', function () {
     })();
   });
 
+  it('should resolve object props', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const userObj = {
+        name: 'admin',
+        title: undefined,
+        email: 'admin@admin.com',
+        description: undefined,
+        updatedAt: Date.parse('2021-09-23T16:44:34.483Z'),
+        createdAt: Date.parse('2021-09-23T16:44:34.483Z'),
+        staticId: 'QmRxqZjNRMFoQxKXhBRMDDJupm9KXXHmQgTcwQ83G7PRdc',
+        publicKey: 'CAASpgIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDgArr1MKM1YgNcZLMV303XO4wvQ621/yODb921mB8UT03RBjiTBpGCzfKjJ1Ud/g4uZFHRYV9kJl6t8bUOPG1BhpM84shRX1uDIdlLHBVPwaJJLmlQbbor03bKFYP9r3YIyPPDM9EF5hzet3uiMqj9d3j6QMUiWO5xTaCuvVfUHszurk96RDfpCENd2ImpAte0geOwdTBhlajghZWqGjW9t93YJSUyaqjJNpS3pJ5j95ENCnofXPs909xGNc9XcVM8D2yqPqaVjHz0RXSP7dVg1+Yb6H2R1EYLdCftB/S+LeqKP5NmiXPLwHtnrsyf1A2K62HdtqPTsOCl2ve8uLTVAgMBAAE=',
+        accounts: [],
+        _version: '0.1',
+        _source: 'geesome-node',
+        _protocol: 'geesome-ipsp',
+        _type: 'user-manifest'
+      };
+
+      const storageId = await ipfsHelper.getIpldHashFromObject(
+          ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
+      );
+      assert.equal(storageId, 'bafyreigx5agapxojfn4rge4wzti77sz7q35lrnmhc7w2ev24ofpjfav3di');
+      done();
+    })();
+  });
+
+
   it('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 
