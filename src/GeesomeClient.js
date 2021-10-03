@@ -558,13 +558,6 @@ class GeesomeClient {
     }
   }
 
-  getTreePostCidPath(groupData, postNumber) {
-    const prefix = groupData.staticId + '/posts/';
-    const postNumberPath = trie.getTreePath(postNumber).join('/');
-    // const node = trie.getNode(groupData.posts, postNumber);
-    return prefix + postNumberPath;
-  }
-
   async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
     const group = await this.getGroup(groupId);
 
@@ -585,29 +578,30 @@ class GeesomeClient {
       options.limit = postsCount - options.offset;
     }
 
-    const postsPath = group.staticId + '/posts/';
     const posts = [];
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
-      const postNumberPath = this.getTreePostCidPath(group, postNumber);
-      const node = trie.getNode(group.posts, postNumber);
+      const postNumberPath = trie.getTreePostCidPath(group.staticId, postNumber);
 
-      let post = await this.getObject(postNumberPath);
+      let postManifestId, post;
 
-      if (ipfsHelper.isCid(node)) {
-        post.manifestId = ipfsHelper.cidToHash(node);
-      } else if (node['/']) {
-        post.manifestId = node['/'];
-      } else if (group.isEncrypted) {
-        const manifestId = await this.decryptText(post);
-        post = await this.getPost(manifestId);
+      if (group.isEncrypted) {
+        post = await this.getPost(postNumberPath);
+        postManifestId = await this.decryptText(post);
+        post = await this.getPost(postManifestId);
+      } else {
+        [postManifestId, post] = await Promise.all([
+          this.getObject(postNumberPath, false),
+          this.getObject(postNumberPath)
+        ]);
       }
 
-      post.id = postNumber;
-
-      post.groupId = groupId;
       if (post) {
+        post.id = postNumber;
+        post.manifestId = postManifestId;
+        post.groupId = groupId;
         post.group = group;
       }
+
       posts[index] = post;
 
       if (onItemCallback) {
