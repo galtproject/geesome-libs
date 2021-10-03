@@ -174,7 +174,11 @@ module.exports = class JsIpfsService {
     return ipldHash;
   }
 
-  async getObject(storageId) {
+  async getObject(storageId, resolveProp = true) {
+    const splitStorageId = storageId.split('/');
+    if (splitStorageId.length > 1) {
+      return this.getObjectProp(splitStorageId[0], splitStorageId.slice(1).join('/'), resolveProp);
+    }
     if (!ipfsHelper.isCid(storageId)) {
       storageId = new CID(storageId)
     }
