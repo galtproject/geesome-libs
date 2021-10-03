@@ -63,6 +63,9 @@ const ipfsHelper = {
   ipfsHashToCid(hash) {
     return CID.parse(hash);
   },
+  getObjectRef(storageId) {
+    return storageId;
+  },
   pickObjectFields(object, fields) {
     object = pick(object, fields);
     fields.forEach(f => {

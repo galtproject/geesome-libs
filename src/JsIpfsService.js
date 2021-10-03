@@ -192,12 +192,6 @@ module.exports = class JsIpfsService {
     return ipfsHelper.isIpldHash(result.value) && !localResolve ? this.node.dag.get(ipfsHelper.ipfsHashToCid(result.value), {path: result.remainderPath}).then(response => response.value) : result.value;
   }
 
-  getObjectRef(storageId) {
-    return {
-      '/' : storageId
-    }
-  }
-
   async bindToStaticId(storageId, accountKey, options = {}) {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
