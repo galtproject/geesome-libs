@@ -181,13 +181,15 @@ module.exports = class JsIpfsService {
     return this.node.dag.get(storageId).then(response => response.value);
   }
 
-  async getObjectProp(storageId, propName) {
+  async getObjectProp(storageId, propName, resolveProp = true) {
+    const localResolve = !resolveProp;
+
     if (!ipfsHelper.isCid(storageId)) {
       storageId = new CID(storageId)
     }
     const path = '/' + propName + '/';
-    const result = await this.node.dag.get(storageId, {path}).then(response => response.value);
-    return ipfsHelper.isIpldHash(result) ? this.node.dag.get(ipfsHelper.ipfsHashToCid(result)).then(response => response.value) : result;
+    const result = await this.node.dag.get(storageId, {path, localResolve: true});
+    return ipfsHelper.isIpldHash(result.value) && !localResolve ? this.node.dag.get(ipfsHelper.ipfsHashToCid(result.value), {path: result.remainderPath}).then(response => response.value) : result.value;
   }
 
   getObjectRef(storageId) {

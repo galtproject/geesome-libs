@@ -493,7 +493,7 @@ class GeesomeClient {
     return this.server + '/v1/content-data/' + storageId;
   }
 
-  async getObject(ipldHash) {
+  async getObject(ipldHash, isResolve = true) {
     if (ipldHash.multihash || ipldHash.hash) {
       ipldHash = ipfsHelper.cidToHash(ipldHash);
     }
@@ -512,7 +512,7 @@ class GeesomeClient {
 
       // setTimeout(() => {
       //   if (!responded) {
-          this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
+          this.getRequest(`/ipld/${ipldHash}`, { isResolve }).then(wrapObject).then(resolve).catch(reject);
         // }
       // }, this.ipfsIddleTime);
     });
@@ -558,6 +558,13 @@ class GeesomeClient {
     }
   }
 
+  getTreePostCidPath(groupData, postNumber) {
+    const prefix = groupData.staticId + '/posts/';
+    const postNumberPath = trie.getTreePath(postNumber).join('/');
+    // const node = trie.getNode(groupData.posts, postNumber);
+    return prefix + postNumberPath;
+  }
+
   async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
     const group = await this.getGroup(groupId);
 
@@ -581,10 +588,10 @@ class GeesomeClient {
     const postsPath = group.staticId + '/posts/';
     const posts = [];
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
-      const postNumberPath = trie.getTreePath(postNumber).join('/');
-      let post = await this.getObject(postsPath + postNumberPath);
-
+      const postNumberPath = this.getTreePostCidPath(group, postNumber);
       const node = trie.getNode(group.posts, postNumber);
+
+      let post = await this.getObject(postNumberPath);
 
       if (ipfsHelper.isCid(node)) {
         post.manifestId = ipfsHelper.cidToHash(node);
