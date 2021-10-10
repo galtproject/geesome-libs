@@ -115,7 +115,6 @@ describe('ipfs', function () {
         _protocol: 'geesome-ipsp',
         _type: 'user-manifest'
       };
-      console.log('userObj', userObj);
 
       const storageId = await ipfsHelper.getIpldHashFromObject(
           ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
