@@ -448,6 +448,10 @@ class GeesomeClient {
 
     const groupObj = await this.getObject(groupId);
 
+    if (groupObj) {
+      groupObj.$manifestId = groupId;
+    }
+
     await this.fetchIpldFields(groupObj, ['avatarImage', 'coverImage']);
 
     return groupObj;
@@ -580,7 +584,7 @@ class GeesomeClient {
 
     const posts = [];
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
-      const postNumberPath = trie.getTreePostCidPath(group.staticId, postNumber);
+      const postNumberPath = trie.getTreePostCidPath(group.$manifestId, postNumber);
 
       let postManifestId, post;
 
