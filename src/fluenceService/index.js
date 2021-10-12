@@ -57,6 +57,9 @@ module.exports = class FluenceService {
         return accountKey;
     }
     async resolveStaticId(staticStorageId) {
+        return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
+    }
+    async resolveStaticItem(staticStorageId) {
         if (!startsWith(staticStorageId, 'Qm')) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
@@ -68,7 +71,10 @@ module.exports = class FluenceService {
                     lastItem = item;
                 }
             });
-            return lastItem && lastItem.value;
+            if (lastItem) {
+                lastItem.createdAt = lastItem.timestamp_created;
+            }
+            return lastItem;
         });
     }
     async removeAccountIfExists(name) {
