@@ -62,7 +62,13 @@ module.exports = class FluenceService {
         }
         return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {
             // console.log("subscriber", results[0]);
-            return results[0] && results[0].value;
+            let lastItem;
+            results.forEach(item => {
+                if (!lastItem || item.timestamp_created > lastItem.timestamp_created) {
+                    lastItem = item;
+                }
+            });
+            return lastItem && lastItem.value;
         });
     }
     async removeAccountIfExists(name) {
