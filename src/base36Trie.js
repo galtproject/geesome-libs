@@ -26,9 +26,10 @@ const base36TrieLib = {
     return trie.getTreePath(id);
   },
 
-  getTreePostCidPath(groupStaticId, postNumber) {
+  getTreePostCidPath(groupStaticId, id) {
+    id = base36.encode(id.toString());
     const prefix = groupStaticId + '/posts/';
-    const postNumberPath = trie.getTreePath(postNumber).join('/');
+    const postNumberPath = trie.getTreePath(id).join('/');
     return prefix + postNumberPath;
   }
 };
