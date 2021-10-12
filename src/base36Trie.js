@@ -24,6 +24,13 @@ const base36TrieLib = {
   getTreePath(id) {
     id = base36.encode(id.toString());
     return trie.getTreePath(id);
+  },
+
+  getTreePostCidPath(groupStaticId, id) {
+    id = base36.encode(id.toString());
+    const prefix = groupStaticId + '/posts/';
+    const postNumberPath = trie.getTreePath(id).join('/');
+    return prefix + postNumberPath;
   }
 };
 

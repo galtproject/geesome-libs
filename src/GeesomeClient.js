@@ -448,6 +448,10 @@ class GeesomeClient {
 
     const groupObj = await this.getObject(groupId);
 
+    if (groupObj) {
+      groupObj.$manifestId = groupId;
+    }
+
     await this.fetchIpldFields(groupObj, ['avatarImage', 'coverImage']);
 
     return groupObj;
@@ -493,7 +497,7 @@ class GeesomeClient {
     return this.server + '/v1/content-data/' + storageId;
   }
 
-  async getObject(ipldHash) {
+  async getObject(ipldHash, isResolve = true) {
     if (ipldHash.multihash || ipldHash.hash) {
       ipldHash = ipfsHelper.cidToHash(ipldHash);
     }
@@ -512,7 +516,7 @@ class GeesomeClient {
 
       // setTimeout(() => {
       //   if (!responded) {
-          this.getRequest(`/ipld/${ipldHash}`).then(wrapObject).then(resolve).catch(reject);
+          this.getRequest(`/ipld/${ipldHash}`, { isResolve }).then(wrapObject).then(resolve).catch(reject);
         // }
       // }, this.ipfsIddleTime);
     });
@@ -578,29 +582,30 @@ class GeesomeClient {
       options.limit = postsCount - options.offset;
     }
 
-    const postsPath = group.staticId + '/posts/';
     const posts = [];
     pIteration.forEach(range(postsCount - options.offset, postsCount - options.offset - options.limit), async (postNumber, index) => {
-      const postNumberPath = trie.getTreePath(postNumber).join('/');
-      let post = await this.getObject(postsPath + postNumberPath);
+      const postNumberPath = trie.getTreePostCidPath(group.$manifestId, postNumber);
 
-      const node = trie.getNode(group.posts, postNumber);
+      let postManifestId, post;
 
-      if (ipfsHelper.isCid(node)) {
-        post.manifestId = ipfsHelper.cidToHash(node);
-      } else if (node['/']) {
-        post.manifestId = node['/'];
-      } else if (group.isEncrypted) {
-        const manifestId = await this.decryptText(post);
-        post = await this.getPost(manifestId);
+      if (group.isEncrypted) {
+        post = await this.getPost(postNumberPath);
+        postManifestId = await this.decryptText(post);
+        post = await this.getPost(postManifestId);
+      } else {
+        [postManifestId, post] = await Promise.all([
+          this.getObject(postNumberPath, false),
+          this.getObject(postNumberPath)
+        ]);
       }
 
-      post.id = postNumber;
-
-      post.groupId = groupId;
       if (post) {
+        post.id = postNumber;
+        post.manifestId = postManifestId;
+        post.groupId = groupId;
         post.group = group;
       }
+
       posts[index] = post;
 
       if (onItemCallback) {

@@ -18,6 +18,7 @@ const startsWith = require('lodash/startsWith');
 const includes = require('lodash/includes');
 const isString = require('lodash/isString');
 const isBuffer = require('lodash/isBuffer');
+const get = require('lodash/get');
 const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
@@ -174,26 +175,29 @@ module.exports = class JsIpfsService {
     return ipldHash;
   }
 
-  async getObject(storageId) {
+  async getObject(storageId, resolveProp = true) {
+    const splitStorageId = storageId.split('/');
+    if (splitStorageId.length > 1) {
+      return this.getObjectProp(splitStorageId[0], splitStorageId.slice(1).join('/'), resolveProp);
+    }
     if (!ipfsHelper.isCid(storageId)) {
       storageId = new CID(storageId)
     }
     return this.node.dag.get(storageId).then(response => response.value);
   }
 
-  async getObjectProp(storageId, propName) {
+  async getObjectProp(storageId, propName, resolveProp = true) {
     if (!ipfsHelper.isCid(storageId)) {
       storageId = new CID(storageId)
     }
     const path = '/' + propName + '/';
-    const result = await this.node.dag.get(storageId, {path}).then(response => response.value);
-    return ipfsHelper.isIpldHash(result) ? this.node.dag.get(ipfsHelper.ipfsHashToCid(result)).then(response => response.value) : result;
-  }
-
-  getObjectRef(storageId) {
-    return {
-      '/' : storageId
+    const result = await this.node.dag.get(storageId, {path, localResolve: true});
+    let {value, remainderPath} = result;
+    if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
+      value = get(value, remainderPath.replace('/', '.'));
+      remainderPath = undefined;
     }
+    return ipfsHelper.isIpldHash(value) && resolveProp ? this.node.dag.get(ipfsHelper.ipfsHashToCid(value), {path: remainderPath, localResolve: !resolveProp}).then(response => response.value) : value;
   }
 
   async bindToStaticId(storageId, accountKey, options = {}) {

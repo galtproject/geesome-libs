@@ -57,12 +57,24 @@ module.exports = class FluenceService {
         return accountKey;
     }
     async resolveStaticId(staticStorageId) {
+        return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
+    }
+    async resolveStaticItem(staticStorageId) {
         if (!startsWith(staticStorageId, 'Qm')) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
         return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {
             // console.log("subscriber", results[0]);
-            return results[0] && results[0].value;
+            let lastItem;
+            results.forEach(item => {
+                if (!lastItem || item.timestamp_created > lastItem.timestamp_created) {
+                    lastItem = item;
+                }
+            });
+            if (lastItem) {
+                lastItem.createdAt = lastItem.timestamp_created;
+            }
+            return lastItem;
         });
     }
     async removeAccountIfExists(name) {

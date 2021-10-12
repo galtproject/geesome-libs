@@ -73,13 +73,25 @@ describe('ipfs', function () {
     (async () => {
       const array = ['bar1', 'bar2'];
       const arrayId = await node.saveObject(array);
+      const nestedObj = {
+        '0': 'zero',
+        '1': 'one'
+      };
+      const nestedObjId = await node.saveObject(nestedObj);
 
       const obj = {
         foo: 'bar',
-        fooArray: arrayId
+        fooArray: arrayId,
+        fooObj: nestedObjId
       };
+      console.log('obj', obj);
       const objectId = await node.saveObject(obj);
-      expect(await node.getObjectProp(objectId, 'fooArray')).to.deep.equal(array);
+      expect(await node.getObjectProp(objectId, 'fooArray', true)).to.deep.equal(array);
+      expect(await node.getObjectProp(objectId, 'fooArray/0', true)).to.deep.equal(array[0]);
+      expect(await node.getObjectProp(objectId, 'fooObj', true)).to.deep.equal(nestedObj);
+      expect(await node.getObjectProp(objectId, 'fooObj/0', true)).to.equal(nestedObj[0]);
+      expect(await node.getObjectProp(objectId, 'fooArray', false)).to.deep.equal(arrayId);
+      expect(await node.getObjectProp(objectId, 'fooObj', false)).to.deep.equal(nestedObjId);
       done();
     })();
   });
@@ -103,7 +115,6 @@ describe('ipfs', function () {
         _protocol: 'geesome-ipsp',
         _type: 'user-manifest'
       };
-      console.log('userObj', userObj);
 
       const storageId = await ipfsHelper.getIpldHashFromObject(
           ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
