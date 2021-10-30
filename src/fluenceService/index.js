@@ -44,7 +44,7 @@ module.exports = class FluenceService {
             return parsedEvent && callback(parsedEvent);
         });
     }
-    async bindToStaticId(storageId, accountKey, options = null) {
+    async bindToStaticId(storageId, accountKey, options = {}) {
         if (!startsWith(accountKey, 'Qm')) {
             if (accountKey === 'self') {
                 accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
@@ -52,7 +52,7 @@ module.exports = class FluenceService {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
         }
-        await this.initTopicAndSubscribeBlocking(accountKey, storageId);
+        await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
         await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
         return accountKey;
     }
@@ -168,19 +168,23 @@ module.exports = class FluenceService {
         });
     }
 
-    async subscribeToEvent(_topic, _callback) {
-        await this.initTopicAndSubscribeBlocking(_topic, _topic);
+    async subscribeToEvent(_topic, _callback, options = {}) {
+        await this.initTopicAndSubscribeBlocking(_topic, _topic, options.tries || 0);
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic, _value) {
+    async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
         try {
             await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _value, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
         } catch (e) {
+            tries--;
+            if (tries <= 0) {
+                return console.warn('initTopicAndSubscribeBlocking failed', e);
+            }
             console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
             await this.peer.stop().catch(e => console.warn('peer.stop failed', e));
             await this.peer.start();
-            return this.initTopicAndSubscribeBlocking(_topic, _value);
+            return this.initTopicAndSubscribeBlocking(_topic, _value, tries);
         }
     }
 
