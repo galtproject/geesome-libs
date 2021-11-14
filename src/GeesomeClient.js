@@ -163,6 +163,14 @@ class GeesomeClient {
     });
   }
 
+  async socNetTelegramLogin(phoneNumber, phoneCodeHash, phoneCode, password) {
+    return this.postRequest('/v1/soc-net/telegram/login', {phoneNumber, phoneCodeHash, phoneCode, password});
+  }
+
+  async socNetTelegramGetUser(username = 'me') {
+    return this.postRequest('/v1/soc-net/telegram/get-user', { username });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
