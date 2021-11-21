@@ -164,11 +164,15 @@ class GeesomeClient {
   }
 
   async socNetNamesList() {
-    return this.postRequest(`/v1/soc-net-list`);
+    return this.getRequest(`/v1/soc-net-list`);
   }
 
   async socNetLogin(socNetName, phoneNumber, phoneCodeHash, phoneCode, password) {
     return this.postRequest(`/v1/soc-net/${socNetName}/login`, {phoneNumber, phoneCodeHash, phoneCode, password});
+  }
+
+  async socNetAccountList(socNetName) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/account-list`);
   }
 
   async socNetGetUser(socNetName, username = 'me') {
