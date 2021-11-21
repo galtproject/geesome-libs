@@ -163,12 +163,16 @@ class GeesomeClient {
     });
   }
 
-  async socNetTelegramLogin(phoneNumber, phoneCodeHash, phoneCode, password) {
-    return this.postRequest('/v1/soc-net/telegram/login', {phoneNumber, phoneCodeHash, phoneCode, password});
+  async socNetNamesList() {
+    return this.postRequest(`/v1/soc-net-list`);
   }
 
-  async socNetTelegramGetUser(username = 'me') {
-    return this.postRequest('/v1/soc-net/telegram/get-user', { username });
+  async socNetLogin(socNetName, phoneNumber, phoneCodeHash, phoneCode, password) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/login`, {phoneNumber, phoneCodeHash, phoneCode, password});
+  }
+
+  async socNetGetUser(socNetName, username = 'me') {
+    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { username });
   }
 
   updateCurrentUser(userData) {
