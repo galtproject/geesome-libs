@@ -175,8 +175,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/account-list`);
   }
 
-  async socNetGetUser(socNetName, username = 'me') {
-    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { username });
+  async socNetGetUser(socNetName, userData, username = 'me') {
+    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { userData, username });
   }
 
   updateCurrentUser(userData) {
