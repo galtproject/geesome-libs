@@ -167,8 +167,8 @@ class GeesomeClient {
     return this.getRequest(`/v1/soc-net-list`);
   }
 
-  async socNetLogin(socNetName, phoneNumber, phoneCodeHash, phoneCode, password) {
-    return this.postRequest(`/v1/soc-net/${socNetName}/login`, {phoneNumber, phoneCodeHash, phoneCode, password});
+  async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
+    return this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
   }
 
   async socNetAccountList(socNetName) {
