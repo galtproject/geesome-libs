@@ -183,6 +183,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/update-user`, { userData });
   }
 
+  async socNetGetChannels(socNetName, userData) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { userData });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
