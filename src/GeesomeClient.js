@@ -206,7 +206,7 @@ class GeesomeClient {
 
   async socNetGetAccount(socNetName, userData) {
     const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
-    if (acc.sessionKey && acc.isEncrypted) {
+    if (acc && acc.sessionKey && acc.isEncrypted) {
       this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)] = geesomeWalletClientLib.decrypt(this.apiKey, acc.sessionKey);
     }
     return acc;
