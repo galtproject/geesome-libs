@@ -21,17 +21,22 @@ const merge = require('lodash/merge');
 const find = require('lodash/find');
 const filter = require('lodash/filter');
 const startsWith = require('lodash/startsWith');
+const pick = require('lodash/pick');
 
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
+const commonHelper = require('./common');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
+const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
 
 const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
+  decryptedSocNetCache = {};
+
   constructor(config = {}) {
     this.server = config.server;
     this.apiKey = config.apiKey;
@@ -168,26 +173,64 @@ class GeesomeClient {
   }
 
   async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
-    return this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
+    if (loginData.isEncrypted) {
+      const acc = await this.socNetGetAccount(socNetName, pick(loginData, ['phoneNumber']));
+      if (acc && !acc.sessionKey) { // second stage: submitting phone code
+        loginData.sessionKey = this.decryptedSocNetCache[acc.id];
+        loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKey, loginData.sessionKey);
+      }
+      if (acc && acc.sessionKey) { // third stage: input password
+        loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+      }
+    }
+    const response = await this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
+    if (loginData.isEncrypted) {
+      const encryptedSessionKey = response.account.sessionKey;
+      const accId = response.account.id;
+      if (encryptedSessionKey) {
+        // write cache session key from response by hashed encrypted session key
+        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = response.sessionKey;
+        // remove temp session key by account id
+        delete this.decryptedSocNetCache[accId];
+      } else {
+        // write temp session key value by account id(only need for second stage of login)
+        this.decryptedSocNetCache[accId] = response.sessionKey;
+      }
+    }
+    return response;
   }
 
   async socNetAccountList(socNetName) {
     return this.postRequest(`/v1/soc-net/${socNetName}/account-list`);
   }
 
+  async socNetGetAccount(socNetName, userData) {
+    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
+    if (acc.sessionKey && acc.isEncrypted) {
+      this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)] = geesomeWalletClientLib.decrypt(this.apiKey, acc.sessionKey);
+    }
+    return acc;
+  }
+
+  async setSessionKey(socNetName, userData) {
+    const acc = await this.socNetGetAccount(socNetName, userData);
+    if (acc.isEncrypted) {
+      userData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+    }
+  }
+
   async socNetGetUser(socNetName, userData, username = 'me') {
+    await this.setSessionKey(socNetName, userData);
     return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { userData, username });
   }
 
-  async socNetGetAccount(socNetName, userData) {
-    return this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
-  }
-
   async socNetUpdateAccount(socNetName, userData) {
+    await this.setSessionKey(socNetName, userData);
     return this.postRequest(`/v1/soc-net/${socNetName}/update-account`, { userData });
   }
 
   async socNetGetChannels(socNetName, userData) {
+    await this.setSessionKey(socNetName, userData);
     return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { userData });
   }
 
