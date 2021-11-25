@@ -172,12 +172,16 @@ class GeesomeClient {
     return this.getRequest(`/v1/soc-net-list`);
   }
 
+  apiKeyHash() {
+    return commonHelper.hash(this.apiKey);
+  }
+
   async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
     if (loginData.isEncrypted) {
       const acc = await this.socNetGetAccount(socNetName, pick(loginData, ['phoneNumber']));
       if (acc && !acc.sessionKey) { // second stage: submitting phone code
         loginData.sessionKey = this.decryptedSocNetCache[acc.id];
-        loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKey, loginData.sessionKey);
+        loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), loginData.sessionKey);
       }
       if (acc && acc.sessionKey) { // third stage: input password
         loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
@@ -207,7 +211,7 @@ class GeesomeClient {
   async socNetGetAccount(socNetName, userData) {
     const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
-      this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)] = geesomeWalletClientLib.decrypt(this.apiKey, acc.sessionKey);
+      this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
     }
     return acc;
   }
