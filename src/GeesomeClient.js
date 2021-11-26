@@ -211,7 +211,11 @@ class GeesomeClient {
   async socNetGetAccount(socNetName, userData) {
     const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
-      this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
+      const sessionHash = commonHelper.hash(acc.sessionKey);
+      this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
+      if (includes(this.decryptedSocNetCache[sessionHash], ' ')) { //TODO: find the better way to detect incorrect key
+        throw new Error('incorrect_session_key');
+      }
     }
     return acc;
   }
