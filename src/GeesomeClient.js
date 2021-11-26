@@ -188,6 +188,7 @@ class GeesomeClient {
       }
       if (!this.isSessionKeyCorrect(loginData.sessionKey)) {
         loginData.sessionKey = '';
+        loginData.encryptedSessionKey = '';
       }
     }
     const response = await this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
