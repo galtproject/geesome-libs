@@ -186,7 +186,7 @@ class GeesomeClient {
       if (acc && acc.sessionKey) { // third stage: input password
         loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
       }
-      if (!this.isSocNetSessionKeyCorrect(acc)) {
+      if (!this.isSessionKeyCorrect(loginData.sessionKey)) {
         loginData.sessionKey = '';
       }
     }
@@ -222,7 +222,11 @@ class GeesomeClient {
 
   isSocNetSessionKeyCorrect(acc) {
     const sessionHash = commonHelper.hash(acc.sessionKey);
-    return !includes(this.decryptedSocNetCache[sessionHash], ' ');
+    return this.isSessionKeyCorrect(this.decryptedSocNetCache[sessionHash]);
+  }
+
+  isSessionKeyCorrect(sessionKey) {
+    return !includes(sessionKey, ' ');
   }
 
   async setSessionKey(socNetName, userData) {
