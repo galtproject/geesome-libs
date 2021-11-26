@@ -255,6 +255,11 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { userData });
   }
 
+  async socNetGetChannelInfo(socNetName, userData, channelId) {
+    await this.setSessionKey(socNetName, userData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { userData, channelId });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
