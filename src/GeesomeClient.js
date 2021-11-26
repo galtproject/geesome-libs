@@ -217,7 +217,7 @@ class GeesomeClient {
     return acc;
   }
 
-  async isSocNetSessionKeyCorrect(acc) {
+  isSocNetSessionKeyCorrect(acc) {
     const sessionHash = commonHelper.hash(acc.sessionKey);
     return !includes(this.decryptedSocNetCache[sessionHash], ' ');
   }
@@ -226,6 +226,9 @@ class GeesomeClient {
     const acc = await this.socNetGetAccount(socNetName, userData);
     if (acc.isEncrypted) {
       userData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+      if (!this.isSocNetSessionKeyCorrect(acc)) {
+        userData.sessionKey = '';
+      }
     }
   }
 
