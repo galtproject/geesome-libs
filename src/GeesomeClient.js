@@ -213,11 +213,13 @@ class GeesomeClient {
     if (acc && acc.sessionKey && acc.isEncrypted) {
       const sessionHash = commonHelper.hash(acc.sessionKey);
       this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
-      if (includes(this.decryptedSocNetCache[sessionHash], ' ')) { //TODO: find the better way to detect incorrect key
-        throw new Error('incorrect_session_key');
-      }
     }
     return acc;
+  }
+
+  async isSocNetSessionKeyCorrect(acc) {
+    const sessionHash = commonHelper.hash(acc.sessionKey);
+    return !includes(this.decryptedSocNetCache[sessionHash], ' ');
   }
 
   async setSessionKey(socNetName, userData) {
