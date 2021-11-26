@@ -212,8 +212,8 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/account-list`);
   }
 
-  async socNetGetAccount(socNetName, userData) {
-    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { userData });
+  async socNetGetAccount(socNetName, accountData) {
+    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
       const sessionHash = commonHelper.hash(acc.sessionKey);
       this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
@@ -230,34 +230,34 @@ class GeesomeClient {
     return !includes(sessionKey, ' ');
   }
 
-  async setSessionKey(socNetName, userData) {
-    const acc = await this.socNetGetAccount(socNetName, userData);
+  async setSessionKey(socNetName, accountData) {
+    const acc = await this.socNetGetAccount(socNetName, accountData);
     if (acc.isEncrypted) {
-      userData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+      accountData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
       if (!this.isSocNetSessionKeyCorrect(acc)) {
-        userData.sessionKey = '';
+        accountData.sessionKey = '';
       }
     }
   }
 
-  async socNetGetUser(socNetName, userData, username = 'me') {
-    await this.setSessionKey(socNetName, userData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { userData, username });
+  async socNetGetUser(socNetName, accountData, username = 'me') {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { accountData, username });
   }
 
-  async socNetUpdateAccount(socNetName, userData) {
-    await this.setSessionKey(socNetName, userData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/update-account`, { userData });
+  async socNetUpdateAccount(socNetName, accountData) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/update-account`, { accountData });
   }
 
-  async socNetGetChannels(socNetName, userData) {
-    await this.setSessionKey(socNetName, userData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { userData });
+  async socNetGetChannels(socNetName, accountData) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { accountData });
   }
 
-  async socNetGetChannelInfo(socNetName, userData, channelId) {
-    await this.setSessionKey(socNetName, userData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { userData, channelId });
+  async socNetGetChannelInfo(socNetName, accountData, channelId) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
   updateCurrentUser(userData) {
