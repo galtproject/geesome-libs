@@ -186,6 +186,9 @@ class GeesomeClient {
       if (acc && acc.sessionKey) { // third stage: input password
         loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
       }
+      if (!this.isSocNetSessionKeyCorrect(acc)) {
+        loginData.sessionKey = '';
+      }
     }
     const response = await this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
