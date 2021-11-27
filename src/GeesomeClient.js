@@ -344,12 +344,20 @@ class GeesomeClient {
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
+  getAsyncOperation(id) {
+    return this.postRequest('/v1/user/get-async-operation/' + id);
+  }
+
+  findAsyncOperations(name, channelLike) {
+    return this.postRequest('/v1/user/find-async-operations', {name, channelLike});
+  }
+
   waitForAsyncOperation(asyncOperationId, onProcess) {
     return new Promise((resolve, reject) => {
       // TODO: use channel
       const waitingForFinish = () => {
         setTimeout(() => {
-          this.postRequest('/v1/user/get-async-operation/' + asyncOperationId).then((operation) => {
+          this.getAsyncOperation(asyncOperationId).then((operation) => {
             if (operation.inProcess) {
               if (onProcess) {
                 onProcess(operation);
