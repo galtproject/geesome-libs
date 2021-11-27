@@ -208,17 +208,21 @@ class GeesomeClient {
     return response;
   }
 
-  async socNetAccountList(socNetName) {
-    return this.postRequest(`/v1/soc-net/${socNetName}/account-list`);
+  async socNetDbAccountList(socNetName) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/db-account-list`);
   }
 
-  async socNetGetAccount(socNetName, accountData) {
-    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/get-account`, { accountData });
+  async socNetDbAccount(socNetName, accountData) {
+    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/db-account`, { accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
       const sessionHash = commonHelper.hash(acc.sessionKey);
       this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
     }
     return acc;
+  }
+
+  async socNetDbChannel(socNetName, channelData) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/db-channel`, {channelData});
   }
 
   isSocNetSessionKeyCorrect(acc) {
@@ -240,9 +244,9 @@ class GeesomeClient {
     }
   }
 
-  async socNetGetUser(socNetName, accountData, username = 'me') {
+  async socNetUserInfo(socNetName, accountData, username = 'me') {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/get-user`, { accountData, username });
+    return this.postRequest(`/v1/soc-net/${socNetName}/user-info`, { accountData, username });
   }
 
   async socNetUpdateAccount(socNetName, accountData) {
