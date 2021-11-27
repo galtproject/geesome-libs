@@ -260,6 +260,11 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
+  async socNetRunChannelImport(socNetName, accountData, channelId) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
