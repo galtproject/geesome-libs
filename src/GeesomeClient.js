@@ -235,7 +235,7 @@ class GeesomeClient {
   }
 
   async setSessionKey(socNetName, accountData) {
-    const acc = await this.socNetGetAccount(socNetName, accountData);
+    const acc = await this.socNetDbAccount(socNetName, accountData);
     if (acc.isEncrypted) {
       accountData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
       if (!this.isSocNetSessionKeyCorrect(acc)) {
