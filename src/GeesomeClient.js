@@ -344,18 +344,15 @@ class GeesomeClient {
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
-  asyncResponseWrapper(res, params) {
-    if (!res.asyncOperationId) {
-      return res;
-    }
+  waitForAsyncOperation(asyncOperationId, onProcess) {
     return new Promise((resolve, reject) => {
       // TODO: use channel
       const waitingForFinish = () => {
         setTimeout(() => {
-          this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
+          this.postRequest('/v1/user/get-async-operation/' + asyncOperationId).then((operation) => {
             if (operation.inProcess) {
-              if (params && params.onProcess) {
-                params.onProcess(operation);
+              if (onProcess) {
+                onProcess(operation);
               }
               return waitingForFinish();
             }
@@ -364,13 +361,20 @@ class GeesomeClient {
               return reject({message: operation.errorMessage});
             }
 
-            resolve(this.getDbContent(operation.contentId));
+            resolve(operation.contentId ? this.getDbContent(operation.contentId) : 'done');
           }).catch(waitingForFinish);
         }, 1000);
       };
 
       waitingForFinish();
     })
+  }
+
+  asyncResponseWrapper(res, params) {
+    if (!res.asyncOperationId) {
+      return res;
+    }
+    return this.waitForAsyncOperation(res.asyncOperationId, params ? params.onProcess : null);
   }
 
   createPost(postData) {
