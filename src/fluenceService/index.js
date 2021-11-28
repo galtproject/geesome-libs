@@ -45,16 +45,25 @@ module.exports = class FluenceService {
         });
     }
     async bindToStaticId(storageId, accountKey, options = {}) {
-        if (!startsWith(accountKey, 'Qm')) {
-            if (accountKey === 'self') {
-                accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
-            } else {
-                accountKey = await this.accStorage.getAccountStaticId(accountKey);
+        return new Promise(async (resolve, reject) => {
+            let resolved = false;
+            setTimeout(() => {
+                if (!resolved) {
+                    reject('timeout');
+                }
+            }, 1000);
+            if (!startsWith(accountKey, 'Qm')) {
+                if (accountKey === 'self') {
+                    accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
+                } else {
+                    accountKey = await this.accStorage.getAccountStaticId(accountKey);
+                }
             }
-        }
-        await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
-        await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
-        return accountKey;
+            await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
+            await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
+            resolved = true;
+            resolve(accountKey);
+        });
     }
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
