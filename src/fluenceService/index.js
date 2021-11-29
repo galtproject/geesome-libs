@@ -3,10 +3,11 @@ const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
+const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
-    constructor(accStorage, peer) {
+    constructor(accStorage, peer, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
@@ -28,6 +29,10 @@ module.exports = class FluenceService {
                 }
             }
         });
+
+        if (options.logLevel) {
+            log.setLevel(options.logLevel);
+        }
     }
     getClientRelayId() {
         return this.peer.getStatus().relayPeerId;
