@@ -362,10 +362,10 @@ class GeesomeClient {
       const waitingForFinish = () => {
         setTimeout(() => {
           this.getAsyncOperation(asyncOperationId).then((operation) => {
+            if (onProcess) {
+              onProcess(operation);
+            }
             if (operation.inProcess) {
-              if (onProcess) {
-                onProcess(operation);
-              }
               return waitingForFinish();
             }
 
