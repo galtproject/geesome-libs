@@ -12,6 +12,7 @@ const isString = require('lodash/isString');
 const isObject = require('lodash/isObject');
 const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
+const createHash = require('create-hash');
 const stableSort = require('stable');
 const uuidv4 = require('uuid/v4');
 const bip39 = require("ethereum-cryptography/bip39");
@@ -85,3 +86,6 @@ module.exports.random = (mode = 'hash') => {
   }
 };
 
+module.exports.hash = (input, algo = 'sha256') => {
+  return createHash(algo).update(input).digest('hex');
+}

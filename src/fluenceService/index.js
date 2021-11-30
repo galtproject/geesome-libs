@@ -3,10 +3,11 @@ const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
+const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
-    constructor(accStorage, peer) {
+    constructor(accStorage, peer, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
@@ -28,6 +29,10 @@ module.exports = class FluenceService {
                 }
             }
         });
+
+        if (options.logLevel) {
+            log.setLevel(options.logLevel);
+        }
     }
     getClientRelayId() {
         return this.peer.getStatus().relayPeerId;
@@ -44,17 +49,26 @@ module.exports = class FluenceService {
             return parsedEvent && callback(parsedEvent);
         });
     }
-    async bindToStaticId(storageId, accountKey, options = null) {
-        if (!startsWith(accountKey, 'Qm')) {
-            if (accountKey === 'self') {
-                accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
-            } else {
-                accountKey = await this.accStorage.getAccountStaticId(accountKey);
+    async bindToStaticId(storageId, accountKey, options = {}) {
+        return new Promise(async (resolve, reject) => {
+            let resolved = false;
+            setTimeout(() => {
+                if (!resolved) {
+                    reject('timeout');
+                }
+            }, 1000);
+            if (!startsWith(accountKey, 'Qm')) {
+                if (accountKey === 'self') {
+                    accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
+                } else {
+                    accountKey = await this.accStorage.getAccountStaticId(accountKey);
+                }
             }
-        }
-        await this.initTopicAndSubscribeBlocking(accountKey, storageId);
-        await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
-        return accountKey;
+            await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
+            await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
+            resolved = true;
+            resolve(accountKey);
+        });
     }
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
@@ -168,19 +182,23 @@ module.exports = class FluenceService {
         });
     }
 
-    async subscribeToEvent(_topic, _callback) {
-        await this.initTopicAndSubscribeBlocking(_topic, _topic);
+    async subscribeToEvent(_topic, _callback, options = {}) {
+        await this.initTopicAndSubscribeBlocking(_topic, _topic, options.tries || 0);
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic, _value) {
+    async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
         try {
             await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _value, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
         } catch (e) {
+            tries--;
+            if (tries <= 0) {
+                return console.warn('initTopicAndSubscribeBlocking failed', e);
+            }
             console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
             await this.peer.stop().catch(e => console.warn('peer.stop failed', e));
             await this.peer.start();
-            return this.initTopicAndSubscribeBlocking(_topic, _value);
+            return this.initTopicAndSubscribeBlocking(_topic, _value, tries);
         }
     }
 

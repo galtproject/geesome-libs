@@ -21,17 +21,22 @@ const merge = require('lodash/merge');
 const find = require('lodash/find');
 const filter = require('lodash/filter');
 const startsWith = require('lodash/startsWith');
+const pick = require('lodash/pick');
 
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
+const commonHelper = require('./common');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
+const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
 
 const {extractHostname, isIpAddress, isNumber} = require('./common');
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
+  decryptedSocNetCache = {};
+
   constructor(config = {}) {
     this.server = config.server;
     this.apiKey = config.apiKey;
@@ -163,6 +168,107 @@ class GeesomeClient {
     });
   }
 
+  async socNetNamesList() {
+    return this.getRequest(`/v1/soc-net-list`);
+  }
+
+  apiKeyHash() {
+    return commonHelper.hash(this.apiKey);
+  }
+
+  async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
+    if (loginData.isEncrypted) {
+      const acc = await this.socNetDbAccount(socNetName, pick(loginData, ['phoneNumber']));
+      if (acc && !acc.sessionKey) { // second stage: submitting phone code
+        loginData.sessionKey = this.decryptedSocNetCache[acc.id];
+        loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), loginData.sessionKey);
+      }
+      if (acc && acc.sessionKey) { // third stage: input password
+        loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+      }
+      if (!this.isSessionKeyCorrect(loginData.sessionKey)) {
+        loginData.sessionKey = '';
+        loginData.encryptedSessionKey = '';
+      }
+    }
+    const response = await this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
+    if (loginData.isEncrypted) {
+      const encryptedSessionKey = response.account.sessionKey;
+      const accId = response.account.id;
+      if (encryptedSessionKey) {
+        // write cache session key from response by hashed encrypted session key
+        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = response.sessionKey;
+        // remove temp session key by account id
+        delete this.decryptedSocNetCache[accId];
+      } else {
+        // write temp session key value by account id(only need for second stage of login)
+        this.decryptedSocNetCache[accId] = response.sessionKey;
+      }
+    }
+    return response;
+  }
+
+  async socNetDbAccountList(socNetName) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/db-account-list`);
+  }
+
+  async socNetDbAccount(socNetName, accountData) {
+    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/db-account`, { accountData });
+    if (acc && acc.sessionKey && acc.isEncrypted) {
+      const sessionHash = commonHelper.hash(acc.sessionKey);
+      this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
+    }
+    return acc;
+  }
+
+  async socNetDbChannel(socNetName, channelData) {
+    return this.postRequest(`/v1/soc-net/${socNetName}/db-channel`, {channelData});
+  }
+
+  isSocNetSessionKeyCorrect(acc) {
+    const sessionHash = commonHelper.hash(acc.sessionKey);
+    return this.isSessionKeyCorrect(this.decryptedSocNetCache[sessionHash]);
+  }
+
+  isSessionKeyCorrect(sessionKey) {
+    return !includes(sessionKey, ' ');
+  }
+
+  async setSessionKey(socNetName, accountData) {
+    const acc = await this.socNetDbAccount(socNetName, accountData);
+    if (acc.isEncrypted) {
+      accountData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+      if (!this.isSocNetSessionKeyCorrect(acc)) {
+        accountData.sessionKey = '';
+      }
+    }
+  }
+
+  async socNetUserInfo(socNetName, accountData, username = 'me') {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/user-info`, { accountData, username });
+  }
+
+  async socNetUpdateAccount(socNetName, accountData) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/update-account`, { accountData });
+  }
+
+  async socNetGetChannels(socNetName, accountData) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { accountData });
+  }
+
+  async socNetGetChannelInfo(socNetName, accountData, channelId) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { accountData, channelId });
+  }
+
+  async socNetRunChannelImport(socNetName, accountData, channelId) {
+    await this.setSessionKey(socNetName, accountData);
+    return this.postRequest(`/v1/soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
@@ -242,19 +348,24 @@ class GeesomeClient {
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
-  asyncResponseWrapper(res, params) {
-    if (!res.asyncOperationId) {
-      return res;
-    }
+  getAsyncOperation(id) {
+    return this.postRequest('/v1/user/get-async-operation/' + id);
+  }
+
+  findAsyncOperations(name, channelLike) {
+    return this.postRequest('/v1/user/find-async-operations', {name, channelLike});
+  }
+
+  waitForAsyncOperation(asyncOperationId, onProcess) {
     return new Promise((resolve, reject) => {
       // TODO: use channel
       const waitingForFinish = () => {
         setTimeout(() => {
-          this.postRequest('/v1/user/get-async-operation/' + res.asyncOperationId).then((operation) => {
+          this.getAsyncOperation(asyncOperationId).then((operation) => {
+            if (onProcess) {
+              onProcess(operation);
+            }
             if (operation.inProcess) {
-              if (params && params.onProcess) {
-                params.onProcess(operation);
-              }
               return waitingForFinish();
             }
 
@@ -262,13 +373,20 @@ class GeesomeClient {
               return reject({message: operation.errorMessage});
             }
 
-            resolve(this.getDbContent(operation.contentId));
+            resolve(operation.contentId ? this.getDbContent(operation.contentId) : 'done');
           }).catch(waitingForFinish);
         }, 1000);
       };
 
       waitingForFinish();
     })
+  }
+
+  asyncResponseWrapper(res, params) {
+    if (!res.asyncOperationId) {
+      return res;
+    }
+    return this.waitForAsyncOperation(res.asyncOperationId, params ? params.onProcess : null);
   }
 
   createPost(postData) {

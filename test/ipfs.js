@@ -20,6 +20,7 @@ const JsIpfsService = require('../src/JsIpfsService');
 const ipfsHelper = require('../src/ipfsHelper');
 const peerIdHelper = require('../src/peerIdHelper');
 const common = require('../src/common');
+const trie = require('../src/base36Trie');
 
 describe('ipfs', function () {
   let node;
@@ -92,6 +93,31 @@ describe('ipfs', function () {
       expect(await node.getObjectProp(objectId, 'fooObj/0', true)).to.equal(nestedObj[0]);
       expect(await node.getObjectProp(objectId, 'fooArray', false)).to.deep.equal(arrayId);
       expect(await node.getObjectProp(objectId, 'fooObj', false)).to.deep.equal(nestedObjId);
+      done();
+    })();
+  });
+
+  it('should resolve trie props', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const postsTree = {};
+
+      for (let i = 1; i <= 100; i++) {
+        const postManifestId = await node.saveObject({ name: 'Post #' + i });
+        trie.setNode(postsTree, i, postManifestId);
+      }
+
+      const groupManifest = await node.saveObject({
+        name: 'Group tree',
+        posts: postsTree
+      });
+
+      for (let i = 1; i <= 100; i++) {
+        const postNumberPath = trie.getTreePostCidPath(groupManifest, i);
+        const obj = await node.getObject(postNumberPath, true);
+        expect(obj.name).to.equal('Post #' + i);
+      }
       done();
     })();
   });

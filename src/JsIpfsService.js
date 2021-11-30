@@ -23,8 +23,7 @@ const urlSource = require('ipfs-utils/src/files/url-source');
 const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
-const CID = require('cids');
-
+const { CID } = require('multiformats/cid');
 // const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 // const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
@@ -181,14 +180,14 @@ module.exports = class JsIpfsService {
       return this.getObjectProp(splitStorageId[0], splitStorageId.slice(1).join('/'), resolveProp);
     }
     if (!ipfsHelper.isCid(storageId)) {
-      storageId = new CID(storageId)
+      storageId = CID.parse(storageId)
     }
     return this.node.dag.get(storageId).then(response => response.value);
   }
 
   async getObjectProp(storageId, propName, resolveProp = true) {
     if (!ipfsHelper.isCid(storageId)) {
-      storageId = new CID(storageId)
+      storageId = CID.parse(storageId)
     }
     const path = '/' + propName + '/';
     const result = await this.node.dag.get(storageId, {path, localResolve: true});
