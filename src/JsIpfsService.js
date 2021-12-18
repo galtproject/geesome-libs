@@ -137,8 +137,24 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  async getFileStat(filePath) {
-    return this.node.files.stat('/ipfs/' + filePath);
+  async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000}) {
+    let resolved = false;
+
+    return new Promise(async (resolve, reject) => {
+      setTimeout(() => {
+        if (!resolved && options.attempts > 0) {
+          resolve(this.getFileStat(filePath, {
+            ...options,
+            attempts: options.attempts - 1
+          }));
+        }
+      }, options.attemptTimeout);
+
+      this.node.files.stat('/ipfs/' + filePath).then((r) => {
+        resolved = true;
+        resolve(r);
+      });
+    });
   }
 
   async getFileStream(filePath, options = {}) {
