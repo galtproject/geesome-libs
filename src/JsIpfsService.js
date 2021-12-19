@@ -153,8 +153,10 @@ module.exports = class JsIpfsService {
       }, options.attemptTimeout);
 
       this.node.files.stat('/ipfs/' + filePath).then((r) => {
-        resolved = true;
-        resolve(r);
+        if (r) {
+          resolved = true;
+          resolve(r);
+        }
       });
     });
   }
