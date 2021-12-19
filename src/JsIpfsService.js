@@ -143,7 +143,7 @@ module.exports = class JsIpfsService {
 
     return new Promise(async (resolve, reject) => {
       setTimeout(() => {
-        console.log('!resolved', !resolved, 'options.attempts > 0', options.attempts > 0);
+        console.log('setTimeout', filePath, '!resolved', !resolved, 'options.attempts > 0', options.attempts > 0);
         if (!resolved && options.attempts > 0) {
           resolve(this.getFileStat(filePath, {
             ...options,
