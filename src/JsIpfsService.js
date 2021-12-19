@@ -138,7 +138,7 @@ module.exports = class JsIpfsService {
   }
 
   async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000}) {
-    console.log('getFileStat', options);
+    console.log('getFileStat', filePath, options);
     let resolved = false;
 
     return new Promise(async (resolve, reject) => {
