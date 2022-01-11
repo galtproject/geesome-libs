@@ -5843,9 +5843,9 @@ gc-stats@^1.4.0:
     nan "^2.13.2"
     node-pre-gyp "^0.13.0"
 
-"geesome-wallet-client@git://github.com/galtproject/geesome-wallet-client.git#a34de98":
+"geesome-wallet-client@https://github.com/galtproject/geesome-wallet-client.git#a34de98":
   version "1.0.0"
-  resolved "git://github.com/galtproject/geesome-wallet-client.git#a34de986717dc847af20e85ad9607b801ac9fc55"
+  resolved "https://github.com/galtproject/geesome-wallet-client.git#a34de986717dc847af20e85ad9607b801ac9fc55"
   dependencies:
     aes-js "^3.1.2"
     async "^3.1.0"
