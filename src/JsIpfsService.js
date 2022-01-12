@@ -12,6 +12,7 @@ const peerIdHelper = require('./peerIdHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
+const pick = require('lodash/pick');
 const isObject = require('lodash/isObject');
 const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
@@ -137,7 +138,7 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000}) {
+  async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000, withLocal: true, size: true}) {
     console.log('getFileStat', filePath, options);
     let resolved = false;
 
@@ -152,7 +153,7 @@ module.exports = class JsIpfsService {
         }
       }, options.attemptTimeout);
 
-      this.node.files.stat('/ipfs/' + filePath).then((r) => {
+      this.node.files.stat('/ipfs/' + filePath, pick(options, ['hash', 'size', 'withLocal', 'timeout', 'signal'])).then((r) => {
         if (r) {
           resolved = true;
           resolve(r);
