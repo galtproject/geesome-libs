@@ -99,7 +99,7 @@ module.exports = class JsIpfsService {
     let result = await this.node.add([data], {pin: false});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
-    if(options.waitForPin) {
+    if (options.waitForPin) {
       await pinPromise;
     }
     return result;
