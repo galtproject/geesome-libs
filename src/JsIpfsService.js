@@ -163,14 +163,13 @@ module.exports = class JsIpfsService {
   }
 
   async getFileStream(filePath, options = {}) {
-    //TODO: solve problem with not responding getFileStat
-    // if(ipfsHelper.isIpfsHash(trim(filePath, '/'))) {
-    //   filePath = trim(filePath, '/');
-    //   const stat = await this.getFileStat(filePath);
-    //   if(stat.type === 'directory') {
-    //     filePath += '/index.html';
-    //   }
-    // }
+    if(ipfsHelper.isIpfsHash(trim(filePath, '/'))) {
+      filePath = trim(filePath, '/');
+      const stat = await this.getFileStat(filePath);
+      if(stat.type === 'directory') {
+        filePath += '/index.html';
+      }
+    }
     return itToStream(this.node.cat(filePath, options));
   }
 
