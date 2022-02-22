@@ -170,7 +170,6 @@ describe('ipfs', function () {
 
       expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
-
       done();
     })();
   });
@@ -188,7 +187,6 @@ describe('ipfs', function () {
 
       const decryptedPrivateKey = await peerIdHelper.decryptPrivateBase64WithPass(encryptedPrivateKey, pass);
       expect(decryptedPrivateKey).to.equals(privateKey);
-
       done();
     })();
   });

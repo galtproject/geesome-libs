@@ -12,6 +12,7 @@ const peerIdHelper = require('./peerIdHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
+const pick = require('lodash/pick');
 const isObject = require('lodash/isObject');
 const find = require('lodash/find');
 const startsWith = require('lodash/startsWith');
@@ -98,7 +99,7 @@ module.exports = class JsIpfsService {
     let result = await this.node.add([data], {pin: false});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
-    if(options.waitForPin) {
+    if (options.waitForPin) {
       await pinPromise;
     }
     return result;
@@ -137,8 +138,28 @@ module.exports = class JsIpfsService {
     return this.node.key.rm(name);
   }
 
-  async getFileStat(filePath) {
-    return this.node.files.stat('/ipfs/' + filePath);
+  async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000, withLocal: true, size: true}) {
+    console.log('getFileStat', filePath, options);
+    let resolved = false;
+
+    return new Promise(async (resolve, reject) => {
+      setTimeout(() => {
+        console.log('setTimeout', filePath, '!resolved', !resolved, 'options.attempts > 0', options.attempts > 0);
+        if (!resolved && options.attempts > 0) {
+          resolve(this.getFileStat(filePath, {
+            ...options,
+            attempts: options.attempts - 1
+          }));
+        }
+      }, options.attemptTimeout);
+
+      this.node.files.stat('/ipfs/' + filePath, pick(options, ['hash', 'size', 'withLocal', 'timeout', 'signal'])).then((r) => {
+        if (r) {
+          resolved = true;
+          resolve(r);
+        }
+      });
+    });
   }
 
   async getFileStream(filePath, options = {}) {

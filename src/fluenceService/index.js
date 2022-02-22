@@ -56,7 +56,7 @@ module.exports = class FluenceService {
                 if (!resolved) {
                     reject('timeout');
                 }
-            }, 1000);
+            }, 3000);
             if (!startsWith(accountKey, 'Qm')) {
                 if (accountKey === 'self') {
                     accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);

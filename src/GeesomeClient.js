@@ -269,6 +269,14 @@ class GeesomeClient {
     return this.postRequest(`/v1/soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
   }
 
+  async staticSiteGetDefaultOptions(type, id) {
+    return this.postRequest(`/v1/render/static-site-generator/get-default-options`, { type, id });
+  }
+
+  async staticSiteRunGenerate(type, id, options) {
+    return this.postRequest(`/v1/render/static-site-generator/run-for-${type}`, { id, options });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`/v1/user/update`, userData);
   }
