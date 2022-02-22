@@ -44,7 +44,7 @@
     "multicodec": "^3.0.1",
     "multiformats": "^9.4.7",
     "multihashes": "^4.0.2",
-    "node-forge": "0.10.0",
+    "node-forge": "1.0.0",
     "openpgp": "^4.10.0",
     "p-iteration": "^1.1.8",
     "peer-id": "0.15.3",
