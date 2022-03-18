@@ -20,12 +20,10 @@ module.exports = class FluenceService {
 
         geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
             checkSignature: (from, data, seqno, signature) => {
-                // console.log("checking signature in JS");
                 try {
-                    // console.log("checking signature finished. valid?", result);
                     return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
                 } catch (e) {
-                    // console.error("checking signature failed:", e);
+                    console.error('registerGeesomeCrypto', e);
                 }
             }
         });
