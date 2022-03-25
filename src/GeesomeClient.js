@@ -753,7 +753,7 @@ class GeesomeClient {
       post = await this.getObject(postId);
       post.manifestId = postId;
     } else if (isNumber(postId)) {
-      const postsPath = group.id + '/posts/';
+      const postsPath = group.$manifestId + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
 
