@@ -200,6 +200,10 @@ module.exports = class FluenceService {
         }
     }
 
+    async stop() {
+        return this.peer.stop();
+    }
+
     async getStaticIdPeers(ipnsId) {
         let subs = await dhtApi.findSubscribers(this.peer, getIpnsUpdatesTopic(ipnsId));
         return subs;
