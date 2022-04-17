@@ -360,6 +360,10 @@ class GeesomeClient {
     return this.postRequest('/v1/user/get-async-operation/' + id);
   }
 
+  cancelAsyncOperation(id) {
+    return this.postRequest('/v1/user/cancel-async-operation/' + id);
+  }
+
   findAsyncOperations(name, channelLike) {
     return this.postRequest('/v1/user/find-async-operations', {name, channelLike});
   }
