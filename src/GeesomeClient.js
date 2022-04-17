@@ -231,7 +231,7 @@ class GeesomeClient {
   }
 
   isSessionKeyCorrect(sessionKey) {
-    return !includes(sessionKey, ' ');
+    return /^[A-Za-z0-9]*$/.test(sessionKey);
   }
 
   async setSessionKey(socNetName, accountData) {
