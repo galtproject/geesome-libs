@@ -906,6 +906,28 @@ class GeesomeClient {
     return this.postRequest(`/v1/admin/add-user`, userData);
   }
 
+  adminCreateInvite(inviteData) {
+    return this.postRequest(`/v1/admin/add-invite`, inviteData);
+  }
+
+  adminUpdateInvite(inviteId, inviteData) {
+    return this.postRequest(`/v1/admin/update-invite/${inviteId}`, inviteData);
+  }
+
+  adminInvitesList(isActive = undefined, listParams = {}) {
+    let {sortBy, sortDir, limit, offset} = listParams;
+
+    if (!sortBy) {
+      sortBy = 'createdAt';
+    }
+    if (!sortDir) {
+      sortDir = 'desc';
+    }
+    return this.getRequest(`/v1/admin/invites/`, {
+      params: {sortBy, sortDir, limit, offset, isActive}
+    });
+  }
+
   adminSetUserLimit(limitData) {
     return this.postRequest(`/v1/admin/set-user-limit`, limitData);
   }
