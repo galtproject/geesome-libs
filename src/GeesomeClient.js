@@ -231,7 +231,7 @@ class GeesomeClient {
   }
 
   isSessionKeyCorrect(sessionKey) {
-    return !includes(sessionKey, ' ');
+    return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=]*$/.test(sessionKey);
   }
 
   async setSessionKey(socNetName, accountData) {
@@ -358,6 +358,10 @@ class GeesomeClient {
 
   getAsyncOperation(id) {
     return this.postRequest('/v1/user/get-async-operation/' + id);
+  }
+
+  cancelAsyncOperation(id) {
+    return this.postRequest('/v1/user/cancel-async-operation/' + id);
   }
 
   findAsyncOperations(name, channelLike) {
@@ -753,7 +757,7 @@ class GeesomeClient {
       post = await this.getObject(postId);
       post.manifestId = postId;
     } else if (isNumber(postId)) {
-      const postsPath = group.id + '/posts/';
+      const postsPath = group.$manifestId + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
 
@@ -898,8 +902,38 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
   }
 
+  getSelfAccountId() {
+    return this.getRequest(`/v1/self-account-id`).then(r => r.result);
+  }
+
+  joinByInvite(code, userData) {
+    return this.postRequest(`/v1/invite/join/${code}`, userData);
+  }
+
   adminCreateUser(userData) {
     return this.postRequest(`/v1/admin/add-user`, userData);
+  }
+
+  adminCreateInvite(inviteData) {
+    return this.postRequest(`/v1/admin/add-invite`, inviteData);
+  }
+
+  adminUpdateInvite(inviteId, inviteData) {
+    return this.postRequest(`/v1/admin/update-invite/${inviteId}`, inviteData);
+  }
+
+  adminInvitesList(isActive = undefined, listParams = {}) {
+    let {sortBy, sortDir, limit, offset} = listParams;
+
+    if (!sortBy) {
+      sortBy = 'createdAt';
+    }
+    if (!sortDir) {
+      sortDir = 'desc';
+    }
+    return this.getRequest(`/v1/admin/invites/`, {
+      params: {sortBy, sortDir, limit, offset, isActive}
+    });
   }
 
   adminSetUserLimit(limitData) {

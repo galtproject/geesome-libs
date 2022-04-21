@@ -10,10 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fluencelabs/aqua": "0.6.0-272",
+    "@fluencelabs/aqua": "0.7.1-288",
     "@fluencelabs/aqua-dht": "0.2.5",
-    "@fluencelabs/aqua-lib": "0.3.4",
-    "@fluencelabs/fluence": "0.19.1",
+    "@fluencelabs/aqua-lib": "0.4.3",
+    "@fluencelabs/fluence": "0.21.6",
     "@fluencelabs/fluence-network-environment": "1.0.13",
     "@ipld/dag-cbor": "^6.0.10",
     "axios": "^0.21.1",

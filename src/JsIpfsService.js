@@ -139,12 +139,10 @@ module.exports = class JsIpfsService {
   }
 
   async getFileStat(filePath, options = {attempts: 3, attemptTimeout: 2000, withLocal: true, size: true}) {
-    console.log('getFileStat', filePath, options);
     let resolved = false;
 
     return new Promise(async (resolve, reject) => {
       setTimeout(() => {
-        console.log('setTimeout', filePath, '!resolved', !resolved, 'options.attempts > 0', options.attempts > 0);
         if (!resolved && options.attempts > 0) {
           resolve(this.getFileStat(filePath, {
             ...options,
@@ -157,8 +155,10 @@ module.exports = class JsIpfsService {
         if (r) {
           resolved = true;
           resolve(r);
+        } else {
+          reject(new Error('empty_response_error'));
         }
-      });
+      }).catch(e => reject(e));
     });
   }
 
