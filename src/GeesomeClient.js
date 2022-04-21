@@ -902,6 +902,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
   }
 
+  getSelfAccountId() {
+    return this.postRequest(`/v1/self-account-id`);
+  }
+
   joinByInvite(code, userData) {
     return this.postRequest(`/v1/invite/join/${code}`, userData);
   }
