@@ -903,7 +903,7 @@ class GeesomeClient {
   }
 
   getSelfAccountId() {
-    return this.postRequest(`/v1/self-account-id`);
+    return this.getRequest(`/v1/self-account-id`);
   }
 
   joinByInvite(code, userData) {
