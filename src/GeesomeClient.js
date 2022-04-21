@@ -902,6 +902,10 @@ class GeesomeClient {
     return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
   }
 
+  joinByInvite(code, userData) {
+    return this.postRequest(`/v1/invite/join/${code}`, userData);
+  }
+
   adminCreateUser(userData) {
     return this.postRequest(`/v1/admin/add-user`, userData);
   }
