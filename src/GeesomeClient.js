@@ -787,10 +787,16 @@ class GeesomeClient {
   }
 
   subscribeToGroupUpdates(groupId, callback) {
+    if (!this.communicator) {
+      return console.warn('[GeesomeClient] Communicator not defined');
+    }
     this.communicator.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
   }
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
+    if (!this.communicator) {
+      return console.warn('[GeesomeClient] Communicator not defined');
+    }
     this.communicator.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
       if (includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
