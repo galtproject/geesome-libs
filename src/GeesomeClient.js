@@ -61,11 +61,11 @@ class GeesomeClient {
   }
 
   getRequest(url, options = null) {
-    return this.wrapResponse(this.$http.get(url, options));
+    return this.wrapResponse(this.$http.get('/v1/' + url, options));
   }
 
   postRequest(url, data = null) {
-    return this.wrapResponse(this.$http.post(url, data));
+    return this.wrapResponse(this.$http.post('/v1/' + url, data));
   }
 
   wrapResponse(httPromise) {
@@ -75,7 +75,7 @@ class GeesomeClient {
   }
 
   getCurrentUser() {
-    return this.getRequest('/v1/user').then(user => {
+    return this.getRequest('user').then(user => {
       this.serverLessMode = false;
       return user;
     }).catch((err) => {
@@ -85,11 +85,11 @@ class GeesomeClient {
   }
 
   setUserAccount(accountData) {
-    return this.postRequest('/v1/user/set-account', accountData);
+    return this.postRequest('user/set-account', accountData);
   }
 
   async exportPrivateKey() {
-    this._privateKey = await this.postRequest(`/v1/user/export-private-key`).then(res => res.result);
+    this._privateKey = await this.postRequest(`user/export-private-key`).then(res => res.result);
   }
 
   async decryptText(encryptedText) {
@@ -133,7 +133,7 @@ class GeesomeClient {
   }
 
   async loginPassword(username, password) {
-    return this.postRequest('/v1/login/password', {username, password}).then(data => {
+    return this.postRequest('login/password', {username, password}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
@@ -141,7 +141,7 @@ class GeesomeClient {
   }
 
   async loginAuthMessage(authMessageId, accountAddress, signature, params = {}) {
-    return this.postRequest('/v1/login/auth-message', {authMessageId, accountAddress, signature, params}).then(data => {
+    return this.postRequest('login/auth-message', {authMessageId, accountAddress, signature, params}).then(data => {
       this.setApiKey(data.apiKey);
       this.serverLessMode = false;
       return data;
@@ -149,7 +149,7 @@ class GeesomeClient {
   }
 
   async generateAuthMessage(accountProvider, accountAddress) {
-    return this.postRequest('/v1/generate-auth-message', {accountProvider, accountAddress});
+    return this.postRequest('generate-auth-message', {accountProvider, accountAddress});
   }
 
   async logout() {
@@ -158,18 +158,18 @@ class GeesomeClient {
   }
 
   isNodeEmpty() {
-    return this.getRequest(`/v1/is-empty`).then(r => r.result);
+    return this.getRequest(`is-empty`).then(r => r.result);
   }
 
   setup(setupData) {
-    return this.postRequest(`/v1/setup`, setupData).then(data => {
+    return this.postRequest(`setup`, setupData).then(data => {
       this.setApiKey(data.apiKey);
       return data;
     });
   }
 
   async socNetNamesList() {
-    return this.getRequest(`/v1/soc-net-list`);
+    return this.getRequest(`soc-net-list`);
   }
 
   apiKeyHash() {
@@ -191,7 +191,7 @@ class GeesomeClient {
         loginData.encryptedSessionKey = '';
       }
     }
-    const response = await this.postRequest(`/v1/soc-net/${socNetName}/login`, loginData);
+    const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
       const encryptedSessionKey = response.account.sessionKey;
       const accId = response.account.id;
@@ -209,11 +209,11 @@ class GeesomeClient {
   }
 
   async socNetDbAccountList(socNetName) {
-    return this.postRequest(`/v1/soc-net/${socNetName}/db-account-list`);
+    return this.postRequest(`soc-net/${socNetName}/db-account-list`);
   }
 
   async socNetDbAccount(socNetName, accountData) {
-    const acc = await this.postRequest(`/v1/soc-net/${socNetName}/db-account`, { accountData });
+    const acc = await this.postRequest(`soc-net/${socNetName}/db-account`, { accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
       const sessionHash = commonHelper.hash(acc.sessionKey);
       this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
@@ -222,7 +222,7 @@ class GeesomeClient {
   }
 
   async socNetDbChannel(socNetName, channelData) {
-    return this.postRequest(`/v1/soc-net/${socNetName}/db-channel`, {channelData});
+    return this.postRequest(`soc-net/${socNetName}/db-channel`, {channelData});
   }
 
   isSocNetSessionKeyCorrect(acc) {
@@ -246,92 +246,92 @@ class GeesomeClient {
 
   async socNetUserInfo(socNetName, accountData, username = 'me') {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/user-info`, { accountData, username });
+    return this.postRequest(`soc-net/${socNetName}/user-info`, { accountData, username });
   }
 
   async socNetUpdateAccount(socNetName, accountData) {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/update-account`, { accountData });
+    return this.postRequest(`soc-net/${socNetName}/update-account`, { accountData });
   }
 
   async socNetGetChannels(socNetName, accountData) {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/channels`, { accountData });
+    return this.postRequest(`soc-net/${socNetName}/channels`, { accountData });
   }
 
   async socNetGetChannelInfo(socNetName, accountData, channelId) {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/channel-info`, { accountData, channelId });
+    return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
   async socNetRunChannelImport(socNetName, accountData, channelId) {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`/v1/soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
+    return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
   }
 
   async staticSiteGetDefaultOptions(type, id) {
-    return this.postRequest(`/v1/render/static-site-generator/get-default-options`, { type, id });
+    return this.postRequest(`render/static-site-generator/get-default-options`, { type, id });
   }
 
   async staticSiteRunGenerate(type, id, options) {
-    return this.postRequest(`/v1/render/static-site-generator/run-for-${type}`, { id, options });
+    return this.postRequest(`render/static-site-generator/run-for-${type}`, { id, options });
   }
 
   updateCurrentUser(userData) {
-    return this.postRequest(`/v1/user/update`, userData);
+    return this.postRequest(`user/update`, userData);
   }
 
   userGetFriends(search = null, listParams = {}) {
-    return this.getRequest(`/v1/user/get-friends`, {params: extend({search}, listParams)});
+    return this.getRequest(`user/get-friends`, {params: extend({search}, listParams)});
   }
 
   addFriend(friendId) {
-    return this.postRequest(`/v1/user/add-friend`, {friendId});
+    return this.postRequest(`user/add-friend`, {friendId});
   }
 
   removeFriend(friendId) {
-    return this.postRequest(`/v1/user/remove-friend`, {friendId});
+    return this.postRequest(`user/remove-friend`, {friendId});
   }
 
   getPersonalChatGroups() {
-    return this.getRequest(`/v1/user/personal-chat-groups`);
+    return this.getRequest(`user/personal-chat-groups`);
   }
 
   createGroup(groupData) {
-    return this.postRequest(`/v1/user/create-group`, groupData);
+    return this.postRequest(`user/create-group`, groupData);
   }
 
   updateGroup(groupData) {
-    return this.postRequest(`/v1/user/group/${groupData.id}/update`, groupData);
+    return this.postRequest(`user/group/${groupData.id}/update`, groupData);
   }
 
   async isMemberOfCategory(categoryId) {
-    return this.postRequest(`/v1/user/category/${categoryId}/is-member`).then(data => data.result);
+    return this.postRequest(`user/category/${categoryId}/is-member`).then(data => data.result);
   }
 
   async joinGroup(groupId) {
     if (this.serverLessMode) {
       return this.clientStorage.joinToGroup(groupId);
     }
-    return this.postRequest(`/v1/user/group/${groupId}/join`);
+    return this.postRequest(`user/group/${groupId}/join`);
   }
 
   async leaveGroup(groupId) {
     if (this.serverLessMode) {
       return this.clientStorage.leaveGroup(groupId);
     }
-    return this.postRequest(`/v1/user/group/${groupId}/leave`);
+    return this.postRequest(`user/group/${groupId}/leave`);
   }
 
   async isMemberOfGroup(groupId) {
     if (this.serverLessMode) {
       return this.clientStorage.isMemberOfGroup(groupId);
     }
-    return this.postRequest(`/v1/user/group/${groupId}/is-member`).then(data => data.result);
+    return this.postRequest(`user/group/${groupId}/is-member`).then(data => data.result);
   }
 
   saveObject(object) {
-    return this.postRequest('/save-object', object, {headers: {'Content-Type': 'multipart/form-data'}});
+    return this.postRequest('save-object', object, {headers: {'Content-Type': 'multipart/form-data'}});
   }
 
   saveFile(file, params = {}) {
@@ -342,30 +342,30 @@ class GeesomeClient {
     });
 
     formData.append("file", file);
-    return this.postRequest('/v1/user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}})
+    return this.postRequest('user/save-file', formData, {headers: {'Content-Type': 'multipart/form-data'}})
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
   saveContentData(content, params = {}) {
-    return this.postRequest('/v1/user/save-data', extend({content}, params))
+    return this.postRequest('user/save-data', extend({content}, params))
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
   saveDataByUrl(url, params = {}) {
-    return this.postRequest('/v1/user/save-data-by-url', extend({url}, params))
+    return this.postRequest('user/save-data-by-url', extend({url}, params))
       .then(res => this.asyncResponseWrapper(res, params));
   }
 
   getAsyncOperation(id) {
-    return this.postRequest('/v1/user/get-async-operation/' + id);
+    return this.postRequest('user/get-async-operation/' + id);
   }
 
   cancelAsyncOperation(id) {
-    return this.postRequest('/v1/user/cancel-async-operation/' + id);
+    return this.postRequest('user/cancel-async-operation/' + id);
   }
 
   findAsyncOperations(name, channelLike) {
-    return this.postRequest('/v1/user/find-async-operations', {name, channelLike});
+    return this.postRequest('user/find-async-operations', {name, channelLike});
   }
 
   waitForAsyncOperation(asyncOperationId, onProcess) {
@@ -402,122 +402,122 @@ class GeesomeClient {
   }
 
   createPost(postData) {
-    return this.postRequest(`/v1/user/group/create-post`, postData);
+    return this.postRequest(`user/group/create-post`, postData);
   }
 
   updatePost(postData) {
-    return this.postRequest(`/v1/user/group/update-post/${postData.id}`, postData);
+    return this.postRequest(`user/group/update-post/${postData.id}`, postData);
   }
 
   getGroupUnread(groupId) {
-    return this.getRequest(`/v1/user/group/unread/${groupId}`).then(res => {
+    return this.getRequest(`user/group/unread/${groupId}`).then(res => {
       res.count = parseInt(res.count);
       return res;
     });
   }
 
   setGroupRead(readData) {
-    return this.postRequest(`/v1/user/group/set-read`, readData);
+    return this.postRequest(`user/group/set-read`, readData);
   }
 
   getDbPost(postId) {
-    return this.getRequest(`/v1/user/post/${postId}`);
+    return this.getRequest(`user/post/${postId}`);
   }
 
   getDbGroupPosts(groupId, params = null) {
-    return this.getRequest(`/v1/group/${groupId}/posts`, {params});
+    return this.getRequest(`group/${groupId}/posts`, {params});
   }
 
   createCategory(categoryData) {
-    return this.postRequest(`/v1/user/create-category`, categoryData);
+    return this.postRequest(`user/create-category`, categoryData);
   }
 
   getDbCategoryPosts(categoryId, params = null) {
-    return this.getRequest(`/v1/category/${categoryId}/posts`, {params});
+    return this.getRequest(`category/${categoryId}/posts`, {params});
   }
 
   getDbCategoryGroups(categoryId, params = null) {
-    return this.getRequest(`/v1/user/category/${categoryId}/groups`, {params});
+    return this.getRequest(`user/category/${categoryId}/groups`, {params});
   }
 
   createGroupSection(groupSectionData) {
-    return this.postRequest(`/v1/user/group-section/create`, groupSectionData);
+    return this.postRequest(`user/group-section/create`, groupSectionData);
   }
 
   updateGroupSection(groupSectionId, groupSectionData) {
-    return this.postRequest(`/v1/user/group-section/${groupSectionId}/update`, groupSectionData);
+    return this.postRequest(`user/group-section/${groupSectionId}/update`, groupSectionData);
   }
 
   getDbCategoryGroupSections(params = null) {
-    return this.getRequest(`/v1/user/group-sections`, {params});
+    return this.getRequest(`user/group-sections`, {params});
   }
 
   getDbCategoryByParams(params) {
-    return this.postRequest(`/v1/category/get`, params);
+    return this.postRequest(`category/get`, params);
   }
 
   getDbGroupByParams(params) {
-    return this.postRequest(`/v1/group/get`, params);
+    return this.postRequest(`group/get`, params);
   }
 
   getDbPostByParams(params) {
-    return this.postRequest(`/v1/post/get`, params);
+    return this.postRequest(`post/get`, params);
   }
 
   addGroupToCategory(groupId, categoryId) {
-    return this.postRequest(`/v1/user/category/${categoryId}/add-group`, {groupId});
+    return this.postRequest(`user/category/${categoryId}/add-group`, {groupId});
   }
 
   addAdminToGroup(groupId, userId) {
-    return this.postRequest(`/v1/user/group/${groupId}/add-admin`, {userId});
+    return this.postRequest(`user/group/${groupId}/add-admin`, {userId});
   }
 
   removeAdminFromGroup(groupId, userId) {
-    return this.postRequest(`/v1/user/group/${groupId}/remove-admin`, {userId});
+    return this.postRequest(`user/group/${groupId}/remove-admin`, {userId});
   }
 
   setAdminsOfGroup(groupId, userIds) {
-    return this.postRequest(`/v1/user/group/${groupId}/set-admins`, {userIds});
+    return this.postRequest(`user/group/${groupId}/set-admins`, {userIds});
   }
 
   addMemberToGroup(groupId, userId, permissions = []) {
-    return this.postRequest(`/v1/user/group/${groupId}/add-member`, {userId, permissions});
+    return this.postRequest(`user/group/${groupId}/add-member`, {userId, permissions});
   }
 
   setMembersOfGroup(groupId, userIds, permissions = []) {
-    return this.postRequest(`/v1/user/group/${groupId}/set-members`, {userIds, permissions});
+    return this.postRequest(`user/group/${groupId}/set-members`, {userIds, permissions});
   }
 
   setMemberGroupPermissions(groupId, userId, permissions = []) {
-    return this.postRequest(`/v1/user/group/${groupId}/set-permissions`, {userId, permissions});
+    return this.postRequest(`user/group/${groupId}/set-permissions`, {userId, permissions});
   }
 
   removeMemberFromGroup(groupId, userId) {
-    return this.postRequest(`/v1/user/group/${groupId}/remove-member`, {userId});
+    return this.postRequest(`user/group/${groupId}/remove-member`, {userId});
   }
 
   addMemberToCategory(categoryId, userId, permissions = []) {
-    return this.postRequest(`/v1/user/category/${categoryId}/add-member`, {userId, permissions});
+    return this.postRequest(`user/category/${categoryId}/add-member`, {userId, permissions});
   }
 
   removeMemberFromCategory(categoryId, userId) {
-    return this.postRequest(`/v1/user/category/${categoryId}/remove-member`, {userId});
+    return this.postRequest(`user/category/${categoryId}/remove-member`, {userId});
   }
 
   regenerateUserPreviews() {
-    return this.postRequest(`/v1/user/regenerate-previews`);
+    return this.postRequest(`user/regenerate-previews`);
   }
 
   getContentDataByApi(storageId) {
-    return this.getRequest('/v1/content-data/' + storageId);
+    return this.getRequest('content-data/' + storageId);
   }
 
   getDbContent(dbId) {
-    return this.getRequest('/v1/content/' + dbId);
+    return this.getRequest('content/' + dbId);
   }
 
   getDbContentByStorageId(storageId) {
-    return this.getRequest('/v1/content-by-storage-id/' + storageId);
+    return this.getRequest('content-by-storage-id/' + storageId);
   }
 
   async getMemberInGroups(types) {
@@ -527,7 +527,7 @@ class GeesomeClient {
       // TODO: filter by types
     } else {
       //TODO: get groups list directly from ipld?
-      groupsIds = await this.getRequest('/v1/user/member-in-groups', {params: {types: types.join(',')}}).then(groupData => groupData.list.map(g => g.manifestStorageId));
+      groupsIds = await this.getRequest('user/member-in-groups', {params: {types: types.join(',')}}).then(groupData => groupData.list.map(g => g.manifestStorageId));
     }
     return pIteration.map(groupsIds, (groupId) => this.getGroup(groupId));
   }
@@ -542,7 +542,7 @@ class GeesomeClient {
 
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
-    return this.getRequest('/v1/user/admin-in-groups', {params: {types: types.join(',')}}).then(groupData => {
+    return this.getRequest('user/admin-in-groups', {params: {types: types.join(',')}}).then(groupData => {
       return pIteration.map(groupData.list, (group) => this.getGroup(group.manifestStorageId))
     });
   }
@@ -568,7 +568,7 @@ class GeesomeClient {
   }
 
   async getDbGroup(groupId) {
-    return this.getRequest(`/v1/group/${groupId}`);
+    return this.getRequest(`group/${groupId}`);
   }
 
   async getGroup(groupId) {
@@ -585,7 +585,7 @@ class GeesomeClient {
     await this.fetchIpldFields(groupObj, ['avatarImage', 'coverImage']);
 
     return groupObj;
-    // return this.$http.get(`/v1/group/${groupId}`).then(response => response.data);
+    // return this.$http.get(`group/${groupId}`).then(response => response.data);
   }
 
   async fetchIpldFields(obj, fieldsNamesArr) {
@@ -646,7 +646,7 @@ class GeesomeClient {
 
       // setTimeout(() => {
       //   if (!responded) {
-          this.getRequest(`/ipld/${ipldHash}`, { isResolve }).then(wrapObject).then(resolve).catch(reject);
+          this.getRequest(`ipld/${ipldHash}`, { isResolve }).then(wrapObject).then(resolve).catch(reject);
         // }
       // }, this.ipfsIddleTime);
     });
@@ -747,7 +747,7 @@ class GeesomeClient {
       }
     });
     return posts;
-// return this.$http.get(`/v1/group/${groupId}/posts`, { params: { limit, offset } }).then(response => response.data);
+// return this.$http.get(`group/${groupId}/posts`, { params: { limit, offset } }).then(response => response.data);
   }
 
   async getGroupPost(groupId, postId) {
@@ -821,15 +821,15 @@ class GeesomeClient {
   }
 
   getCanCreatePost(groupId) {
-    return this.getRequest(`/v1/user/group/${groupId}/can-create-post`).then(data => data.valid);
+    return this.getRequest(`user/group/${groupId}/can-create-post`).then(data => data.valid);
   }
 
   getCanEditGroup(groupId) {
-    return this.getRequest(`/v1/user/group/${groupId}/can-edit`).then(data => data.valid);
+    return this.getRequest(`user/group/${groupId}/can-edit`).then(data => data.valid);
   }
 
   resolveIpns(ipns) {
-    return this.getRequest(`/resolve/${ipns}`).catch(() => null);
+    return this.getRequest(`resolve/${ipns}`).catch(() => null);
   }
 
   getFileCatalogItems(parentItemId, type, listParams = {}) {
@@ -841,91 +841,91 @@ class GeesomeClient {
     if (!sortDir) {
       sortDir = 'desc';
     }
-    return this.getRequest(`/v1/user/file-catalog/`, {
+    return this.getRequest(`user/file-catalog/`, {
       params: {parentItemId, type, sortBy, sortDir, limit, offset, search}
     });
   }
 
   getFileCatalogBreadcrumbs(itemId) {
-    return this.getRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/breadcrumbs`);
+    return this.getRequest(`user/file-catalog/file-catalog-item/${itemId}/breadcrumbs`);
   }
 
   createFolder(parentItemId, name) {
-    return this.postRequest(`/v1/user/file-catalog/create-folder`, {parentItemId, name});
+    return this.postRequest(`user/file-catalog/create-folder`, {parentItemId, name});
   }
 
   addContentIdToFolderId(contentId, folderId) {
-    return this.postRequest(`/v1/user/file-catalog/add-content-to-folder`, {contentId, folderId});
+    return this.postRequest(`user/file-catalog/add-content-to-folder`, {contentId, folderId});
   }
 
   updateFileCatalogItem(itemId, updateData) {
-    return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/update`, updateData);
+    return this.postRequest(`user/file-catalog/file-catalog-item/${itemId}/update`, updateData);
   }
 
   deleteFileCatalogItem(itemId, options) {
-    return this.postRequest(`/v1/user/file-catalog/file-catalog-item/${itemId}/delete`, options);
+    return this.postRequest(`user/file-catalog/file-catalog-item/${itemId}/delete`, options);
   }
 
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
-    return this.postRequest(`/v1/file-catalog/get-contents-ids`, fileCatalogIds);
+    return this.postRequest(`file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
   saveContentByPath(contentId, path) {
-    return this.postRequest(`/v1/user/file-catalog/save-content-by-path`, {contentId, path});
+    return this.postRequest(`user/file-catalog/save-content-by-path`, {contentId, path});
   }
 
   getContentByPath(path) {
-    return this.postRequest(`/v1/user/file-catalog/get-content-by-path`, {path});
+    return this.postRequest(`user/file-catalog/get-content-by-path`, {path});
   }
 
   getFileCatalogItemByPath(path, type) {
-    return this.postRequest(`/v1/user/file-catalog/get-item-by-path`, {path, type});
+    return this.postRequest(`user/file-catalog/get-item-by-path`, {path, type});
   }
 
   publishFolder(folderId, params = {}) {
-    return this.postRequest(`/v1/user/file-catalog/publish-folder/${folderId}`, params);
+    return this.postRequest(`user/file-catalog/publish-folder/${folderId}`, params);
   }
 
   getAllItems(itemsName, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
-    return this.getRequest(`/v1/admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
+    return this.getRequest(`admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
   }
 
   getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
-    return this.getRequest(`/v1/user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
+    return this.getRequest(`user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
 
   getUserByApiKey(apiKey) {
-    return this.getRequest(`/v1/admin/get-user-by-api-key/` + apiKey);
+    return this.getRequest(`admin/get-user-by-api-key/` + apiKey);
   }
 
   addUserApiKey(data) {
-    return this.postRequest(`/v1/user/api-key/add`, data);
+    return this.postRequest(`user/api-key/add`, data);
   }
 
   updateUserApiKey(apiKeyId, updateData) {
-    return this.postRequest(`/v1/user/api-key/${apiKeyId}/update`, updateData);
+    return this.postRequest(`user/api-key/${apiKeyId}/update`, updateData);
   }
 
   getSelfAccountId() {
-    return this.getRequest(`/v1/self-account-id`).then(r => r.result);
+    return this.getRequest(`self-account-id`).then(r => r.result);
   }
 
   joinByInvite(code, userData) {
-    return this.postRequest(`/v1/invite/join/${code}`, userData);
+    return this.postRequest(`invite/join/${code}`, userData);
   }
 
   adminCreateUser(userData) {
-    return this.postRequest(`/v1/admin/add-user`, userData);
+    return this.postRequest(`admin/add-user`, userData);
   }
 
   adminCreateInvite(inviteData) {
-    return this.postRequest(`/v1/admin/add-invite`, inviteData);
+    return this.postRequest(`admin/add-invite`, inviteData);
   }
 
   adminUpdateInvite(inviteId, inviteData) {
-    return this.postRequest(`/v1/admin/update-invite/${inviteId}`, inviteData);
+    return this.postRequest(`admin/update-invite/${inviteId}`, inviteData);
   }
 
   adminInvitesList(isActive = undefined, listParams = {}) {
@@ -937,57 +937,57 @@ class GeesomeClient {
     if (!sortDir) {
       sortDir = 'desc';
     }
-    return this.getRequest(`/v1/admin/invites/`, {
+    return this.getRequest(`admin/invites/`, {
       params: {sortBy, sortDir, limit, offset, isActive}
     });
   }
 
   adminSetUserLimit(limitData) {
-    return this.postRequest(`/v1/admin/set-user-limit`, limitData);
+    return this.postRequest(`admin/set-user-limit`, limitData);
   }
 
   adminGetUserLimit(userId, limitName) {
-    return this.getRequest(`/v1/admin/get-user/${userId}/limit/${limitName}`);
+    return this.getRequest(`admin/get-user/${userId}/limit/${limitName}`);
   }
 
   adminIsHaveCorePermission(permissionName) {
-    return this.getRequest(`v1/user/permissions/core/is-have/${permissionName}`).then(data => data.result);
+    return this.getRequest(`user/permissions/core/is-have/${permissionName}`).then(data => data.result);
   }
 
   adminAddCorePermission(userId, permissionName) {
-    return this.postRequest(`/v1/admin/permissions/core/add_permission`, {userId, permissionName});
+    return this.postRequest(`admin/permissions/core/add_permission`, {userId, permissionName});
   }
 
   adminRemoveCorePermission(userId, permissionName) {
-    return this.postRequest(`/v1/admin/permissions/core/remove_permission`, {userId, permissionName});
+    return this.postRequest(`admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
   adminGetCorePermissionList(userId) {
-    return this.postRequest(`/v1/admin/permissions/core/get_list`, {userId});
+    return this.postRequest(`admin/permissions/core/get_list`, {userId});
   }
 
   adminAddUserApiKey(userId, data) {
-    return this.postRequest(`/v1/admin/add-user-api-key`, {userId, ...data});
+    return this.postRequest(`admin/add-user-api-key`, {userId, ...data});
   }
 
   adminGetBootNodes(type = 'ipfs') {
-    return this.getRequest(`/v1/admin/boot-nodes`, {type});
+    return this.getRequest(`admin/boot-nodes`, {type});
   }
 
   adminAddBootNode(address, type = 'ipfs') {
-    return this.postRequest(`/v1/admin/boot-nodes/add`, {address, type});
+    return this.postRequest(`admin/boot-nodes/add`, {address, type});
   }
 
   adminRemoveBootNode(address, type = 'ipfs') {
-    return this.postRequest(`/v1/admin/boot-nodes/remove`, {address, type});
+    return this.postRequest(`admin/boot-nodes/remove`, {address, type});
   }
 
   adminGetUserAccount(provider, address) {
-    return this.postRequest(`/v1/admin/get-user-account`, {provider, address});
+    return this.postRequest(`admin/get-user-account`, {provider, address});
   }
 
   getNodeAddressList(type = 'ipfs') {
-    return this.getRequest(`/v1/node-address-list`, {params: {type}}).then(data => data.result);
+    return this.getRequest(`node-address-list`, {params: {type}}).then(data => data.result);
   }
 
   async getNodeAddress(_includesAddress = null) {
@@ -1005,7 +1005,7 @@ class GeesomeClient {
   }
 
   getGroupPeers(ipnsId) {
-    return this.getRequest(`/v1/group/${ipnsId}/peers`);
+    return this.getRequest(`group/${ipnsId}/peers`);
   }
 
   async connectToIpfsNodeToServer() {
