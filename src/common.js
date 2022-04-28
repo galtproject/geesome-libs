@@ -89,3 +89,12 @@ module.exports.random = (mode = 'hash') => {
 module.exports.hash = (input, algo = 'sha256') => {
   return createHash(algo).update(input).digest('hex');
 }
+
+module.exports.makeCode = (length) => {
+  let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let res = '';
+  for (let i = 0; i < length; i++) {
+    res += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return res;
+};
