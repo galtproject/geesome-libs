@@ -264,9 +264,9 @@ class GeesomeClient {
     return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
-  async socNetRunChannelImport(socNetName, accountData, channelId) {
+  async socNetRunChannelImport(socNetName, accountData, channelId, advancedSettings = {}) {
     await this.setSessionKey(socNetName, accountData);
-    return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId });
+    return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
   async staticSiteGetDefaultOptions(type, id) {
