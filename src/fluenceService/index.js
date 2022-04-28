@@ -62,7 +62,9 @@ module.exports = class FluenceService {
                     accountKey = await this.accStorage.getAccountStaticId(accountKey);
                 }
             }
+            console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
+            console.log('bindToStaticId:fanout_event');
             await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
