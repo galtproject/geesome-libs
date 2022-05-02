@@ -264,8 +264,12 @@ class GeesomeClient {
     return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
-  async socNetUpdateChannel(socNetName, channelId, updateData) {
-    return this.postRequest(`soc-net/${socNetName}/db-update-channel`, { channelId, ...updateData });
+  async socNetUpdateDbChannel(socNetName, id, updateData) {
+    return this.postRequest(`soc-net/${socNetName}/update-db-channel`, { channelData: {id}, updateData });
+  }
+
+  async socNetUpdateDbAccount(socNetName, id, updateData) {
+    return this.postRequest(`soc-net/${socNetName}/update-db-account`, { accountData: {id}, updateData });
   }
 
   async socNetRunChannelImport(socNetName, accountData, channelId, advancedSettings = {}) {
