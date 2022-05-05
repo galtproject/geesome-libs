@@ -2424,9 +2424,9 @@ ipfs-utils@^0.7.0, ipfs-utils@^0.7.1, ipfs-utils@^0.7.2:
     ky-universal "^0.3.0"
     stream-to-it "^0.2.0"
 
-"ipfs@git://github.com/galtproject/js-ipfs.git#3e2c24d4":
+"ipfs@https://github.com/galtproject/js-ipfs.git#3e2c24d4":
   version "0.41.0"
-  resolved "git://github.com/galtproject/js-ipfs.git#3e2c24d46d1c28f804a459ace40618e942e5c1a0"
+  resolved "https://github.com/galtproject/js-ipfs.git#3e2c24d46d1c28f804a459ace40618e942e5c1a0"
   dependencies:
     "@hapi/ammo" "^4.0.0"
     "@hapi/boom" "^7.4.3"
