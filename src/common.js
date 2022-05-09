@@ -12,6 +12,9 @@ const isString = require('lodash/isString');
 const isObject = require('lodash/isObject');
 const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
+const startsWith = require('lodash/startsWith');
+const endsWith = require('lodash/endsWith');
+const last = require('lodash/last');
 const createHash = require('create-hash');
 const stableSort = require('stable');
 const uuidv4 = require('uuid/v4');
@@ -104,10 +107,10 @@ module.exports.getFilenameFromPath = (path) => {
 }
 
 module.exports.getExtensionFromName = (fileName) => {
-  return (fileName || '').split('.').length > 1 ? _.last((fileName || '').split('.')).toLowerCase() : null
+  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase() : null
 }
 
 module.exports.isVideoType = (fullType) => {
   //TODO: detect more video types
-  return _.startsWith(fullType, 'video') || _.endsWith(fullType, 'mp4') || _.endsWith(fullType, 'avi') || _.endsWith(fullType, 'mov') || _.endsWith(fullType, 'quicktime');
+  return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
 }
