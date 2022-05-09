@@ -98,3 +98,16 @@ module.exports.makeCode = (length) => {
   }
   return res;
 };
+
+module.exports.getFilenameFromPath = (path) => {
+  return _.trim(path, '/').split('/').slice(-1)[0];
+}
+
+module.exports.getExtensionFromName = (fileName) => {
+  return (fileName || '').split('.').length > 1 ? _.last((fileName || '').split('.')).toLowerCase() : null
+}
+
+module.exports.isVideoType = (fullType) => {
+  //TODO: detect more video types
+  return _.startsWith(fullType, 'video') || _.endsWith(fullType, 'mp4') || _.endsWith(fullType, 'avi') || _.endsWith(fullType, 'mov') || _.endsWith(fullType, 'quicktime');
+}
