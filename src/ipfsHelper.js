@@ -152,6 +152,18 @@ const ipfsHelper = {
 
   async getIpldHashFromObject(object) {
     return ipfsHelper.cidToHash(await dagCBOR.util.cid(dagCBOR.util.serialize(object)));
+  },
+
+  getStorageIdHash(storageId) {
+    if (ipfsHelper.isCid(storageId)) {
+      storageId = ipfsHelper.cidToHash(storageId);
+    }
+
+    if (storageId['/']) {
+      storageId = storageId['/'];
+    }
+
+    return storageId;
   }
 };
 
