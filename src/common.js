@@ -15,6 +15,7 @@ const includes = require('lodash/includes');
 const startsWith = require('lodash/startsWith');
 const endsWith = require('lodash/endsWith');
 const last = require('lodash/last');
+const trim = require('lodash/trim');
 const createHash = require('create-hash');
 const stableSort = require('stable');
 const uuidv4 = require('uuid/v4');
@@ -103,7 +104,7 @@ module.exports.makeCode = (length) => {
 };
 
 module.exports.getFilenameFromPath = (path) => {
-  return _.trim(path, '/').split('/').slice(-1)[0];
+  return trim(path, '/').split('/').slice(-1)[0];
 }
 
 module.exports.getExtensionFromName = (fileName) => {
