@@ -56,11 +56,7 @@ module.exports = class FluenceService {
                 }
             }, 3000);
             if (!startsWith(accountKey, 'Qm')) {
-                if (accountKey === 'self') {
-                    accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
-                } else {
-                    accountKey = await this.accStorage.getAccountStaticId(accountKey);
-                }
+                accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
@@ -97,8 +93,8 @@ module.exports = class FluenceService {
     async getAccountIdByName(name) {
         return this.accStorage.getAccountStaticId(name);
     }
-    async createAccountIfNotExists(name) {
-        return this.accStorage.getOrCreateAccountStaticId(name);
+    async createAccountIfNotExists(name, userId = null) {
+        return this.accStorage.getOrCreateAccountStaticId(name, userId = null);
     }
 
     async getAccountPeerId(key) {
@@ -110,7 +106,7 @@ module.exports = class FluenceService {
     }
 
     async getCurrentAccountId() {
-        return this.accStorage.getOrCreateAccountStaticId('self');
+        return this.accStorage.getAccountStaticId('self');
     }
 
     async resolveStaticIdEntry(staticStorageId) {
@@ -153,7 +149,6 @@ module.exports = class FluenceService {
     }
 
     async publishEvent(topic, data) {
-        await this.accStorage.getOrCreateAccountStaticId('self');
         const selfPeerId = await this.accStorage.getAccountPeerId('self');
         return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
     }
