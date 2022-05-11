@@ -20,6 +20,9 @@ module.exports = class FluenceService {
             log.setLevel(options.logLevel);
         }
     }
+    async isReady() {
+        return !!this.peer;
+    }
     setPeer(peer) {
         this.peer = peer;
     }
