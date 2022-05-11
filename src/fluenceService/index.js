@@ -7,11 +7,23 @@ const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
-    constructor(accStorage, peer, options = {}) {
+    constructor(accStorage, peer = null, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
 
+        if (this.peer) {
+            this.registerEvents();
+        }
+
+        if (options.logLevel) {
+            log.setLevel(options.logLevel);
+        }
+    }
+    setPeer(peer) {
+        this.peer = peer;
+    }
+    registerEvents() {
         geesomeCrypto.registerClientAPI(this.peer, 'api', {
             receive_event: (topic, e) => {
                 this.emitTopicSubscribers(topic, e);
@@ -27,10 +39,6 @@ module.exports = class FluenceService {
                 }
             }
         });
-
-        if (options.logLevel) {
-            log.setLevel(options.logLevel);
-        }
     }
     getClientRelayId() {
         return this.peer.getStatus().relayPeerId;
