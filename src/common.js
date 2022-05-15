@@ -12,6 +12,10 @@ const isString = require('lodash/isString');
 const isObject = require('lodash/isObject');
 const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
+const startsWith = require('lodash/startsWith');
+const endsWith = require('lodash/endsWith');
+const last = require('lodash/last');
+const trim = require('lodash/trim');
 const createHash = require('create-hash');
 const stableSort = require('stable');
 const uuidv4 = require('uuid/v4');
@@ -88,4 +92,26 @@ module.exports.random = (mode = 'hash') => {
 
 module.exports.hash = (input, algo = 'sha256') => {
   return createHash(algo).update(input).digest('hex');
+}
+
+module.exports.makeCode = (length) => {
+  let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let res = '';
+  for (let i = 0; i < length; i++) {
+    res += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return res;
+};
+
+module.exports.getFilenameFromPath = (path) => {
+  return trim(path, '/').split('/').slice(-1)[0];
+}
+
+module.exports.getExtensionFromName = (fileName) => {
+  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase() : null
+}
+
+module.exports.isVideoType = (fullType) => {
+  //TODO: detect more video types
+  return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
 }

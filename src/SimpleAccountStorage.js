@@ -49,7 +49,7 @@ module.exports = class SimpleAccountStorage {
         const publicBase58 = peerIdHelper.peerIdToPublicBase58(peerId);
         return this.setAccount(name, { privateBase64, publicBase64, publicBase58 });
     }
-    async getOrCreateAccountStaticId(name) {
+    async getOrCreateAccountStaticId(name, userId = null) {
         const account = this.getAccount(name);
         if (account) {
             return account.publicBase58;

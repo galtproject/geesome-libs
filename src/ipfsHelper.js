@@ -269,6 +269,18 @@ const ipfsHelper = {
     });
 
     return node.api;
+  },
+
+  getStorageIdHash(storageId) {
+    if (ipfsHelper.isCid(storageId)) {
+      storageId = ipfsHelper.cidToHash(storageId);
+    }
+
+    if (storageId['/']) {
+      storageId = storageId['/'];
+    }
+
+    return storageId;
   }
 };
 module.exports = ipfsHelper;

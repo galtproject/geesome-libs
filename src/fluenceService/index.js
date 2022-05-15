@@ -7,11 +7,26 @@ const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
-    constructor(accStorage, peer, options = {}) {
+    constructor(accStorage, peer = null, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
 
+        if (this.peer) {
+            this.registerEvents();
+        }
+
+        if (options.logLevel) {
+            log.setLevel(options.logLevel);
+        }
+    }
+    async isReady() {
+        return !!this.peer;
+    }
+    setPeer(peer) {
+        this.peer = peer;
+    }
+    registerEvents() {
         geesomeCrypto.registerClientAPI(this.peer, 'api', {
             receive_event: (topic, e) => {
                 this.emitTopicSubscribers(topic, e);
@@ -27,10 +42,6 @@ module.exports = class FluenceService {
                 }
             }
         });
-
-        if (options.logLevel) {
-            log.setLevel(options.logLevel);
-        }
     }
     getClientRelayId() {
         return this.peer.getStatus().relayPeerId;
@@ -56,13 +67,11 @@ module.exports = class FluenceService {
                 }
             }, 3000);
             if (!startsWith(accountKey, 'Qm')) {
-                if (accountKey === 'self') {
-                    accountKey = await this.accStorage.getOrCreateAccountStaticId(accountKey);
-                } else {
-                    accountKey = await this.accStorage.getAccountStaticId(accountKey);
-                }
+                accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
+            console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
+            console.log('bindToStaticId:fanout_event');
             await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
@@ -95,8 +104,8 @@ module.exports = class FluenceService {
     async getAccountIdByName(name) {
         return this.accStorage.getAccountStaticId(name);
     }
-    async createAccountIfNotExists(name) {
-        return this.accStorage.getOrCreateAccountStaticId(name);
+    async createAccountIfNotExists(name, userId = null) {
+        return this.accStorage.getOrCreateAccountStaticId(name, userId = null);
     }
 
     async getAccountPeerId(key) {
@@ -108,7 +117,7 @@ module.exports = class FluenceService {
     }
 
     async getCurrentAccountId() {
-        return this.accStorage.getOrCreateAccountStaticId('self');
+        return this.accStorage.getAccountStaticId('self');
     }
 
     async resolveStaticIdEntry(staticStorageId) {
@@ -151,7 +160,6 @@ module.exports = class FluenceService {
     }
 
     async publishEvent(topic, data) {
-        await this.accStorage.getOrCreateAccountStaticId('self');
         const selfPeerId = await this.accStorage.getAccountPeerId('self');
         return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
     }

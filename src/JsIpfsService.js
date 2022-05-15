@@ -284,6 +284,16 @@ module.exports = class JsIpfsService {
     return this.id().then(nodeId => nodeId.addresses);
   }
 
+  async remoteNodeAddressList(types = []) {
+    return this.nodeAddressList().then(addresses => {
+      addresses = addresses.filter(a => !includes(a, '/127.0.0.1/'))
+      types.forEach(type => {
+        addresses = addresses.filter(a => includes(a, '/' + type + '/'))
+      });
+      return addresses;
+    });
+  }
+
   addPin(hash) {
     return this.node.pin.add(hash).then(() => {
       console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', hash);
