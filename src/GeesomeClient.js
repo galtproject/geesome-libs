@@ -88,6 +88,10 @@ class GeesomeClient {
     return this.postRequest('user/set-account', accountData);
   }
 
+  getUserAccounts() {
+    return this.getRequest('user/get-accounts');
+  }
+
   async exportPrivateKey() {
     this._privateKey = await this.postRequest(`user/export-private-key`).then(res => res.result);
   }
