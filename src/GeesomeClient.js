@@ -75,7 +75,8 @@ class GeesomeClient {
   }
 
   getCurrentUser() {
-    return this.getRequest('user').then(user => {
+    return this.getRequest('user').then(async user => {
+      user.foreignAccounts = await this.getUserAccounts();
       this.serverLessMode = false;
       return user;
     }).catch((err) => {
@@ -86,6 +87,10 @@ class GeesomeClient {
 
   setUserAccount(accountData) {
     return this.postRequest('user/set-account', accountData);
+  }
+
+  getUserAccounts() {
+    return this.getRequest('user/get-accounts');
   }
 
   async exportPrivateKey() {
