@@ -40,7 +40,7 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return startsWith(value, 'Qm') && /^\w+$/.test(value);
+    return (startsWith(value, 'Qm') || this.isIpldHash(value)) && /^\w+$/.test(value);
   },
   isIpldHash(value) {
     if (!value) {

@@ -62,7 +62,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFileByUrl(url, options = {}) {
-    let result = await this.node.add(urlSource(url), {pin: false});
+    let result = await this.node.add(urlSource(url), {pin: false, cidVersion: 1});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
@@ -72,7 +72,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveBrowserFile(fileObject, options = {}) {
-    let result = await this.node.add(fileObject, {pin: false});
+    let result = await this.node.add(fileObject, {pin: false, cidVersion: 1});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if(options.waitForPin) {
@@ -96,7 +96,7 @@ module.exports = class JsIpfsService {
   }
 
   async saveFile(data, options = {}) {
-    let result = await this.node.add([data], {pin: false});
+    let result = await this.node.add([data], {pin: false, cidVersion: 1});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
     if (options.waitForPin) {
@@ -217,7 +217,7 @@ module.exports = class JsIpfsService {
       value = get(value, remainderPath.replace('/', '.'));
       remainderPath = undefined;
     }
-    return ipfsHelper.isIpldHash(value) && resolveProp ? this.node.dag.get(ipfsHelper.ipfsHashToCid(value), {path: remainderPath, localResolve: !resolveProp}).then(response => response.value) : value;
+    return ipfsHelper.isIpfsHash(value) && resolveProp ? this.node.dag.get(ipfsHelper.ipfsHashToCid(value), {path: remainderPath, localResolve: !resolveProp}).then(response => response.value) : value;
   }
 
   async bindToStaticId(storageId, accountKey, options = {}) {
@@ -351,10 +351,10 @@ module.exports = class JsIpfsService {
   }
 
   publishEvent(topic, data) {
-    if(isObject(data)) {
+    if (isObject(data)) {
       data = JSON.stringify(data);
     }
-    if(isString(data)) {
+    if (isString(data)) {
       data = Buffer.from(data);
     }
     return this.node.pubsub.publish(topic, data);

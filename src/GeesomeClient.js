@@ -610,31 +610,28 @@ class GeesomeClient {
     })
   }
 
+  async getContentLinkByStaticId(staticId) {
+    return this.server + '/ipns/' + staticId;
+  }
+
   async getContentLink(content, previewType = null) {
     if (!content) {
       return null;
     }
     let storageId;
     let manifest;
-    //                        TODO: delete deprecated content  field
-    if (content.storageId || content.content) {
+    if (content.storageId) {
       manifest = content;
     } else {
       storageId = content;
     }
 
-    if (ipfsHelper.isIpldHash(storageId) && !manifest) {
-      manifest = await this.getObject(storageId);
-    }
-
     if (manifest) {
       if (previewType) {
         const previewObj = ((manifest.preview || {})[previewType] || {});
-        //                                  TODO: delete deprecated content  field
-        storageId = previewObj.storageId || previewObj.content || manifest.storageId || manifest.content;
+        storageId = previewObj.storageId || manifest.storageId;
       } else {
-        //                                TODO: delete deprecated content  field
-        storageId = manifest.storageId || manifest.content;
+        storageId = manifest.storageId;
       }
     }
     return this.server + '/v1/content-data/' + storageId;
@@ -674,14 +671,11 @@ class GeesomeClient {
   }
 
   async getContentData(contentHash) {
-    if(isObject(contentHash) && contentHash.storageId) {
+    if (isObject(contentHash) && contentHash.storageId) {
       contentHash = contentHash.storageId;
     }
     if (contentHash['/']) {
       contentHash = contentHash['/'];
-    }
-    if (ipfsHelper.isIpldHash(contentHash)) {
-      contentHash = (await this.getObject(contentHash)).storageId;
     }
 
     let responded = false;
@@ -766,7 +760,7 @@ class GeesomeClient {
   async getGroupPost(groupId, postId) {
     const group = await this.getGroup(groupId);
     let post;
-    if (ipfsHelper.isIpldHash(postId)) {
+    if (ipfsHelper.isIpfsHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
     } else if (isNumber(postId)) {
