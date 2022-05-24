@@ -160,7 +160,7 @@ const pubSubHelper = {
         const verify = crypto.createVerify('RSA-SHA256');
         verify.update(bytes);
         const pem = jwkToPem(rsaPubKey._key);
-        return verify.verify(pem, signature)
+        return verify.verify(pem, signature);
     },
 
 };

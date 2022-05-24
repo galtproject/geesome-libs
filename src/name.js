@@ -27,6 +27,10 @@ const name = {
     return `${namespace}${name.base64Ipns(groupIpns)}`;
   },
 
+  getFluenceUpdatesTopic(ipnsId) {
+    return ipnsId;
+  },
+
   getIpnsUpdatesTopic(ipnsId) {
     const namespace = '/record/';
     return `${namespace}${name.base64Ipns(ipnsId)}`;

@@ -34,7 +34,7 @@ module.exports = {
             const peer = new FluencePeer();
             const peerId = await peerIdHelper.createPeerId();
             await peer.start({
-                connectTo: testNet[1],
+                connectTo: testNet[2],
                 KeyPair: new KeyPair(peerId)
             });
             // console.log("connected");
