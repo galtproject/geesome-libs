@@ -20,6 +20,7 @@ const {GeesomeClient} = require('../src/GeesomeClient');
 const pgpHelper = require('../src/pgpHelper');
 const peerIdHelper = require('../src/peerIdHelper');
 const ipfsHelper = require('../src/ipfsHelper');
+const pubSubHelper = require('../src/pubSubHelper');
 
 describe('pgp', function () {
   let geesomeClient;
@@ -108,9 +109,9 @@ describe('pgp', function () {
       const alicePeerId = await peerIdHelper.createPeerIdFromPrivKey(peerIdHelper.privateKeyToBase64(aliceKey));
       const aliceBase64PublicKey = peerIdHelper.peerIdToPublicBase64(alicePeerId);
 
-      const msg = await ipfsHelper.buildAndSignFluenceMessage(bobKeyBase58, 'test');
-      expect(await ipfsHelper.checkFluenceSignature(msg.from, msg.data, msg.seqno, msg.signature)).to.equals(true);
-      expect(await ipfsHelper.checkFluenceSignature(aliceBase64PublicKey, msg.data, msg.seqno, msg.signature)).to.equals(false);
+      const msg = await pubSubHelper.buildAndSignFluenceMessage(bobKeyBase58, 'test');
+      expect(await pubSubHelper.checkFluenceSignature(msg.from, msg.data, msg.seqno, msg.signature)).to.equals(true);
+      expect(await pubSubHelper.checkFluenceSignature(aliceBase64PublicKey, msg.data, msg.seqno, msg.signature)).to.equals(false);
       done();
     })();
   })

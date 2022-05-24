@@ -2,7 +2,7 @@ const dhtApi = require('./generated/dht-api');
 const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
-const ipfsHelper = require('../ipfsHelper');
+const pubSubHelper = require('../pubSubHelper');
 const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
@@ -36,7 +36,7 @@ module.exports = class FluenceService {
         geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
             checkSignature: (from, data, seqno, signature) => {
                 try {
-                    return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+                    return pubSubHelper.checkFluenceSignature(from, data, seqno, signature);
                 } catch (e) {
                     console.error('registerGeesomeCrypto', e);
                 }
@@ -54,7 +54,7 @@ module.exports = class FluenceService {
     }
     emitTopicSubscribers(topic, event) {
         return pIteration.forEach(this.subscribesByTopics[topic] || [], async callback => {
-            const parsedEvent = await ipfsHelper.parseFluenceEvent(topic, event);
+            const parsedEvent = await pubSubHelper.parseFluenceEvent(topic, event);
             return parsedEvent && callback(parsedEvent);
         });
     }
@@ -169,7 +169,7 @@ module.exports = class FluenceService {
     }
     async publishEventByPrivateKey(privateKey, topic, data) {
         privateKey = privateKey.bytes || privateKey;
-        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
+        const event = await pubSubHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return this.publishEventByData(topic, event);
     }

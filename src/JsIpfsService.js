@@ -9,6 +9,7 @@
 
 const ipfsHelper = require('./ipfsHelper');
 const peerIdHelper = require('./peerIdHelper');
+const pubSubHelper = require('./pubSubHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
@@ -325,7 +326,7 @@ module.exports = class JsIpfsService {
       data = Buffer.from(data);
     }
     privateKey = privateKey.bytes || privateKey;
-    const message = await ipfsHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
+    const message = await pubSubHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
     return this.node.pubsub.publishMessage(message);
   }
 
@@ -362,7 +363,7 @@ module.exports = class JsIpfsService {
 
   subscribeToEvent(topic, callback) {
     return this.node.pubsub.subscribe(topic, async (event) => {
-      ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
+      pubSubHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {
         console.warn("PubSub ipns validation failed", event, error);

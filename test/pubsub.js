@@ -17,7 +17,7 @@ const expect = chai.expect
 chai.use(dirtyChai)
 
 const commonHelper = require('../src/common');
-const ipfsHelper = require('../src/ipfsHelper');
+const pubSubHelper = require('../src/pubSubHelper');
 const peerIdHelper = require('../src/peerIdHelper');
 const waitFor = require('./utils/wait-for');
 const createNodes = require('./utils/createNodes');
@@ -106,7 +106,7 @@ describe('pubsub', function () {
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
           const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
 
-          const event = await ipfsHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
+          const event = await pubSubHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
           event.seqno = randomSeqno().toString('base64');
           try {
             await nodeA.publishEventByData(testTopic, event);

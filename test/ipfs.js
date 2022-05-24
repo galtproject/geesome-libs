@@ -150,7 +150,6 @@ describe('ipfs', function () {
     })();
   });
 
-
   it('should correctly convert peerId to string representations', function (done) {
     this.timeout(80 * 1000);
 
@@ -165,11 +164,14 @@ describe('ipfs', function () {
 
       const pubKey = peerIdHelper.base64ToPublicKey(peerIdHelper.peerIdToPublicBase64(peerId));
       const peerIdFromPubKey = await peerIdHelper.createPeerIdFromPubKey(pubKey.bytes);
-      expect(peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
+      expect(await peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(await peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
       expect(peerIdHelper.publicKeyToBase64(pubKey)).to.equals(peerIdHelper.peerIdToPublicBase64(peerId));
 
       expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
+
+      expect(peerIdHelper.peerIdToCid(peerId).indexOf('bafzbe')).to.equals(0);
+      expect(peerIdHelper.peerIdToCid(peerId).length).to.equals(59);
       done();
     })();
   });
