@@ -164,7 +164,7 @@ describe('ipfs', function () {
 
       const pubKey = peerIdHelper.base64ToPublicKey(peerIdHelper.peerIdToPublicBase64(peerId));
       const peerIdFromPubKey = await peerIdHelper.createPeerIdFromPubKey(pubKey.bytes);
-      expect(await peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(await peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
+      expect(peerIdHelper.peerIdToPublicBase58(peerId)).to.equals(peerIdHelper.peerIdToPublicBase58(peerIdFromPubKey));
       expect(peerIdHelper.publicKeyToBase64(pubKey)).to.equals(peerIdHelper.peerIdToPublicBase64(peerId));
 
       expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
