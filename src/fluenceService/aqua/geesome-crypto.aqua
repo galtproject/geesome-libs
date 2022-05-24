@@ -1,4 +1,4 @@
-import findSubscribers from "@fluencelabs/aqua-dht/pubsub.aqua"
+import "@fluencelabs/registry/resources-api.aqua"
 
 service GeesomeCrypto("GeesomeCrypto"):
   checkSignature(from: string, data: string, seqno: string, signature: string) -> bool
@@ -9,24 +9,32 @@ data Event:
     seqno: string
     signature: string
 
+-- API that every provider must adhere to
+-- You can think of it as an application protocol
 service ClientAPI("api"):
-    receive_event(topic: string, e: Event)
+    receive_event(event: Event)
 
-func fanout_event(topic: string, event: Event, call: string -> ()):
-    call("will check signature")
+func call_provider(p: Record, event: Event):
+    -- topological move to provider via relay
+    on p.peer_id via p.relay_id:
+        -- resolve service on a provider
+        ClientAPI p.service_id
+        -- call function
+        ClientAPI.receive_event(event)
+
+-- send event to every provider
+func fanout_event(resource_id: String, ack: i16, event: Event, call: string -> ()):
     try:
         sigValid <- GeesomeCrypto.checkSignature(event.from, event.data, event.seqno, event.signature)
     catch e:
-        call("checkSignature failed")
-    call("did check signature")
+        call("signature_check_failed")
+
     if sigValid == false:
         call("signature_not_valid")
     else:
-        call("signature is valid")
-        subs <- findSubscribers(topic)
-        for r <- subs par:
-            on r.peer_id via r.relay_id!:
-                ClientAPI.receive_event(topic, event)
-                co call("receive_event")
-
-        co call("done")
+        -- retrieve all providers of a resource
+        providers <- resolveProviders(resource_id, ack)
+        -- iterate through them
+        for p <- providers par:
+            call_provider(p, event)
+    co call("done")

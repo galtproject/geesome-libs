@@ -1,4 +1,5 @@
-const dhtApi = require('./generated/dht-api');
+const registryApi = require('./generated/registry-api');
+//registerNodeProvider, createResource, registerProvider, resolveProviders
 const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
@@ -7,14 +8,17 @@ const log = require('loglevel');
 const {getIpnsUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
+    accStorage;
+    subscribesByTopics;
+    peer;
+    geesomeCryptoResourceId;
+
+    registryService = 'geesome-registry';
+
     constructor(accStorage, peer = null, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
-
-        if (this.peer) {
-            this.registerEvents();
-        }
 
         if (options.logLevel) {
             log.setLevel(options.logLevel);
@@ -26,7 +30,13 @@ module.exports = class FluenceService {
     setPeer(peer) {
         this.peer = peer;
     }
-    registerEvents() {
+    async registerEvents() {
+        let [resourceId, createError] = await registryApi.createResource(this.peer, _topic);
+        if (createError || !resourceId) {
+            throw new Error(createError ? createError.toString() : 'resourceId_creation_failed');
+        }
+        this.geesomeCryptoResourceId = resourceId;
+
         geesomeCrypto.registerClientAPI(this.peer, 'api', {
             receive_event: (topic, e) => {
                 this.emitTopicSubscribers(topic, e);
@@ -84,7 +94,7 @@ module.exports = class FluenceService {
         if (!startsWith(staticStorageId, 'Qm')) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
-        return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {
+        return registryApi.findSubscribers(this.peer, staticStorageId).then(results => {
             // console.log("subscriber", results[0]);
             let lastItem;
             results.forEach(item => {
@@ -177,7 +187,7 @@ module.exports = class FluenceService {
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            geesomeCrypto.fanout_event(this.peer, topic, event, (res) => {
+            geesomeCrypto.fanout_event(this.peer, this.geesomeCryptoResourceId, 1, topic, event, (res) => {
                 // console.log("fanout_event", res);
                 if (res === 'done') {
                     return resolve();
@@ -195,7 +205,14 @@ module.exports = class FluenceService {
 
     async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
         try {
-            await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _value, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
+            let [resourceId, createError] = await registryApi.createResource(this.peer, _topic);
+            if (createError || !resourceId) {
+                throw new Error(createError ? createError.toString() : 'resourceId_creation_failed');
+            }
+            let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(this.peer, this.resourceId, _value, this.registryService);
+            if (!nodeSuccess || regNodeError) {
+                throw new Error(regNodeError ? regNodeError.toString() : 'registerNodeProvider_failed');
+            }
         } catch (e) {
             tries--;
             if (tries <= 0) {
@@ -213,7 +230,7 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await dhtApi.findSubscribers(this.peer, getIpnsUpdatesTopic(ipnsId));
+        let subs = await registryApi.resolveProviders(this.peer, getIpnsUpdatesTopic(ipnsId));
         return subs;
     }
 
@@ -225,7 +242,7 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        let subs = await dhtApi.findSubscribers(this.peer, topic);
+        let subs = await registryApi.resolveProviders(this.peer, topic);
         return subs;
     }
 }

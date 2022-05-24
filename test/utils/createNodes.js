@@ -38,7 +38,9 @@ module.exports = {
                 KeyPair: new KeyPair(peerId)
             });
             // console.log("connected");
-            return new FluenceService(accStorage, peer);
+            const service = new FluenceService(accStorage, peer);
+            await service.registerEvents();
+            return service;
         };
 
         const _nodeA = await createNode();

@@ -1,4 +1,0 @@
-import initTopicAndSubscribe, initTopicAndSubscribeBlocking, findSubscribers from "@fluencelabs/aqua-dht/pubsub.aqua"
-
-export initTopicAndSubscribe, initTopicAndSubscribeBlocking, findSubscribers
-

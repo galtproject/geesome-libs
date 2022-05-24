@@ -1,0 +1,4 @@
+import registerNodeProvider, createResource, registerProvider, resolveProviders from "@fluencelabs/registry/resources-api.aqua"
+
+export registerNodeProvider, createResource, registerProvider, resolveProviders
+
