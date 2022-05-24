@@ -46,7 +46,7 @@ describe('ipfs', function () {
       const content = '1';
       const savedText = await node.saveFileByData(content, {waitForPin: true});
       const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
-      expect(ipfsHash).to.equals('QmWYddCPs7uR9EvHNCZzpguVFVNfHc6aM3hPVzPdAEESMc');
+      expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
       expect(savedText.id).to.equals(ipfsHash);
       done();
     })();

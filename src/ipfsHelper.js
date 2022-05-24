@@ -17,7 +17,6 @@ const isObject = require('lodash/isObject');
 const jwkToPem = require('pem-jwk').jwk2pem
 
 const ipns = require('ipns');
-const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
 const uint8ArrayConcat = require('uint8arrays/concat')
 const uint8ArrayFromString = require('uint8arrays/from-string')
 
@@ -132,19 +131,13 @@ const ipfsHelper = {
   },
 
   async getIpfsHashFromString(string) {
-    const { UnixFS } = require('ipfs-unixfs');
-    const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
-    const buffer = unixFsFile.marshal();
-
-    const node = new DAGNode(buffer);
-    const serialized = DAGUtil.serialize(node);
-    const cid = await DAGUtil.cid(serialized, { cidVersion: 0 });
-
-    return cid.toBaseEncodedString();
+    const bytes = new TextEncoder('utf8').encode(string);
+    // https://github.com/multiformats/multicodec/blob/5de6f09bdf7ed137f47c94a2e61866a87b4b3141/table.csv
+    const cid = await sha256.digest(bytes).then(res => CID.createV1(85, res));
+    return cid.toString();
   },
 
   async getIpldHashFromObject(object) {
-    //TODO: find more efficient way
     return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
   },
 
