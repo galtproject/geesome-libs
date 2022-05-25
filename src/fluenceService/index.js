@@ -4,7 +4,7 @@ const pIteration = require('p-iteration');
 const pubSubHelper = require('../pubSubHelper');
 const ipfsHelper = require('../ipfsHelper');
 const log = require('loglevel');
-const {getFluenceUpdatesTopic} = require('../name');
+const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
     constructor(accStorage, peer = null, options = {}) {
@@ -82,6 +82,9 @@ module.exports = class FluenceService {
     }
     getUpdatesTopic(cid, type = 'update') {
         return getFluenceUpdatesTopic(cid, type);
+    }
+    getAccountsGroupUpdatesTopic(accounts, type = 'update') {
+        return getFluenceAccountsGroupUpdatesTopic(accounts, type);
     }
     async resolveStaticItem(staticStorageId) {
         if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
