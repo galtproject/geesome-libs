@@ -1,6 +1,5 @@
 const dhtApi = require('./generated/dht-api');
 const geesomeCrypto = require('./generated/geesome-crypto');
-const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const pubSubHelper = require('../pubSubHelper');
 const ipfsHelper = require('../ipfsHelper');
@@ -73,13 +72,16 @@ module.exports = class FluenceService {
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
             console.log('bindToStaticId:fanout_event');
-            await this.publishEventByStaticId(accountKey, getFluenceUpdatesTopic(accountKey), '/ipfs/' + storageId);
+            await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
         });
     }
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
+    }
+    getUpdatesTopic(cid, type) {
+        return getFluenceUpdatesTopic(cid, type);
     }
     async resolveStaticItem(staticStorageId) {
         if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
@@ -166,7 +168,7 @@ module.exports = class FluenceService {
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(getFluenceUpdatesTopic(ipnsId), callback);
+        return this.subscribeToEvent(this.getUpdatesTopic(ipnsId, 'update'), callback);
     }
     async publishEventByPrivateKey(privateKey, topic, data) {
         privateKey = privateKey.bytes || privateKey;
@@ -215,7 +217,7 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await dhtApi.findSubscribers(this.peer, getFluenceUpdatesTopic(ipnsId));
+        let subs = await dhtApi.findSubscribers(this.peer, this.getUpdatesTopic(ipnsId, 'update'));
         return subs;
     }
 

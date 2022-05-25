@@ -27,8 +27,9 @@ const name = {
     return `${namespace}${name.base64Ipns(groupIpns)}`;
   },
 
-  getFluenceUpdatesTopic(ipnsId) {
-    return ipnsId;
+  getFluenceUpdatesTopic(cid, namespace) {
+    const hash = new Keccak(256);
+    return hash.update(`/${namespace}/${cid}`).digest('hex');
   },
 
   getIpnsUpdatesTopic(ipnsId) {
