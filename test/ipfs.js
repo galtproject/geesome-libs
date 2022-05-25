@@ -51,6 +51,8 @@ describe('ipfs', function () {
       expect(savedText.id).to.equals(ipfsHash);
       const savedText2 = await node.saveFileByData('2', {waitForPin: true});
       expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
+      expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
+      expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
       done();
     })();
   });
@@ -65,6 +67,8 @@ describe('ipfs', function () {
       expect(savedIpld).to.equals('bafyreiblaotetvwobe7cu2uqvnddr6ew2q3cu75qsoweulzku2egca4dxq');
       expect(savedIpld).to.equals(savedIpldHash);
       expect(ipfsHelper.isObjectCidHash(savedIpldHash)).to.equals(true);
+      expect(ipfsHelper.isAccountCidHash(savedIpldHash)).to.equals(false);
+      expect(ipfsHelper.isFileCidHash(savedIpldHash)).to.equals(false);
 
       const gotObject = await node.getObject(savedIpld);
       expect(gotObject.foo).to.equals('bar');
@@ -175,8 +179,9 @@ describe('ipfs', function () {
       expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
 
-      expect(ipfsHelper.isAccountCidHash(peerId)).to.equals(true);
-      expect(peerIdHelper.peerIdToCid(peerId).length).to.equals(59);
+      expect(ipfsHelper.isAccountCidHash(peerIdHelper.peerIdToCid(peerId))).to.equals(true);
+      expect(ipfsHelper.isObjectCidHash(peerIdHelper.peerIdToCid(peerId))).to.equals(false);
+      expect(ipfsHelper.isFileCidHash(peerIdHelper.peerIdToCid(peerId))).to.equals(false);
       done();
     })();
   });
