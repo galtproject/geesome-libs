@@ -569,10 +569,9 @@ class GeesomeClient {
   }
 
   async getUser(userId) {
-    if (ipfsHelper.isIpfsHash(userId)) {
+    if (ipfsHelper.isAccountCidHash(userId)) {
       userId = await this.resolveIpns(userId);
     }
-
     const userObj = await this.getObject(userId);
 
     await this.fetchIpldFields(userObj, ['avatarImage']);
@@ -585,7 +584,7 @@ class GeesomeClient {
   }
 
   async getGroup(groupId) {
-    if (ipfsHelper.isIpfsHash(groupId)) {
+    if (ipfsHelper.isAccountCidHash(groupId)) {
       groupId = await this.resolveIpns(groupId);
     }
 
@@ -760,7 +759,7 @@ class GeesomeClient {
   async getGroupPost(groupId, postId) {
     const group = await this.getGroup(groupId);
     let post;
-    if (ipfsHelper.isIpfsHash(postId)) {
+    if (ipfsHelper.isObjectCidHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
     } else if (isNumber(postId)) {

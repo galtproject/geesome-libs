@@ -3,6 +3,7 @@ const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
 const pubSubHelper = require('../pubSubHelper');
+const ipfsHelper = require('../ipfsHelper');
 const log = require('loglevel');
 const {getFluenceUpdatesTopic} = require('../name');
 
@@ -66,7 +67,7 @@ module.exports = class FluenceService {
                     reject('timeout');
                 }
             }, 3000);
-            if (!startsWith(accountKey, 'bafzbe')) {
+            if (!ipfsHelper.isAccountCidHash(accountKey)) {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
@@ -81,7 +82,7 @@ module.exports = class FluenceService {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
     }
     async resolveStaticItem(staticStorageId) {
-        if (!startsWith(staticStorageId, 'bafzbe')) {
+        if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
         return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {

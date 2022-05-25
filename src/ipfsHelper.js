@@ -22,13 +22,31 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return (startsWith(value, 'Qm') || this.isIpldHash(value)) && /^\w+$/.test(value);
+    return (startsWith(value, 'Qm') || ipfsHelper.isCidHash(value)) && /^\w+$/.test(value);
   },
-  isIpldHash(value) {
+  isCidHash(value) {
     if (!value) {
       return false;
     }
     return startsWith(value.codec, 'dag-') || (isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
+  },
+  isFileCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) || startsWith(value, 'bafkre');
+  },
+  isObjectCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) || startsWith(value, 'bafyre');
+  },
+  isAccountCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) || startsWith(value, 'bafzbe');
   },
   isCid(value) {
     const cid = CID.asCID(value);
