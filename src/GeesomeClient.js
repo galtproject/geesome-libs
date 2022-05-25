@@ -1030,15 +1030,15 @@ class GeesomeClient {
   }
 
   setServerByDocumentLocation() {
-    let port = 7722;
+    let port = 2053;
     if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
-      port = 7711;
+      port = 2052;
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
 
   isLocalServer() {
-    return includes(this.server, ':7711');
+    return includes(this.server, ':2052');
   }
 
   async getPreloadAddresses() {
