@@ -47,7 +47,10 @@ describe('ipfs', function () {
       const savedText = await node.saveFileByData(content, {waitForPin: true});
       const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
       expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
+      expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
       expect(savedText.id).to.equals(ipfsHash);
+      const savedText2 = await node.saveFileByData('2', {waitForPin: true});
+      expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
       done();
     })();
   });
@@ -61,6 +64,7 @@ describe('ipfs', function () {
       const savedIpldHash = await ipfsHelper.getIpldHashFromObject(content);
       expect(savedIpld).to.equals('bafyreiblaotetvwobe7cu2uqvnddr6ew2q3cu75qsoweulzku2egca4dxq');
       expect(savedIpld).to.equals(savedIpldHash);
+      expect(ipfsHelper.isObjectCidHash(savedIpldHash)).to.equals(true);
 
       const gotObject = await node.getObject(savedIpld);
       expect(gotObject.foo).to.equals('bar');
@@ -74,6 +78,7 @@ describe('ipfs', function () {
     (async () => {
       const array = ['bar1', 'bar2'];
       const arrayId = await node.saveObject(array);
+      expect(ipfsHelper.isObjectCidHash(arrayId)).to.equals(true);
       const nestedObj = {
         '0': 'zero',
         '1': 'one'
@@ -170,7 +175,7 @@ describe('ipfs', function () {
       expect(peerIdHelper.peerIdToPublicBase58(peerId).indexOf('Qm')).to.equals(0);
       expect(peerIdHelper.peerIdToPublicBase58(peerId).length).to.equals(46);
 
-      expect(peerIdHelper.peerIdToCid(peerId).indexOf('bafzbe')).to.equals(0);
+      expect(ipfsHelper.isAccountCidHash(peerId)).to.equals(true);
       expect(peerIdHelper.peerIdToCid(peerId).length).to.equals(59);
       done();
     })();
