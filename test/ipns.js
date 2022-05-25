@@ -17,7 +17,6 @@ const dirtyChai = require('dirty-chai');
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const {getFluenceUpdatesTopic} = require('../src/name');
 const waitFor = require('./utils/wait-for');
 const createNodes = require('./utils/createNodes');
 const peerIdHelper = require('../src/peerIdHelper');
@@ -69,14 +68,14 @@ describe('ipns', function () {
             done();
           });
 
-          console.log('getPeers', getFluenceUpdatesTopic(testAccountIpnsId));
+          console.log('getPeers', nodeA.getUpdatesTopic(testAccountIpnsId, 'update'));
           await waitFor((callback) => {
-            nodeA.getPeers(getFluenceUpdatesTopic(testAccountIpnsId)).then(peers => {
+            nodeA.getPeers(nodeA.getUpdatesTopic(testAccountIpnsId, 'update')).then(peers => {
               callback(null, peers.length > 0);
             })
           });
 
-          console.log('bindToStaticId', getFluenceUpdatesTopic(testHash, testAccountIpnsId));
+          console.log('bindToStaticId', testHash, testAccountIpnsId);
           await nodeA.bindToStaticId(testHash, testAccountIpnsId, {resolve: false});
         })();
       });

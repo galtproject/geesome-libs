@@ -80,7 +80,7 @@ module.exports = class FluenceService {
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
     }
-    getUpdatesTopic(cid, type) {
+    getUpdatesTopic(cid, type = 'update') {
         return getFluenceUpdatesTopic(cid, type);
     }
     async resolveStaticItem(staticStorageId) {
