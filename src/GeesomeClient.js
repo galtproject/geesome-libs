@@ -282,12 +282,16 @@ class GeesomeClient {
     return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
-  async staticSiteGetDefaultOptions(type, id) {
-    return this.postRequest(`render/static-site-generator/get-default-options`, { type, id });
+  async staticSiteGetDefaultOptions(entityType, entityId) {
+    return this.postRequest(`render/static-site-generator/get-default-options`, { entityType, entityId });
   }
 
-  async staticSiteRunGenerate(type, id, options) {
-    return this.postRequest(`render/static-site-generator/run-for-${type}`, { id, options });
+  async staticSiteRunGenerate(entityType, entityId, options) {
+    return this.postRequest(`render/static-site-generator/run`, { entityType, entityId, options });
+  }
+
+  async staticSiteBind(entityType, entityId, name) {
+    return this.postRequest(`render/static-site-generator/bind-to-static-id`, { entityType, entityId, name });
   }
 
   updateCurrentUser(userData) {
