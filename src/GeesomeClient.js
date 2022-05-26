@@ -642,7 +642,7 @@ class GeesomeClient {
       }
     }
     if (ipfsHelper.isIpfsHash(storageId)) {
-      return this.server + '/ipfs/' + storageId;
+      return `${this.server}/${ipfsHelper.isAccountCidHash(storageId) ? 'ipns' : 'ipfs'}/${storageId}`;
     } else {
       return this.server + '/v1/content-data/' + storageId;
     }
