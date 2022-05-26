@@ -641,7 +641,11 @@ class GeesomeClient {
         storageId = manifest.storageId;
       }
     }
-    return this.server + '/v1/content-data/' + storageId;
+    if (ipfsHelper.isIpfsHash(storageId)) {
+      return this.server + '/ipfs/' + storageId;
+    } else {
+      return this.server + '/v1/content-data/' + storageId;
+    }
   }
 
   async getObject(ipldHash, isResolve = true) {
