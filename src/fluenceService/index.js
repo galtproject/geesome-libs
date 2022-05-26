@@ -1,10 +1,10 @@
 const dhtApi = require('./generated/dht-api');
 const geesomeCrypto = require('./generated/geesome-crypto');
-const startsWith = require('lodash/startsWith');
 const pIteration = require('p-iteration');
+const pubSubHelper = require('../pubSubHelper');
 const ipfsHelper = require('../ipfsHelper');
 const log = require('loglevel');
-const {getIpnsUpdatesTopic} = require('../name');
+const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
 
 module.exports = class FluenceService {
     constructor(accStorage, peer = null, options = {}) {
@@ -36,7 +36,7 @@ module.exports = class FluenceService {
         geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
             checkSignature: (from, data, seqno, signature) => {
                 try {
-                    return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+                    return pubSubHelper.checkFluenceSignature(from, data, seqno, signature);
                 } catch (e) {
                     console.error('registerGeesomeCrypto', e);
                 }
@@ -54,7 +54,7 @@ module.exports = class FluenceService {
     }
     emitTopicSubscribers(topic, event) {
         return pIteration.forEach(this.subscribesByTopics[topic] || [], async callback => {
-            const parsedEvent = await ipfsHelper.parseFluenceEvent(topic, event);
+            const parsedEvent = await pubSubHelper.parseFluenceEvent(topic, event);
             return parsedEvent && callback(parsedEvent);
         });
     }
@@ -66,13 +66,13 @@ module.exports = class FluenceService {
                     reject('timeout');
                 }
             }, 3000);
-            if (!startsWith(accountKey, 'Qm')) {
+            if (!ipfsHelper.isAccountCidHash(accountKey)) {
                 accountKey = await this.accStorage.getAccountStaticId(accountKey);
             }
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
             console.log('bindToStaticId:fanout_event');
-            await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
+            await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
         });
@@ -80,8 +80,14 @@ module.exports = class FluenceService {
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
     }
+    getUpdatesTopic(cid, type = 'update') {
+        return getFluenceUpdatesTopic(cid, type);
+    }
+    getAccountsGroupUpdatesTopic(accounts, type = 'update') {
+        return getFluenceAccountsGroupUpdatesTopic(accounts, type);
+    }
     async resolveStaticItem(staticStorageId) {
-        if (!startsWith(staticStorageId, 'Qm')) {
+        if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
         return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {
@@ -165,11 +171,11 @@ module.exports = class FluenceService {
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(getIpnsUpdatesTopic(ipnsId), callback);
+        return this.subscribeToEvent(this.getUpdatesTopic(ipnsId, 'update'), callback);
     }
     async publishEventByPrivateKey(privateKey, topic, data) {
         privateKey = privateKey.bytes || privateKey;
-        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
+        const event = await pubSubHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return this.publishEventByData(topic, event);
     }
@@ -189,6 +195,7 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback, options = {}) {
+        console.log('initTopicAndSubscribeBlocking', _topic);
         await this.initTopicAndSubscribeBlocking(_topic, _topic, options.tries || 0);
         return this.addTopicSubscriber(_topic, _callback);
     }
@@ -213,7 +220,7 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await dhtApi.findSubscribers(this.peer, getIpnsUpdatesTopic(ipnsId));
+        let subs = await dhtApi.findSubscribers(this.peer, this.getUpdatesTopic(ipnsId, 'update'));
         return subs;
     }
 

@@ -28,7 +28,7 @@ module.exports = class SimpleAccountStorage {
     }
     getAccount(name) {
         const storageData = this.getStorage();
-        return storageData[name] || find(storageData, (account) => account.publicBase58 == name);
+        return storageData[name] || find(storageData, (account) => account.cid == name);
     }
     async getAccountPeerId(name) {
         const account = this.getAccount(name);
@@ -36,7 +36,7 @@ module.exports = class SimpleAccountStorage {
     }
     async getAccountStaticId(name) {
         const account = this.getAccount(name);
-        return account.publicBase58;
+        return account.cid;
     }
     async getAccountPublicKey(name) {
         const account = this.getAccount(name);
@@ -47,13 +47,14 @@ module.exports = class SimpleAccountStorage {
         const privateBase64 = peerIdHelper.peerIdToPrivateBase64(peerId);
         const publicBase64 = peerIdHelper.peerIdToPublicBase64(peerId);
         const publicBase58 = peerIdHelper.peerIdToPublicBase58(peerId);
-        return this.setAccount(name, { privateBase64, publicBase64, publicBase58 });
+        const cid = peerIdHelper.peerIdToCid(peerId);
+        return this.setAccount(name, { privateBase64, publicBase64, publicBase58, cid });
     }
     async getOrCreateAccountStaticId(name, userId = null) {
         const account = this.getAccount(name);
         if (account) {
-            return account.publicBase58;
+            return account.cid;
         }
-        return this.createAccount(name).then(acc => acc.publicBase58);
+        return this.createAccount(name).then(acc => acc.cid);
     }
 };

@@ -6,10 +6,13 @@
  * (Founded by [Nikolai Popeka](https://github.com/npopeka) by
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
-
 const crypto = require('libp2p-crypto');
 const PeerId = require('peer-id');
 const cryptoKeys = require('libp2p-crypto/src/keys')
+const ipfsHelper = require('./ipfsHelper');
+// TODO: use @libp2p/peer-id
+// https://github.com/libp2p/js-libp2p-interfaces/blob/d72b30cfca4b9145e0b31db28e8fa3329a180e83/packages/libp2p-peer-id-factory/test/index.spec.ts
+//import { peerIdFromString, peerIdFromBytes, peerIdFromCID, createPeerId } from '@libp2p/peer-id';
 
 const peerIdHelper = {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
@@ -30,6 +33,10 @@ const peerIdHelper = {
 
   peerIdToPublicBase58(peerId) {
     return peerId.toB58String();
+  },
+
+  peerIdToCid(peerId) {
+    return peerId.toString();
   },
 
   async createPeerIdFromPrivateBase64(base64) {
