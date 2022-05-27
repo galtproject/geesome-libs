@@ -34,7 +34,8 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return isString(value) && value.length === 59 && /^\w+$/.test(value) && startsWith(value, 'bafkre');
+    //TODO: spec about bafybe
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'bafkre') || startsWith(value, 'bafybe'));
   },
   isObjectCidHash(value) {
     if (!value) {
