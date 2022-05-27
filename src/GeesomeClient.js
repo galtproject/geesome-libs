@@ -642,10 +642,14 @@ class GeesomeClient {
       }
     }
     if (ipfsHelper.isIpfsHash(storageId)) {
-      return `${this.server}/${ipfsHelper.isAccountCidHash(storageId) ? 'ipns' : 'ipfs'}/${storageId}`;
+      return `${this.getServerStorageUri(ipfsHelper.isAccountCidHash(storageId))}/${storageId}`;
     } else {
       return this.server + '/v1/content-data/' + storageId;
     }
+  }
+
+  getServerStorageUri(isIpns) {
+    return `${this.server}/${isIpns ? 'ipns' : 'ipfs'}`;
   }
 
   async getObject(ipldHash, isResolve = true) {
