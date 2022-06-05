@@ -302,6 +302,18 @@ class GeesomeClient {
     return this.postRequest(`render/static-site-generator/get-info`, { entityType, entityId });
   }
 
+  async addSerialAutoActions(actions) {
+    return this.postRequest(`user/add-serial-auto-actions`, actions);
+  }
+
+  async getAutoActions() {
+    return this.getRequest(`user/get-auto-actions`);
+  }
+
+  async updateAutoAction(id, updateData) {
+    return this.postRequest(`user/update-auto-action/${id}`, updateData);
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`user/update`, userData);
   }
