@@ -314,6 +314,23 @@ class GeesomeClient {
     return this.postRequest(`user/update-auto-action/${id}`, updateData);
   }
 
+  buildAutoActions(actions, runPeriod) {
+    return actions.map((a, i) => {
+      const {funcArgs} = a;
+      return {
+        runPeriod: i ? 0 : runPeriod,
+        executeOn: i ? null : commonHelper.moveDate(runPeriod, 'second'),
+        funcArgs: JSON.stringify(funcArgs),
+        isActive: true,
+        isEncrypted: true,
+        position: 1,
+        totalExecuteAttempts: 3,
+        currentExecuteAttempts: 3,
+        ...a
+      }
+    });
+  }
+
   updateCurrentUser(userData) {
     return this.postRequest(`user/update`, userData);
   }
