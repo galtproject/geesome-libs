@@ -306,8 +306,8 @@ class GeesomeClient {
     return this.postRequest(`user/add-serial-auto-actions`, actions);
   }
 
-  async getAutoActions() {
-    return this.getRequest(`user/get-auto-actions`);
+  async getAutoActions(params) {
+    return this.getRequest(`user/get-auto-actions`, params);
   }
 
   async updateAutoAction(id, updateData) {
