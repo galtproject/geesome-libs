@@ -330,7 +330,7 @@ class GeesomeClient {
     return actions.map((a, i) => {
       const {funcArgs} = a;
       return {
-        runPeriod: i ? 0 : runPeriod,
+        executePeriod: i ? 0 : runPeriod,
         executeOn: i || !runPeriod ? null : commonHelper.moveDate(runPeriod, 'second'),
         isActive: true,
         isEncrypted: true,
