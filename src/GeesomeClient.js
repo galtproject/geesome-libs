@@ -331,7 +331,7 @@ class GeesomeClient {
       const {funcArgs} = a;
       return {
         runPeriod: i ? 0 : runPeriod,
-        executeOn: i ? null : commonHelper.moveDate(runPeriod, 'second'),
+        executeOn: i || !runPeriod ? null : commonHelper.moveDate(runPeriod, 'second'),
         isActive: true,
         isEncrypted: true,
         position: 1,
