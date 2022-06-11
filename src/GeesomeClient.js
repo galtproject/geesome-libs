@@ -430,8 +430,8 @@ class GeesomeClient {
     return this.postRequest('user/cancel-async-operation/' + id);
   }
 
-  findAsyncOperations(name, channelLike) {
-    return this.postRequest('user/find-async-operations', {name, channelLike});
+  findAsyncOperations(name, channelLike, inProcess = true) {
+    return this.postRequest('user/find-async-operations', {name, channelLike, inProcess});
   }
 
   waitForAsyncOperation(asyncOperationId, onProcess) {
