@@ -245,7 +245,7 @@ class GeesomeClient {
   }
 
   async setSessionKeyToAccountData(socNetName, accountData) {
-    accountData.sessionKey = await this.getSessionKey(socNetName, accountData);
+    accountData.sessionKey = await this.getSocNetSessionKey(socNetName, accountData);
   }
 
   async getSocNetSessionKey(socNetName, accountData) {
