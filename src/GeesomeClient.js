@@ -320,13 +320,13 @@ class GeesomeClient {
       return {
         runPeriod: i ? 0 : runPeriod,
         executeOn: i ? null : commonHelper.moveDate(runPeriod, 'second'),
-        funcArgs: JSON.stringify(funcArgs),
         isActive: true,
         isEncrypted: true,
         position: 1,
         totalExecuteAttempts: 3,
         currentExecuteAttempts: 3,
-        ...a
+        ...a,
+        funcArgs: JSON.stringify(funcArgs),
       }
     });
   }
