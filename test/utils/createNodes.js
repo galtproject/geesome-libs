@@ -31,7 +31,7 @@ module.exports = {
     async fluence() {
         const createNode = async () => {
             const service = new FluenceService(accStorage);
-            await service.initPeer(await peerIdHelper.createPeerId(), testNet[1]);
+            await service.initPeer(await peerIdHelper.createPeerId(), testNet[2]);
             return service;
         };
 

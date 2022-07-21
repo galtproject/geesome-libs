@@ -39,8 +39,11 @@ module.exports = class FluenceService {
         await peer.start({ connectTo: this.connectTo, KeyPair: new KeyPair(peerId) });
         return peer;
     }
+    getPeerIdString() {
+        return this.peer.getStatus().peerId;
+    }
     async getPeerId() {
-        return peerIdHelper.createFromB58String(this.peer.getStatus().peerId);
+        return peerIdHelper.createFromB58String(this.getPeerIdString());
     }
     async initPeer(peerId, connectTo = null) {
         if (connectTo) {
@@ -109,7 +112,7 @@ module.exports = class FluenceService {
     }
     async getResourceByTopicAndPeerId(topic, hostPeerId) {
         console.log('getResourceId', 'topic', topic, 'peerId', peerIdHelper.peerIdToPublicBase58(hostPeerId))
-        return registryApi.getResourceId(this.peer, topic, peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
+        return registryApi.getResourceId(this.peer, topic, await peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
             console.error(e);
             return null;
         });
@@ -246,7 +249,7 @@ module.exports = class FluenceService {
     }
 
     async registerResourceProvider(_peer, _resourceId, _value) {
-        let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, await this.getPeerId(), _resourceId, _value, this.registryService);
+        let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, await this.getPeerIdString(), _resourceId, _value, this.registryService);
         if (!nodeSuccess || regNodeError) {
             throw new Error(regNodeError ? regNodeError.toString() : 'registerNodeProvider_failed');
         }
@@ -273,7 +276,9 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        let subs = await registryApi.resolveProviders(this.peer, await this.getResourceByTopicAndPeerId(topic, await this.getPeerId()), 1).catch(e => {
+        const resource = await this.getResourceByTopicAndPeerId(topic, await this.getPeerId());
+        console.log('resource', resource);
+        let subs = await registryApi.resolveProviders(this.peer, resource, 1).catch(e => {
             console.error(e);
             return [];
         });
