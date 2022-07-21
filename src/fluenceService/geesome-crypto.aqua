@@ -18,7 +18,7 @@ func call_provider(p: Record, event: Event):
     -- topological move to provider via relay
     on p.peer_id via p.relay_id:
         -- resolve service on a provider
-        ClientAPI p.service_id
+        ClientAPI p.service_id!
         -- call function
         ClientAPI.receive_event(event)
 

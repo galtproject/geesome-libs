@@ -1,15 +1,18 @@
 const registryApi = require('./generated/registry-api');
 //registerNodeProvider, createResource, registerProvider, resolveProviders
-const geesomeCrypto = require('./generated/geesome-crypto');
 const startsWith = require('lodash/startsWith');
+const orderBy = require('lodash/orderBy');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('../ipfsHelper');
+const peerIdHelper = require('../peerIdHelper');
 const log = require('loglevel');
-const {getIpnsUpdatesTopic} = require('../name');
+const {getIpnsUpdatesTopic, getPeerIdTopic} = require('../name');
+const { FluencePeer, KeyPair } = require("@fluencelabs/fluence");
 
 module.exports = class FluenceService {
     accStorage;
     subscribesByTopics;
+    connectTo;
     peer;
     geesomeCryptoResourceId;
 
@@ -30,28 +33,37 @@ module.exports = class FluenceService {
     setPeer(peer) {
         this.peer = peer;
     }
-    async registerEvents() {
-        let [resourceId, createError] = await registryApi.createResource(this.peer, _topic);
-        if (createError || !resourceId) {
-            throw new Error(createError ? createError.toString() : 'resourceId_creation_failed');
+    async buildPeerAndConnect(peerId) {
+        const peer = new FluencePeer();
+        console.log('this.connectTo', this.connectTo);
+        await peer.start({ connectTo: this.connectTo, KeyPair: new KeyPair(peerId) });
+        return peer;
+    }
+    async getPeerId() {
+        return peerIdHelper.createFromB58String(this.peer.getStatus().peerId);
+    }
+    async initPeer(peerId, connectTo = null) {
+        if (connectTo) {
+            this.connectTo = connectTo;
         }
-        this.geesomeCryptoResourceId = resourceId;
+        this.setPeer(await this.buildPeerAndConnect(peerId));
+        console.log('registryApi', registryApi);
 
-        geesomeCrypto.registerClientAPI(this.peer, 'api', {
-            receive_event: (topic, e) => {
-                this.emitTopicSubscribers(topic, e);
-            }
-        });
-
-        geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
-            checkSignature: (from, data, seqno, signature) => {
-                try {
-                    return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
-                } catch (e) {
-                    console.error('registerGeesomeCrypto', e);
-                }
-            }
-        });
+        // registryApi.registerClientAPI(this.peer, 'api', {
+        //     receive_event: (topic, e) => {
+        //         this.emitTopicSubscribers(topic, e);
+        //     }
+        // });
+        //
+        // registryApi.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
+        //     checkSignature: (from, data, seqno, signature) => {
+        //         try {
+        //             return ipfsHelper.checkFluenceSignature(from, data, seqno, signature);
+        //         } catch (e) {
+        //             console.error('registerGeesomeCrypto', e);
+        //         }
+        //     }
+        // });
     }
     getClientRelayId() {
         return this.peer.getStatus().relayPeerId;
@@ -68,7 +80,7 @@ module.exports = class FluenceService {
             return parsedEvent && callback(parsedEvent);
         });
     }
-    async bindToStaticId(storageId, accountKey, options = {}) {
+    async bindToStaticId(accountKey, storageId, options = {}) {
         return new Promise(async (resolve, reject) => {
             let resolved = false;
             setTimeout(() => {
@@ -76,13 +88,15 @@ module.exports = class FluenceService {
                     reject('timeout');
                 }
             }, 3000);
-            if (!startsWith(accountKey, 'Qm')) {
-                accountKey = await this.accStorage.getAccountStaticId(accountKey);
-            }
-            console.log('bindToStaticId:initTopicAndSubscribeBlocking');
-            await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
-            console.log('bindToStaticId:fanout_event');
-            await this.publishEventByStaticId(accountKey, getIpnsUpdatesTopic(accountKey), '/ipfs/' + storageId);
+            const peerId = await this.getAccountPeerId(accountKey);
+            const peer = await this.buildPeerAndConnect(peerId);
+            const topic = getPeerIdTopic(peerId);
+            console.log('bindToStaticId:createResource');
+            const resourceId = await this.createResource(peer, topic, options.tries || 0);
+            console.log('bindToStaticId:registerResourceProvider');
+            await this.registerResourceProvider(peer, resourceId, storageId);
+            console.log('bindToStaticId:publishEventByPeerId');
+            await this.publishEventByPeerId(peerId, topic, storageId);
             resolved = true;
             resolve(accountKey);
         });
@@ -90,23 +104,35 @@ module.exports = class FluenceService {
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
     }
-    async resolveStaticItem(staticStorageId) {
-        if (!startsWith(staticStorageId, 'Qm')) {
-            staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
-        }
-        return registryApi.findSubscribers(this.peer, staticStorageId).then(results => {
-            // console.log("subscriber", results[0]);
-            let lastItem;
-            results.forEach(item => {
-                if (!lastItem || item.timestamp_created > lastItem.timestamp_created) {
-                    lastItem = item;
-                }
-            });
-            if (lastItem) {
-                lastItem.createdAt = lastItem.timestamp_created;
-            }
-            return lastItem;
+    async getResourceByPeerId(hostPeerId, topicPeerId) {
+        return registryApi.getResourceId(this.peer, getPeerIdTopic(topicPeerId), peerIdHelper.peerIdToPublicBase58(hostPeerId));
+    }
+    async getResourceByTopicAndPeerId(topic, hostPeerId) {
+        console.log('getResourceId', 'topic', topic, 'peerId', peerIdHelper.peerIdToPublicBase58(hostPeerId))
+        return registryApi.getResourceId(this.peer, topic, peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
+            console.error(e);
+            return null;
         });
+    }
+    async getHostAndAccResourceByStaticId(staticId) {
+        if (!startsWith(staticId, 'Qm')) {
+            staticId = await this.accStorage.getAccountStaticId(staticId);
+        }
+        const accPeerId = await this.accStorage.getAccountPeerId(staticId);
+        const hostPeerId = await this.getPeerId();
+        return [
+            await this.getResourceByPeerId(hostPeerId, accPeerId),
+            await this.getResourceByPeerId(accPeerId, accPeerId),
+        ];
+    }
+    async resolveStaticItem(staticStorageId) {
+        const [hostResource, accResource] = await this.getHostAndAccResourceByStaticId(staticStorageId);
+        return Promise.all([
+            registryApi.resolveProviders(this.peer, hostResource, 1).then(records => orderBy(records, ['timestamp_created'], ['desc'])[0]),
+            registryApi.resolveProviders(this.peer, accResource, 1).then(records => orderBy(records, ['timestamp_created'], ['desc'])[0]),
+        ])
+            .then(records => records.filter(r => r))
+            .then(records => orderBy(records, ['timestamp_created'], ['desc'])[0]);
     }
     async removeAccountIfExists(name) {
         return this.accStorage.destroyStaticId(name);
@@ -166,28 +192,25 @@ module.exports = class FluenceService {
     }
 
     async publishEventByPeerId(peerId, topic, data) {
-        return this.publishEventByPrivateKey(peerId._privKey, topic, data);
-    }
-
-    async publishEvent(topic, data) {
-        const selfPeerId = await this.accStorage.getAccountPeerId('self');
-        return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
-    }
-
-    async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(getIpnsUpdatesTopic(ipnsId), callback);
-    }
-    async publishEventByPrivateKey(privateKey, topic, data) {
+        let privateKey = peerId._privKey;
         privateKey = privateKey.bytes || privateKey;
         const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return this.publishEventByData(topic, event);
     }
 
+    async publishEvent(topic, data) {
+        return this.publishEventByPeerId(await this.accStorage.getAccountPeerId('self'), topic, data);
+    }
+
+    async subscribeToStaticIdUpdates(ipnsId, callback) {
+        return this.subscribeToEvent(getIpnsUpdatesTopic(ipnsId), callback);
+    }
+
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            geesomeCrypto.fanout_event(this.peer, this.geesomeCryptoResourceId, 1, topic, event, (res) => {
+            registryApi.fanout_event(this.peer, this.geesomeCryptoResourceId, 1, topic, event, (res) => {
                 // console.log("fanout_event", res);
                 if (res === 'done') {
                     return resolve();
@@ -199,29 +222,33 @@ module.exports = class FluenceService {
     }
 
     async subscribeToEvent(_topic, _callback, options = {}) {
-        await this.initTopicAndSubscribeBlocking(_topic, _topic, options.tries || 0);
+        await this.createResource(_topic, _topic, options.tries || 0);
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
+    async createResource(_peer, _topic, tries = 0) {
         try {
-            let [resourceId, createError] = await registryApi.createResource(this.peer, _topic);
+            let [resourceId, createError] = await registryApi.createResource(_peer, _topic, {ttl: 20000});
             if (createError || !resourceId) {
                 throw new Error(createError ? createError.toString() : 'resourceId_creation_failed');
             }
-            let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(this.peer, this.resourceId, _value, this.registryService);
-            if (!nodeSuccess || regNodeError) {
-                throw new Error(regNodeError ? regNodeError.toString() : 'registerNodeProvider_failed');
-            }
+            return resourceId;
         } catch (e) {
             tries--;
             if (tries <= 0) {
-                return console.warn('initTopicAndSubscribeBlocking failed', e);
+                return console.warn('createResource failed', e);
             }
-            console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
+            console.warn('createResource failed, try again...', e);
             await this.peer.stop().catch(e => console.warn('peer.stop failed', e));
             await this.peer.start();
-            return this.initTopicAndSubscribeBlocking(_topic, _value, tries);
+            return this.createResource(_topic, tries);
+        }
+    }
+
+    async registerResourceProvider(_peer, _resourceId, _value) {
+        let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, await this.getPeerId(), _resourceId, _value, this.registryService);
+        if (!nodeSuccess || regNodeError) {
+            throw new Error(regNodeError ? regNodeError.toString() : 'registerNodeProvider_failed');
         }
     }
 
@@ -230,8 +257,12 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await registryApi.resolveProviders(this.peer, getIpnsUpdatesTopic(ipnsId));
-        return subs;
+        const [hostResourceId, accResourceId] = await this.getHostAndAccResourceByStaticId(ipnsId);
+        const [hostPeers, accPeers] = await Promise.all([
+            registryApi.resolveProviders(this.peer, hostResourceId, 1),
+            registryApi.resolveProviders(this.peer, accResourceId, 1)
+        ]);
+        return hostPeers.concat(accPeers);
     }
 
     async getPubSubLs() {
@@ -242,7 +273,10 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        let subs = await registryApi.resolveProviders(this.peer, topic);
+        let subs = await registryApi.resolveProviders(this.peer, await this.getResourceByTopicAndPeerId(topic, await this.getPeerId()), 1).catch(e => {
+            console.error(e);
+            return [];
+        });
         return subs;
     }
 }

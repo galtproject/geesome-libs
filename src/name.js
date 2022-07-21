@@ -12,6 +12,7 @@ const { Keccak } = require('sha3');
 const base64url = require('base64url');
 const ipns = require('ipns');
 const {fromB58String} = require('multihashes');
+const peerIdHelper = require('./peerIdHelper');
 
 const name = {
   getPersonalChatName(friendsIds, groupTheme) {
@@ -30,6 +31,10 @@ const name = {
   getIpnsUpdatesTopic(ipnsId) {
     const namespace = '/record/';
     return `${namespace}${name.base64Ipns(ipnsId)}`;
+  },
+
+  getPeerIdTopic(peerId) {
+    return peerIdHelper.peerIdToPublicBase58(peerId);
   },
 
   base64Ipns(ipnsId) {

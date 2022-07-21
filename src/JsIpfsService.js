@@ -220,11 +220,11 @@ module.exports = class JsIpfsService {
     return ipfsHelper.isIpfsHash(value) && resolveProp ? this.node.dag.get(ipfsHelper.ipfsHashToCid(value), {path: remainderPath, localResolve: !resolveProp}).then(response => response.value) : value;
   }
 
-  async bindToStaticId(storageId, accountKey, options = {}) {
+  async bindToStaticId(accountKey, storageId, options = {}) {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
-    if(!options.lifetime) {
+    if (!options.lifetime) {
       options.lifetime = '1h';
     }
     return this.node.name.publish(storageId, { key: accountKey, allowOffline: true, ...options }).then(response => response.name);
@@ -317,7 +317,12 @@ module.exports = class JsIpfsService {
     return this.subscribeToEvent(topic, callback);
   }
 
-  async publishEventByPrivateKey(privateKey, topic, data) {
+  async publishEventByStaticId(staticId, topic, data, pass) {
+    return this.publishEventByPeerId(await this.getAccountPeerId(staticId, pass), topic, data);
+  }
+
+  async publishEventByPeerId(peerId, topic, data) {
+    let privateKey = peerId._privKey;
     if(isObject(data)) {
       data = JSON.stringify(data);
     }
@@ -327,14 +332,6 @@ module.exports = class JsIpfsService {
     privateKey = privateKey.bytes || privateKey;
     const message = await ipfsHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
     return this.node.pubsub.publishMessage(message);
-  }
-
-  async publishEventByStaticId(staticId, topic, data, pass) {
-    return this.publishEventByPrivateKey(await this.keyLookup(staticId, pass), topic, data);
-  }
-
-  async publishEventByPeerId(peerId, topic, data) {
-    return this.publishEventByPrivateKey(peerId._privKey, topic, data);
   }
 
   getStaticIdPeers(staticId) {

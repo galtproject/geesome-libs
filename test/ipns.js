@@ -74,11 +74,11 @@ describe('ipns', function () {
             })
           });
 
-          await nodeA.bindToStaticId(testHash, testAccountIpnsId, {resolve: false});
+          await nodeA.bindToStaticId(testAccountIpnsId, testHash, {resolve: false});
         })();
       });
 
-      it('bindToStaticId and resolveStaticId', function (done) {
+      it.only('bindToStaticId and resolveStaticId', function (done) {
         this.timeout(80 * 1000);
 
         (async () => {
@@ -89,9 +89,10 @@ describe('ipns', function () {
           console.log('staticId', staticId);
 
           let peers = await nodeA.getPeers(staticId);
+          console.log('peers', peers);
           assert.equal(peers.length, 0);
 
-          await nodeA.bindToStaticId(testHash, testAccountName);
+          await nodeA.bindToStaticId(testAccountName, testHash);
 
           peers = await nodeA.getPeers(staticId);
           assert.equal(peers.length, 1);

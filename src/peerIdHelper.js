@@ -54,6 +54,7 @@ const peerIdHelper = {
 
   createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
+  createFromB58String: PeerId.createFromB58String.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
   createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId)
 };

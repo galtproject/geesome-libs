@@ -5,7 +5,6 @@ const JsIpfsService = require('../../src/JsIpfsService');
 const FluenceService = require('../../src/fluenceService');
 
 const { testNet } = require('@fluencelabs/fluence-network-environment');
-const { FluencePeer, KeyPair } = require("@fluencelabs/fluence");
 const accStorage = new SimpleAccountStorage();
 const peerIdHelper = require('../../src/peerIdHelper');
 
@@ -31,15 +30,8 @@ module.exports = {
     },
     async fluence() {
         const createNode = async () => {
-            const peer = new FluencePeer();
-            const peerId = await peerIdHelper.createPeerId();
-            await peer.start({
-                connectTo: testNet[1],
-                KeyPair: new KeyPair(peerId)
-            });
-            // console.log("connected");
-            const service = new FluenceService(accStorage, peer);
-            await service.registerEvents();
+            const service = new FluenceService(accStorage);
+            await service.initPeer(await peerIdHelper.createPeerId(), testNet[1]);
             return service;
         };
 

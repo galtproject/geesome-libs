@@ -1,4 +1,32 @@
-import registerNodeProvider, createResource, registerProvider, resolveProviders from "@fluencelabs/registry/resources-api.aqua"
+module RegistryApi
 
-export registerNodeProvider, createResource, registerProvider, resolveProviders
+import registerNodeProvider, createResource, getResourceId, registerProvider, resolveProviders, executeOnProviders from "@fluencelabs/registry/resources-api.aqua"
 
+export registerNodeProvider, createResource, getResourceId, registerProvider, resolveProviders
+
+import Record from "@fluencelabs/registry/registry-service.aqua"
+
+data Event:
+    data: string
+    from: string
+    seqno: string
+    signature: string
+
+service GeesomeCrypto:
+  checkSignature(from: string, data: string, seqno: string, signature: string) -> bool
+  receive_event(event: Event)
+
+func call_provider(p: Record, event: Event):
+    -- topological move to provider via relay
+    on p.peer_id via p.relay_id:
+       -- resolve and call your service on a provider
+       GeesomeCrypto p.service_id!
+       GeesomeCrypto.receive_event(event)
+
+-- send event to every provider
+func call_everyone(resource_id: string, event: Event, ack: i16) -> *string:
+    records, error <- resolveProviders(resource_id, ack)
+    for rec <- records par:
+        on rec.peer_id via rec.relay_id:
+            call_provider(rec, event)
+    <- error
