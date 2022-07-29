@@ -7,12 +7,12 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const sortBy = require('lodash/sortBy');
-const { Keccak } = require('sha3');
-const base64url = require('base64url');
-const ipns = require('ipns');
-const {fromB58String} = require('multihashes');
-const peerIdHelper = require('./peerIdHelper');
+import sortBy from 'lodash/sortBy.js';
+import { Keccak } from 'sha3';
+import base64url from 'base64url';
+import * as ipns from 'ipns';
+import {fromB58String} from'multihashes';
+import peerIdHelper from'./peerIdHelper.js';
 
 const name = {
   getPersonalChatName(friendsIds, groupTheme) {
@@ -44,5 +44,4 @@ const name = {
   }
 };
 
-
-module.exports = name;
+export default name;

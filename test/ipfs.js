@@ -11,16 +11,18 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
+
+import JsIpfsService from '../src/JsIpfsService.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import ipfsDaemonHelper from '../src/ipfsDaemonHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import common from '../src/common.js';
+import trie from '../src/base36Trie.js';
+
 const expect = chai.expect;
 chai.use(dirtyChai);
-
-const JsIpfsService = require('../src/JsIpfsService');
-const ipfsHelper = require('../src/ipfsHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const common = require('../src/common');
-const trie = require('../src/base36Trie');
 
 describe('ipfs', function () {
   let node;
@@ -29,22 +31,26 @@ describe('ipfs', function () {
     this.timeout(40 * 1000);
 
     (async () => {
-      node = new JsIpfsService(await ipfsHelper.createDaemonNode({
+      console.log('createDaemonNode')
+      const daemonNode = await ipfsDaemonHelper.createDaemonNode({
         test: true,
         disposable: true,
-      }));
+      });
+      console.log('JsIpfsService')
+      node = new JsIpfsService(daemonNode);
       done();
     })();
   });
 
   afterEach((done) => {node.stop().then(() => done())})
 
-  it('should save file with correct ipfs hash', function (done) {
+  it.only('should save file with correct ipfs hash', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
       const content = '1';
       const savedText = await node.saveFileByData(content, {waitForPin: true});
+      console.log('ipfsHelper.getIpfsHashFromString');
       const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
       expect(ipfsHash).to.equals('QmWYddCPs7uR9EvHNCZzpguVFVNfHc6aM3hPVzPdAEESMc');
       expect(savedText.id).to.equals(ipfsHash);

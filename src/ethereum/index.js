@@ -7,10 +7,11 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const web3Utils = require('web3-utils');
-const EthCrypto = require('eth-crypto');
-const stripHexPrefix = require('strip-hex-prefix');
-const BN = require('bn.js');
+import web3Utils from './web3Utils.js';
+import soliditySha3 from './soliditySha3.js';
+import EthCrypto from 'eth-crypto';
+import stripHexPrefix from 'strip-hex-prefix';
+import BN from 'bn.js';
 
 const Ethereum = {
     getAccountAddressBySignature(signature, message, fieldName) {
@@ -43,13 +44,13 @@ const Ethereum = {
             return `${e.type} ${e.name}`;
         });
 
-        return web3Utils.soliditySha3(
-            {t: 'bytes32', v: web3Utils.soliditySha3.apply(web3Utils, typedData.map((d, i) => ({t: 'string', v: schema[i]})))},
-            {t: 'bytes32', v: web3Utils.soliditySha3.apply(web3Utils, types.map((t, i) => ({t, v: data[i]})))},
+        return soliditySha3.soliditySha3(
+            {t: 'bytes32', v: soliditySha3.soliditySha3.apply(web3Utils, typedData.map((d, i) => ({t: 'string', v: schema[i]})))},
+            {t: 'bytes32', v: soliditySha3.soliditySha3.apply(web3Utils, types.map((t, i) => ({t, v: data[i]})))},
         );
     },
     isHexString(v) {
-      return v && v.indexOf && v.indexOf('0x') === 0;
+        return v && v.indexOf && v.indexOf('0x') === 0;
     },
     toBuffer(v) {
         if (v === null || v === undefined) {
@@ -93,28 +94,23 @@ const Ethereum = {
         throw new Error('invalid type')
     },
     intToHex(i) {
-        var hex = i.toString(16); // eslint-disable-line
-
+        const hex = i.toString(16); // eslint-disable-line
         return `0x${hex}`;
     },
     intToBuffer(i) {
         const hex = Ethereum.intToHex(i);
-
         return new Buffer(Ethereum.padToEven(hex.slice(2)), 'hex');
     },
     padToEven(value) {
-        var a = value; // eslint-disable-line
-
+        let a = value; // eslint-disable-line
         if (typeof a !== 'string') {
             throw new Error(`[ethjs-util] while padding to even, value must be string, is currently ${typeof a}, while padToEven.`);
         }
-
         if (a.length % 2) {
             a = `0${a}`;
         }
-
         return a;
     }
 };
 
-module.exports = Ethereum;
+export default Ethereum;

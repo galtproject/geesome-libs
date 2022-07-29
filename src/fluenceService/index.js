@@ -1,15 +1,15 @@
-const registryApi = require('./generated/registry-api');
-//registerNodeProvider, createResource, registerProvider, resolveProviders
-const startsWith = require('lodash/startsWith');
-const orderBy = require('lodash/orderBy');
-const pIteration = require('p-iteration');
-const ipfsHelper = require('../ipfsHelper');
-const peerIdHelper = require('../peerIdHelper');
-const log = require('loglevel');
-const {getIpnsUpdatesTopic, getPeerIdTopic} = require('../name');
-const { FluencePeer, KeyPair } = require("@fluencelabs/fluence");
+import registryApi from './generated/registry-api.js';
+import startsWith from 'lodash/startsWith.js';
+import orderBy from 'lodash/orderBy.js';
+import isArray from 'lodash/isArray.js';
+import pIteration from 'p-iteration';
+import ipfsHelper from '../ipfsHelper.js';
+import peerIdHelper from '../peerIdHelper.js';
+import log from 'loglevel';
+import geesomeName from '../name.js';
+import { FluencePeer, KeyPair } from "@fluencelabs/fluence";
 
-module.exports = class FluenceService {
+export default class FluenceService {
     accStorage;
     subscribesByTopics;
     connectTo;
@@ -93,7 +93,7 @@ module.exports = class FluenceService {
             }, 3000);
             const peerId = await this.getAccountPeerId(accountKey);
             const peer = await this.buildPeerAndConnect(peerId);
-            const topic = getPeerIdTopic(peerId);
+            const topic = geesomeName.getPeerIdTopic(peerId);
             console.log('bindToStaticId:createResource');
             const resourceId = await this.createResource(peer, topic, options.tries || 0);
             console.log('bindToStaticId:registerResourceProvider');
@@ -113,7 +113,7 @@ module.exports = class FluenceService {
     async getResourceByTopicAndPeerId(topic, hostPeerId) {
         console.log('getResourceId', 'topic', topic, 'peerId', peerIdHelper.peerIdToPublicBase58(hostPeerId))
         return registryApi.getResourceId(this.peer, topic, await peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
-            console.error(e);
+            console.error('getResourceId', e);
             return null;
         });
     }
@@ -207,7 +207,7 @@ module.exports = class FluenceService {
     }
 
     async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(getIpnsUpdatesTopic(ipnsId), callback);
+        return this.subscribeToEvent(geesomeName.getIpnsUpdatesTopic(ipnsId), callback);
     }
 
     async publishEventByData(topic, event) {
@@ -229,12 +229,16 @@ module.exports = class FluenceService {
         return this.addTopicSubscriber(_topic, _callback);
     }
 
+    handleError(response, error, errorType) {
+        if (!response) {
+            throw new Error(error ? (isArray(error) ? error.map(e => e.toString()).join(', ') : error.toString()) : errorType);
+        }
+    }
+
     async createResource(_peer, _topic, tries = 0) {
         try {
             let [resourceId, createError] = await registryApi.createResource(_peer, _topic, {ttl: 20000});
-            if (createError || !resourceId) {
-                throw new Error(createError ? createError.toString() : 'resourceId_creation_failed');
-            }
+            this.handleError(resourceId, createError, 'createResource_failed');
             return resourceId;
         } catch (e) {
             tries--;
@@ -250,9 +254,7 @@ module.exports = class FluenceService {
 
     async registerResourceProvider(_peer, _resourceId, _value) {
         let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, await this.getPeerIdString(), _resourceId, _value, this.registryService);
-        if (!nodeSuccess || regNodeError) {
-            throw new Error(regNodeError ? regNodeError.toString() : 'registerNodeProvider_failed');
-        }
+        this.handleError(nodeSuccess, regNodeError, 'registerNodeProvider_failed');
     }
 
     async stop() {

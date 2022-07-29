@@ -1,7 +1,5 @@
 "use strict";
-exports.__esModule = true;
-exports.registerNodeProvider = exports.registerProvider = exports.getResourceId = exports.resolveProviders = exports.createResource = void 0;
-var v3_1 = require("@fluencelabs/fluence/dist/internal/compilerSupport/v3");
+import v3_1 from "@fluencelabs/fluence/dist/internal/compilerSupport/v3.js";
 function createResource() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -52,7 +50,6 @@ function createResource() {
         }
     }, script);
 }
-exports.createResource = createResource;
 function resolveProviders() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -157,7 +154,7 @@ function resolveProviders() {
         }
     }, script);
 }
-exports.resolveProviders = resolveProviders;
+
 function getResourceId() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -202,7 +199,7 @@ function getResourceId() {
         }
     }, script);
 }
-exports.getResourceId = getResourceId;
+
 function registerProvider() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -261,7 +258,7 @@ function registerProvider() {
         }
     }, script);
 }
-exports.registerProvider = registerProvider;
+
 function registerNodeProvider() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -324,4 +321,11 @@ function registerNodeProvider() {
         }
     }, script);
 }
-exports.registerNodeProvider = registerNodeProvider;
+
+export default {
+    registerNodeProvider,
+    registerProvider,
+    createResource,
+    resolveProviders,
+    getResourceId,
+}

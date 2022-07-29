@@ -11,17 +11,18 @@
 /* eslint-env mocha */
 'use strict'
 
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
+
+import commonHelper from '../src/common.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import waitFor from './utils/wait-for.js';
+import createNodes from './utils/createNodes.js';
+import {randomSeqno} from 'libp2p-interfaces/src/pubsub/utils.js';
+
 const expect = chai.expect
 chai.use(dirtyChai)
-
-const commonHelper = require('../src/common');
-const ipfsHelper = require('../src/ipfsHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const waitFor = require('./utils/wait-for');
-const createNodes = require('./utils/createNodes');
-const {randomSeqno} = require('libp2p-interfaces/src/pubsub/utils');
 
 describe('pubsub', function () {
   let nodeA

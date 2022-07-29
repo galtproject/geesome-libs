@@ -1,19 +1,19 @@
-const SimpleAccountStorage = require('../../src/SimpleAccountStorage');
-const ipfsHelper = require('../../src/ipfsHelper');
-const JsIpfsService = require('../../src/JsIpfsService');
+import { testNet } from '@fluencelabs/fluence-network-environment';
 
-const FluenceService = require('../../src/fluenceService');
+import SimpleAccountStorage from '../../src/SimpleAccountStorage.js';
+import ipfsHelper from '../../src/ipfsHelper.js';
+import JsIpfsService from '../../src/JsIpfsService.js';
+import FluenceService from '../../src/fluenceService/index.js';
+import peerIdHelper from '../../src/peerIdHelper.js';
 
-const { testNet } = require('@fluencelabs/fluence-network-environment');
 const accStorage = new SimpleAccountStorage();
-const peerIdHelper = require('../../src/peerIdHelper');
 
-module.exports = {
+export default {
     async ipfs(options) {
         const createNode = () => {
             return ipfsHelper.createDaemonNode({
                 test: true,
-                disposable: true,
+                // disposable: true,
             }, { pass: options.pass, EXPERIMENTAL: {ipnsPubsub: true} });
         };
 

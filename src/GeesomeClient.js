@@ -7,32 +7,30 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const axios = require('axios');
+import axios from 'axios';
+import pIteration from 'p-iteration';
 
-const extend = require('lodash/extend');
-const get = require('lodash/get');
-const set = require('lodash/set');
-const isObject = require('lodash/isObject');
-const forEach = require('lodash/forEach');
-const isUndefined = require('lodash/isUndefined');
-const range = require('lodash/range');
-const includes = require('lodash/includes');
-const merge = require('lodash/merge');
-const find = require('lodash/find');
-const filter = require('lodash/filter');
-const startsWith = require('lodash/startsWith');
-const pick = require('lodash/pick');
+import extend from 'lodash/extend.js';
+import get from 'lodash/get.js';
+import set from 'lodash/set.js';
+import isObject from 'lodash/isObject.js';
+import forEach from 'lodash/forEach.js';
+import isUndefined from 'lodash/isUndefined.js';
+import range from 'lodash/range.js';
+import includes from 'lodash/includes.js';
+import merge from 'lodash/merge.js';
+import find from 'lodash/find.js';
+import filter from 'lodash/filter.js';
+import startsWith from 'lodash/startsWith.js';
+import pick from 'lodash/pick.js';
 
-const pIteration = require('p-iteration');
-const ipfsHelper = require('./ipfsHelper');
-const pgpHelper = require('./pgpHelper');
-const commonHelper = require('./common');
-const trie = require('./base36Trie');
-const JsIpfsService = require('./JsIpfsService');
-const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
-
-const {extractHostname, isIpAddress, isNumber} = require('./common');
-const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
+import ipfsHelper from './ipfsHelper.js';
+import pgpHelper from './pgpHelper.js';
+import trie from './base36Trie.js';
+import JsIpfsService from './JsIpfsService.js';
+import geesomeWalletClientLib from 'geesome-wallet-client/src/lib.js';
+import commonHelper from './common.js';
+import geesomeName from './name.js';
 
 class GeesomeClient {
   decryptedSocNetCache = {};
@@ -763,7 +761,7 @@ class GeesomeClient {
     if (ipfsHelper.isIpfsHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
-    } else if (isNumber(postId)) {
+    } else if (commonHelper.isNumber(postId)) {
       const postsPath = group.$manifestId + '/posts/';
       const postNumberPath = trie.getTreePath(postId).join('/');
       post = await this.getObject(postsPath + postNumberPath);
@@ -797,14 +795,14 @@ class GeesomeClient {
     if (!this.communicator) {
       return console.warn('[GeesomeClient] Communicator not defined');
     }
-    this.communicator.subscribeToEvent(getGroupUpdatesTopic(groupId), callback);
+    this.communicator.subscribeToEvent(geesomeName.getGroupUpdatesTopic(groupId), callback);
   }
 
   subscribeToPersonalChatUpdates(membersIpnsIds, groupTheme, callback) {
     if (!this.communicator) {
       return console.warn('[GeesomeClient] Communicator not defined');
     }
-    this.communicator.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
+    this.communicator.subscribeToEvent(geesomeName.getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
       if (includes(membersIpnsIds, event.keyIpns)) {
         callback(event);
       }
@@ -1049,9 +1047,9 @@ class GeesomeClient {
     if (this.isLocalServer()) {
       preloadAddresses.push(await this.getNodeAddress('127.0.0.1'));
     } else {
-      const serverDomain = extractHostname(this.server);
+      const serverDomain = commonHelper.extractHostname(this.server);
 
-      if (serverDomain && !isIpAddress(serverDomain)) {
+      if (serverDomain && !commonHelper.isIpAddress(serverDomain)) {
         preloadAddresses.push('/dnsaddr/' + serverDomain + '/tcp/7722/https');
       }
 
@@ -1094,7 +1092,7 @@ class GeesomeClient {
   }
 }
 
-class AbstractClientStorage {
+export class AbstractClientStorage {
   set(name, value) {
     assert(false, 'you have to override getValue');
   }
@@ -1129,7 +1127,7 @@ class AbstractClientStorage {
   }
 }
 
-class SimpleClientStorage extends AbstractClientStorage {
+export class SimpleClientStorage extends AbstractClientStorage {
   constructor() {
     super();
     this.storage = {};
@@ -1144,7 +1142,7 @@ class SimpleClientStorage extends AbstractClientStorage {
   }
 }
 
-class BrowserLocalClientStorage extends AbstractClientStorage {
+export class BrowserLocalClientStorage extends AbstractClientStorage {
   get(name) {
     try {
       return JSON.parse(localStorage.getItem(name));
@@ -1158,9 +1156,4 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
-module.exports = {
-  GeesomeClient,
-  AbstractClientStorage,
-  SimpleClientStorage,
-  BrowserLocalClientStorage
-};
+export default GeesomeClient;

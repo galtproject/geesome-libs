@@ -7,33 +7,38 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const { CID } = require('multiformats/cid');
-const { sha256 } = require('multiformats/hashes/sha2');
+import { CID } from 'multiformats/cid';
+import { sha256 } from 'multiformats/hashes/sha2';
 
-const startsWith = require('lodash/startsWith');
-const isString = require('lodash/isString');
-const isBuffer = require('lodash/isBuffer');
-const isObject = require('lodash/isObject');
-const jwkToPem = require('pem-jwk').jwk2pem
+import startsWith from 'lodash/startsWith.js';
+import isString from 'lodash/isString.js';
+import isBuffer from 'lodash/isBuffer.js';
+import isObject from 'lodash/isObject.js';
+import pick from 'lodash/pick.js';
+import isUndefined from 'lodash/isUndefined.js';
+import isDate from 'lodash/isDate.js';
 
-const ipns = require('ipns');
-const { DAGNode, util: DAGUtil } = require('ipld-dag-pb');
-const uint8ArrayConcat = require('uint8arrays/concat')
-const uint8ArrayFromString = require('uint8arrays/from-string')
+import * as ipns from 'ipns';
+import { createNode as dagCreateNode, encode as dagEncode, decode as dagDecode } from '@ipld/dag-pb';
+import libp2pCrypto from 'libp2p-crypto';
+import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
+import RPC from 'libp2p-interfaces/src/pubsub/message/rpc.js';
+import {signMessage, SignPrefix as Libp2pSignPrefix} from 'libp2p-interfaces/src/pubsub/message/sign.js';
+import {normalizeOutRpcMessage, randomSeqno, ensureArray} from 'libp2p-interfaces/src/pubsub/utils.js';
+import {UnixFS} from 'ipfs-unixfs';
 
-const libp2pCrypto = require('libp2p-crypto');
-const libp2pKeys = require('libp2p-crypto/src/keys');
-const crypto = require('crypto')
-const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
-const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
-const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-const dagCBOR = require('@ipld/dag-cbor')
-const PeerId = require('peer-id');
-const pick = require('lodash/pick');
-const isUndefined = require('lodash/isUndefined');
-const isDate = require('lodash/isDate');
+import {encode as dagCborEncode, code as dagCborCode} from '@ipld/dag-cbor';
+import crypto from 'crypto';
+import PeerId from 'peer-id';
+
+import {jwk2pem as jwkToPem} from 'pem-jwk';
+import uint8ArrayConcat from 'uint8arrays/concat.js';
+import uint8ArrayFromString from 'uint8arrays/from-string.js';
+
+import peerIdHelper from './peerIdHelper.js';
+import commonHelper from './common.js';
+
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
-const peerIdHelper = require('./peerIdHelper.js');
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -132,20 +137,19 @@ const ipfsHelper = {
   },
 
   async getIpfsHashFromString(string) {
-    const { UnixFS } = require('ipfs-unixfs');
     const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
     const buffer = unixFsFile.marshal();
 
-    const node = new DAGNode(buffer);
-    const serialized = DAGUtil.serialize(node);
-    const cid = await DAGUtil.cid(serialized, { cidVersion: 0 });
-
+    const node = new dagCreateNode(buffer);
+    const serialized = dagEncode(node);
+    // const cid = await DAGUtil.cid(serialized, { cidVersion: 0 });
+    const cid = CID.asCID(dagDecode(serialized));
     return cid.toBaseEncodedString();
   },
 
   async getIpldHashFromObject(object) {
     //TODO: find more efficient way
-    return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
+    return sha256.digest(dagCborEncode(object)).then(res => CID.createV1(dagCborCode, res)).then(res => ipfsHelper.cidToHash(res));
   },
 
   async buildAndSignPubSubMessage(privateKey, topics, data) {
@@ -246,30 +250,6 @@ const ipfsHelper = {
     return verify.verify(pem, signature)
   },
 
-  async createDaemonNode(options = {}, ipfsOptions = {}) {
-    const hat = require('hat');
-    const {createFactory} = require('ipfsd-ctl');
-
-    const factory = createFactory({
-      type: 'proc', // or 'js' to run in a separate process
-      // type: 'js',
-      ipfsHttpModule: require('ipfs-http-client'),
-      ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
-      ...options
-    })
-
-    const node = await factory.spawn({
-      ipfsOptions: {
-        pass: hat(),
-        init: true,
-        // start: true,
-        ...ipfsOptions
-      },
-      // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
-    });
-
-    return node.api;
-  },
 
   getStorageIdHash(storageId) {
     if (ipfsHelper.isCid(storageId)) {
@@ -283,4 +263,4 @@ const ipfsHelper = {
     return storageId;
   }
 };
-module.exports = ipfsHelper;
+export default ipfsHelper;

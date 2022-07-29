@@ -11,17 +11,17 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const assert = require('assert');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import assert from 'assert';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const {getIpnsUpdatesTopic} = require('../src/name');
-const waitFor = require('./utils/wait-for');
-const createNodes = require('./utils/createNodes');
-const peerIdHelper = require('../src/peerIdHelper');
-const commonHelper = require('../src/common');
+import geesomeName from '../src/name.js';
+import waitFor from './utils/wait-for.js';
+import createNodes from './utils/createNodes.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import commonHelper from'../src/common.js';
 
 describe('ipns', function () {
   let nodeA;
@@ -69,7 +69,7 @@ describe('ipns', function () {
           });
 
           await waitFor((callback) => {
-            nodeA.getPeers(getIpnsUpdatesTopic(testAccountIpnsId)).then(peers => {
+            nodeA.getPeers(geesomeName.getIpnsUpdatesTopic(testAccountIpnsId)).then(peers => {
               callback(null, peers.length > 0);
             })
           });
@@ -78,7 +78,7 @@ describe('ipns', function () {
         })();
       });
 
-      it.only('bindToStaticId and resolveStaticId', function (done) {
+      it('bindToStaticId and resolveStaticId', function (done) {
         this.timeout(80 * 1000);
 
         (async () => {

@@ -7,9 +7,9 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const crypto = require('libp2p-crypto');
-const PeerId = require('peer-id');
-const cryptoKeys = require('libp2p-crypto/src/keys')
+import crypto from 'libp2p-crypto';
+import PeerId from 'peer-id';
+import {keys as cryptoKeys} from 'libp2p-crypto';
 
 const peerIdHelper = {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
@@ -58,4 +58,4 @@ const peerIdHelper = {
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
   createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId)
 };
-module.exports = peerIdHelper;
+export default peerIdHelper;

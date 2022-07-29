@@ -11,22 +11,23 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
+import GeesomeClient from '../src/GeesomeClient.js';
+import pgpHelper from '../src/pgpHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import ipfsDaemonHelper from '../src/ipfsDaemonHelper.js';
+
 const expect = chai.expect;
 chai.use(dirtyChai);
-
-const {GeesomeClient} = require('../src/GeesomeClient');
-const pgpHelper = require('../src/pgpHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const ipfsHelper = require('../src/ipfsHelper');
 
 describe('pgp', function () {
   let geesomeClient;
   const pass = 'ipfs-is-awesome-software';
 
   const createNode = () => {
-    return ipfsHelper.createDaemonNode({
+    return ipfsDaemonHelper.createDaemonNode({
       config: {
         Bootstrap: [],
         Discovery: {

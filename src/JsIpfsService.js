@@ -7,33 +7,31 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const ipfsHelper = require('./ipfsHelper');
-const peerIdHelper = require('./peerIdHelper');
-const common = require('./common');
-
-const trim = require('lodash/trim');
-const pick = require('lodash/pick');
-const isObject = require('lodash/isObject');
-const find = require('lodash/find');
-const startsWith = require('lodash/startsWith');
-const includes = require('lodash/includes');
-const isString = require('lodash/isString');
-const isBuffer = require('lodash/isBuffer');
-const get = require('lodash/get');
-const urlSource = require('ipfs-utils/src/files/url-source');
-const itFirst = require('it-first');
-const itConcat = require('it-concat');
-const itToStream = require('it-to-stream');
-const { CID } = require('multiformats/cid');
+import trim from 'lodash/trim.js';
+import pick from 'lodash/pick.js';
+import isObject from 'lodash/isObject.js';
+import find from 'lodash/find.js';
+import startsWith from 'lodash/startsWith.js';
+import includes from 'lodash/includes.js';
+import isString from 'lodash/isString.js';
+import isBuffer from 'lodash/isBuffer.js';
+import get from 'lodash/get.js';
+import urlSource from 'ipfs-utils/src/files/url-source.js';
+import itFirst from 'it-first';
+import itConcat from 'it-concat';
+import itToStream from'it-to-stream';
+import { CID } from 'multiformats/cid';
 // const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 // const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
+import * as IPNS from 'ipns';
 
-const IPNS = require('ipns');
+import ipfsHelper from './ipfsHelper.js';
+import peerIdHelper from './peerIdHelper.js';
+import common from './common.js';
+import geesomeName from './name.js';
 
-const { getIpnsUpdatesTopic } = require('./name');
-
-module.exports = class JsIpfsService {
+export default class JsIpfsService {
   constructor(node) {
     this.node = node;
     // const {libp2p, peerId} = this.node;
@@ -313,7 +311,7 @@ module.exports = class JsIpfsService {
   }
 
   subscribeToStaticIdUpdates(staticId, callback) {
-    const topic = getIpnsUpdatesTopic(staticId);
+    const topic = geesomeName.getIpnsUpdatesTopic(staticId);
     return this.subscribeToEvent(topic, callback);
   }
 
