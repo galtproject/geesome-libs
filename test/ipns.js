@@ -54,6 +54,7 @@ describe('ipns', function () {
           await nodeA.createAccountIfNotExists('self');
           const selfAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey('self'));
 
+          console.log('subscribeToStaticIdUpdates', testAccountIpnsId);
           await nodeB.subscribeToStaticIdUpdates(testAccountIpnsId, async (message) => {
             assert.equal(message.dataStr, '/ipfs/' + testHash);
             assert.equal(message.from, testAccountPublicKey);
@@ -68,8 +69,9 @@ describe('ipns', function () {
             done();
           });
 
+          console.log('getPeers', nodeA.getUpdatesTopic(testAccountIpnsId, 'update'));
           await waitFor((callback) => {
-            nodeA.getPeers(geesomeName.getIpnsUpdatesTopic(testAccountIpnsId)).then(peers => {
+            nodeA.getPeers(nodeA.getUpdatesTopic(testAccountIpnsId, 'update')).then(peers => {
               callback(null, peers.length > 0);
             })
           });

@@ -107,7 +107,7 @@ describe('pubsub', function () {
           const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
           const testAccountPeerId = await nodeA.getAccountPeerId(testAccountIpnsId, pass);
 
-          const event = await ipfsHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
+          const event = await pubSubHelper.buildAndSignFluenceMessage(peerIdHelper.peerIdToPrivateBase64(testAccountPeerId), "test-message-2");
           event.seqno = randomSeqno().toString('base64');
           try {
             await nodeA.publishEventByData(testTopic, event);

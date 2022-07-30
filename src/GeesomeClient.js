@@ -280,12 +280,36 @@ class GeesomeClient {
     return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
-  async staticSiteGetDefaultOptions(type, id) {
-    return this.postRequest(`render/static-site-generator/get-default-options`, { type, id });
+  async staticSiteGetDefaultOptions(entityType, entityId) {
+    return this.postRequest(`render/static-site-generator/get-default-options`, { entityType, entityId });
   }
 
-  async staticSiteRunGenerate(type, id, options) {
-    return this.postRequest(`render/static-site-generator/run-for-${type}`, { id, options });
+  async staticSiteRunGenerate(entityType, entityId, options) {
+    return this.postRequest(`render/static-site-generator/run`, { entityType, entityId, options });
+  }
+
+  async staticSiteBind(entityType, entityId, name) {
+    return this.postRequest(`render/static-site-generator/bind-to-static-id`, { entityType, entityId, name });
+  }
+
+  async updateStaticSiteInfo(entityType, entityId, data) {
+    return this.postRequest(`render/static-site-generator/update-info`, { entityType, entityId, ...data });
+  }
+
+  async getStaticSiteInfo(entityType, entityId) {
+    return this.postRequest(`render/static-site-generator/get-info`, { entityType, entityId });
+  }
+
+  async addSerialAutoActions(actions) {
+    return this.postRequest(`user/add-serial-auto-actions`, actions);
+  }
+
+  async getAutoActions() {
+    return this.getRequest(`user/get-auto-actions`);
+  }
+
+  async updateAutoAction(id, updateData) {
+    return this.postRequest(`user/update-auto-action/${id}`, updateData);
   }
 
   updateCurrentUser(userData) {
@@ -567,10 +591,9 @@ class GeesomeClient {
   }
 
   async getUser(userId) {
-    if (ipfsHelper.isIpfsHash(userId)) {
+    if (ipfsHelper.isAccountCidHash(userId)) {
       userId = await this.resolveIpns(userId);
     }
-
     const userObj = await this.getObject(userId);
 
     await this.fetchIpldFields(userObj, ['avatarImage']);
@@ -583,7 +606,7 @@ class GeesomeClient {
   }
 
   async getGroup(groupId) {
-    if (ipfsHelper.isIpfsHash(groupId)) {
+    if (ipfsHelper.isAccountCidHash(groupId)) {
       groupId = await this.resolveIpns(groupId);
     }
 
@@ -632,7 +655,15 @@ class GeesomeClient {
         storageId = manifest.storageId;
       }
     }
-    return this.server + '/v1/content-data/' + storageId;
+    if (ipfsHelper.isIpfsHash(storageId)) {
+      return this.getServerStorageUri(ipfsHelper.isAccountCidHash(storageId)) + storageId;
+    } else {
+      return this.server + '/v1/content-data/' + storageId;
+    }
+  }
+
+  getServerStorageUri(isIpns) {
+    return `${this.server}/${isIpns ? 'ipns' : 'ipfs'}/`;
   }
 
   async getObject(ipldHash, isResolve = true) {
@@ -758,7 +789,7 @@ class GeesomeClient {
   async getGroupPost(groupId, postId) {
     const group = await this.getGroup(groupId);
     let post;
-    if (ipfsHelper.isIpfsHash(postId)) {
+    if (ipfsHelper.isObjectCidHash(postId)) {
       post = await this.getObject(postId);
       post.manifestId = postId;
     } else if (commonHelper.isNumber(postId)) {
@@ -1029,15 +1060,15 @@ class GeesomeClient {
   }
 
   setServerByDocumentLocation() {
-    let port = 7722;
+    let port = 2053;
     if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
-      port = 7711;
+      port = 2052;
     }
     this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
   }
 
   isLocalServer() {
-    return includes(this.server, ':7711');
+    return includes(this.server, ':2052');
   }
 
   async getPreloadAddresses() {

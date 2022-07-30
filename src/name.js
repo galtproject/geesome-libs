@@ -28,6 +28,16 @@ const name = {
     return `${namespace}${name.base64Ipns(groupIpns)}`;
   },
 
+  getFluenceUpdatesTopic(cid, namespace) {
+    const hash = new Keccak(256);
+    return hash.update(`/${namespace}/${cid}`).digest('hex');
+  },
+
+  getFluenceAccountsGroupUpdatesTopic(cids, namespace) {
+    const hash = new Keccak(256);
+    return hash.update(`/${namespace}/${sortBy(cids).join(':')}`).digest('hex');
+  },
+
   getIpnsUpdatesTopic(ipnsId) {
     const namespace = '/record/';
     return `${namespace}${name.base64Ipns(ipnsId)}`;

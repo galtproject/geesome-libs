@@ -9,7 +9,11 @@
 
 import crypto from 'libp2p-crypto';
 import PeerId from 'peer-id';
-import {keys as cryptoKeys} from 'libp2p-crypto';
+import cryptoKeys from'libp2p-crypto/src/keys/index.js';
+// const ipfsHelper = require('./ipfsHelper');
+// TODO: use @libp2p/peer-id
+// https://github.com/libp2p/js-libp2p-interfaces/blob/d72b30cfca4b9145e0b31db28e8fa3329a180e83/packages/libp2p-peer-id-factory/test/index.spec.ts
+//import { peerIdFromString, peerIdFromBytes, peerIdFromCID, createPeerId } from '@libp2p/peer-id';
 
 const peerIdHelper = {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
@@ -30,6 +34,10 @@ const peerIdHelper = {
 
   peerIdToPublicBase58(peerId) {
     return peerId.toB58String();
+  },
+
+  peerIdToCid(peerId) {
+    return peerId.toString();
   },
 
   async createPeerIdFromPrivateBase64(base64) {

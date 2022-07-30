@@ -21,9 +21,6 @@ import itFirst from 'it-first';
 import itConcat from 'it-concat';
 import itToStream from'it-to-stream';
 import { CID } from 'multiformats/cid';
-// const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
-// const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
-
 import * as IPNS from 'ipns';
 
 import ipfsHelper from './ipfsHelper.js';
@@ -315,10 +312,6 @@ export default class JsIpfsService {
     return this.subscribeToEvent(topic, callback);
   }
 
-  async publishEventByStaticId(staticId, topic, data, pass) {
-    return this.publishEventByPeerId(await this.getAccountPeerId(staticId, pass), topic, data);
-  }
-
   async publishEventByPeerId(peerId, topic, data) {
     let privateKey = peerId._privKey;
     if(isObject(data)) {
@@ -328,8 +321,12 @@ export default class JsIpfsService {
       data = Buffer.from(data);
     }
     privateKey = privateKey.bytes || privateKey;
-    const message = await ipfsHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
+    const message = await pubSubHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
     return this.node.pubsub.publishMessage(message);
+  }
+
+  async publishEventByStaticId(staticId, topic, data, pass) {
+    return this.publishEventByPeerId(await this.getAccountPeerId(staticId, pass), topic, data);
   }
 
   getStaticIdPeers(staticId) {
@@ -357,7 +354,7 @@ export default class JsIpfsService {
 
   subscribeToEvent(topic, callback) {
     return this.node.pubsub.subscribe(topic, async (event) => {
-      ipfsHelper.parsePubSubEvent(event).then(parsedEvent => {
+      pubSubHelper.parsePubSubEvent(event).then(parsedEvent => {
         callback(parsedEvent);
       }).catch((error) => {
         console.warn("PubSub ipns validation failed", event, error);

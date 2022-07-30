@@ -9,35 +9,28 @@
 
 import { CID } from 'multiformats/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
+import * as hasher from 'multiformats/hashes/hasher';
+import * as Block from 'multiformats/block';
 
 import startsWith from 'lodash/startsWith.js';
 import isString from 'lodash/isString.js';
-import isBuffer from 'lodash/isBuffer.js';
-import isObject from 'lodash/isObject.js';
 import pick from 'lodash/pick.js';
 import isUndefined from 'lodash/isUndefined.js';
 import isDate from 'lodash/isDate.js';
 
-import * as ipns from 'ipns';
-import { createNode as dagCreateNode, encode as dagEncode, decode as dagDecode } from '@ipld/dag-pb';
 import libp2pCrypto from 'libp2p-crypto';
 import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
 import RPC from 'libp2p-interfaces/src/pubsub/message/rpc.js';
-import {signMessage, SignPrefix as Libp2pSignPrefix} from 'libp2p-interfaces/src/pubsub/message/sign.js';
-import {normalizeOutRpcMessage, randomSeqno, ensureArray} from 'libp2p-interfaces/src/pubsub/utils.js';
-import {UnixFS} from 'ipfs-unixfs';
 
 import {encode as dagCborEncode, code as dagCborCode} from '@ipld/dag-cbor';
 import crypto from 'crypto';
-import PeerId from 'peer-id';
 
 import {jwk2pem as jwkToPem} from 'pem-jwk';
 import uint8ArrayConcat from 'uint8arrays/concat.js';
 import uint8ArrayFromString from 'uint8arrays/from-string.js';
 
 import peerIdHelper from './peerIdHelper.js';
-import commonHelper from './common.js';
-
+import * as codec from "@ipld/dag-cbor";
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 
 const ipfsHelper = {
@@ -45,13 +38,32 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return (startsWith(value, 'Qm') || this.isIpldHash(value)) && /^\w+$/.test(value);
+    return (startsWith(value, 'Qm') || ipfsHelper.isCidHash(value)) && /^\w+$/.test(value);
   },
-  isIpldHash(value) {
+  isCidHash(value) {
     if (!value) {
       return false;
     }
     return startsWith(value.codec, 'dag-') || (isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'zd') || startsWith(value, 'ba')));
+  },
+  isFileCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    //TODO: spec about bafybe
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) && (startsWith(value, 'bafkre') || startsWith(value, 'bafybe'));
+  },
+  isObjectCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) && startsWith(value, 'bafyre');
+  },
+  isAccountCidHash(value) {
+    if (!value) {
+      return false;
+    }
+    return isString(value) && value.length === 59 && /^\w+$/.test(value) && startsWith(value, 'bafzbe');
   },
   isCid(value) {
     const cid = CID.asCID(value);
@@ -83,111 +95,34 @@ const ipfsHelper = {
     });
     return object;
   },
+
   async keyLookup(ipfsNode, kname, pass) {
     const pem = await ipfsNode.key.export(kname, pass);
     return libp2pCrypto.keys.import(pem, pass);
   },
 
-  async parsePubSubEvent(event) {
-    if(event.key) {
-      event.keyPeerId = await peerIdHelper.createPeerIdFromPubKey(event.key);
-      event.key = event.keyPeerId._pubKey;
-      event.keyIpns = event.keyPeerId.toB58String();
-
-      const pubSubSignatureValid = await ipfsHelper.checkPubSubSignature(event.key, event);
-      if(!pubSubSignatureValid) {
-        throw "pubsub_signature_invalid";
-      }
-    }
-
-    try {
-      event.data = ipns.unmarshal(event.data);
-      event.data.valueStr = event.data.value.toString('utf8');
-      event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
-
-      const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
-    } catch (e) {
-      // not ipns event
-      // console.warn('Failed unmarshal ipns of event', event);
-      event.dataStr = event.data.toString('utf8');
-      try {
-        event.dataJson = JSON.parse(event.dataStr);
-      } catch (e) {}
-    }
-    return event;
-  },
-
-  checkPubSubSignature(pubKey, message) {
-    // const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
-
-    // Get message sans the signature
-    const bytes = uint8ArrayConcat([
-      Libp2pSignPrefix,
-      RPC.Message.encode({
-        ...message,
-        // @ts-ignore message.from needs to exist
-        from: PeerId.createFromCID(message.from).toBytes(),
-        signature: undefined,
-        key: undefined
-      }).finish()
-    ])
-
-    // verify the base message
-    return pubKey.verify(bytes, message.signature)
-  },
-
   async getIpfsHashFromString(string) {
-    const unixFsFile = new UnixFS({ type: 'file', data: Buffer.from(string) });
-    const buffer = unixFsFile.marshal();
-
-    const node = new dagCreateNode(buffer);
-    const serialized = dagEncode(node);
-    // const cid = await DAGUtil.cid(serialized, { cidVersion: 0 });
-    const cid = CID.asCID(dagDecode(serialized));
-    return cid.toBaseEncodedString();
+    return ipfsHelper.cidHashFromBytes(new TextEncoder('utf8').encode(string), 0x12, 0x55);
   },
 
-  async getIpldHashFromObject(object) {
-    //TODO: find more efficient way
-    return sha256.digest(dagCborEncode(object)).then(res => CID.createV1(dagCborCode, res)).then(res => ipfsHelper.cidToHash(res));
+  async getIpldHashFromObject(value) {
+    let block = await Block.encode({ value, codec, hasher: sha256 });
+    // you can also decode blocks from their binary state
+    block = await Block.decode({ bytes: block.bytes, codec, hasher: sha256 });
+    // if you have the cid you can also verify the hash on decode
+    return Block.create({ bytes: block.bytes, cid: block.cid, codec, hasher: sha256 }).then(b => b.cid.toString());
   },
 
-  async buildAndSignPubSubMessage(privateKey, topics, data) {
-    const peerId = await peerIdHelper.createPeerIdFromPrivKey(privateKey);
-    const from = peerId.toB58String();
-    let msgObject = {
-      data,
-      from,
-      receivedFrom: from,
-      seqno: randomSeqno(),
-      topicIDs: ensureArray(topics)
-    }
-    return signMessage(peerId, normalizeOutRpcMessage(msgObject));
-  },
-
-  async buildAndSignFluenceMessage(privateKeyBase64, data) {
-    if (isObject(data)) {
-      data = JSON.stringify(data);
-    }
-    if (isString(data)) {
-      data = Buffer.from(data);
-    }
-    if (isBuffer(data)) {
-      data = data.toString('base64');
-    }
-    const peerId = await peerIdHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
-    const from = peerIdHelper.peerIdToPublicBase64(peerId);
-    const message = {
-      data,
-      from,
-      seqno: randomSeqno().toString('base64')
-    };
-    const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
-    const signature = await peerId.privKey.sign(bytes);
-    return {
-      ...message,
-      signature: signature.toString('base64'),
-    }
+  async cidHashFromBytes(bytes, hashCode, cidCode) {
+    // 0x55 - raw ipfs hash
+    // 0x72 - pubkey
+    // https://github.com/multiformats/multicodec/blob/5de6f09bdf7ed137f47c94a2e61866a87b4b3141/table.csv
+    const sha = hasher.from({
+      name: 'sha2-256',
+      code: hashCode,
+      encode: (input) => new Uint8Array(crypto.createHash('sha256').update(input).digest())
+    })
+    return CID.create(1, cidCode, await sha.digest(bytes)).toString();
   },
 
   async parseFluenceEvent(topic, event) {
@@ -249,7 +184,6 @@ const ipfsHelper = {
     const pem = jwkToPem(rsaPubKey._key);
     return verify.verify(pem, signature)
   },
-
 
   getStorageIdHash(storageId) {
     if (ipfsHelper.isCid(storageId)) {

@@ -3,11 +3,11 @@ import startsWith from 'lodash/startsWith.js';
 import orderBy from 'lodash/orderBy.js';
 import isArray from 'lodash/isArray.js';
 import pIteration from 'p-iteration';
-import ipfsHelper from '../ipfsHelper.js';
 import peerIdHelper from '../peerIdHelper.js';
 import log from 'loglevel';
 import geesomeName from '../name.js';
 import { FluencePeer, KeyPair } from "@fluencelabs/fluence";
+import pubSubHelper from '../pubSubHelper.js';
 
 export default class FluenceService {
     accStorage;
@@ -15,7 +15,6 @@ export default class FluenceService {
     connectTo;
     peer;
     geesomeCryptoResourceId;
-
     registryService = 'geesome-registry';
 
     constructor(accStorage, peer = null, options = {}) {
@@ -79,7 +78,7 @@ export default class FluenceService {
     }
     emitTopicSubscribers(topic, event) {
         return pIteration.forEach(this.subscribesByTopics[topic] || [], async callback => {
-            const parsedEvent = await ipfsHelper.parseFluenceEvent(topic, event);
+            const parsedEvent = await pubSubHelper.parseFluenceEvent(topic, event);
             return parsedEvent && callback(parsedEvent);
         });
     }
@@ -106,6 +105,12 @@ export default class FluenceService {
     }
     async resolveStaticId(staticStorageId) {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
+    }
+    getUpdatesTopic(cid, type = 'update') {
+        return getFluenceUpdatesTopic(cid, type);
+    }
+    getAccountsGroupUpdatesTopic(accounts, type = 'update') {
+        return getFluenceAccountsGroupUpdatesTopic(accounts, type);
     }
     async getResourceByPeerId(hostPeerId, topicPeerId) {
         return registryApi.getResourceId(this.peer, getPeerIdTopic(topicPeerId), peerIdHelper.peerIdToPublicBase58(hostPeerId));
@@ -195,9 +200,20 @@ export default class FluenceService {
     }
 
     async publishEventByPeerId(peerId, topic, data) {
-        let privateKey = peerId._privKey;
+        return this.publishEventByPrivateKey(peerId._privKey, topic, data);
+    }
+
+    async publishEvent(topic, data) {
+        const selfPeerId = await this.accStorage.getAccountPeerId('self');
+        return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
+    }
+
+    async subscribeToStaticIdUpdates(ipnsId, callback) {
+        return this.subscribeToEvent(this.getUpdatesTopic(ipnsId, 'update'), callback);
+    }
+    async publishEventByPrivateKey(privateKey, topic, data) {
         privateKey = privateKey.bytes || privateKey;
-        const event = await ipfsHelper.buildAndSignFluenceMessage(privateKey, data);
+        const event = await pubSubHelper.buildAndSignFluenceMessage(privateKey, data);
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return this.publishEventByData(topic, event);
     }
