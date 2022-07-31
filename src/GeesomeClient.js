@@ -218,10 +218,15 @@ class GeesomeClient {
   async socNetDbAccount(socNetName, accountData) {
     const acc = await this.postRequest(`soc-net/${socNetName}/db-account`, { accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
-      const sessionHash = commonHelper.hash(acc.sessionKey);
-      this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
+      this.decryptSessionKey(acc.sessionKey);
     }
     return acc;
+  }
+
+  decryptSessionKey(encryptedSessionKey) {
+    const sessionHash = commonHelper.hash(encryptedSessionKey);
+    this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), encryptedSessionKey);
+    return this.decryptedSocNetCache[sessionHash];
   }
 
   async socNetDbChannel(socNetName, channelData) {
@@ -237,46 +242,49 @@ class GeesomeClient {
     return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=]*$/.test(sessionKey);
   }
 
-  async setSessionKey(socNetName, accountData) {
+  async setSessionKeyToAccountData(socNetName, accountData) {
+    accountData.sessionKey = await this.getSocNetSessionKey(socNetName, accountData);
+  }
+
+  async getSocNetSessionKey(socNetName, accountData) {
     const acc = await this.socNetDbAccount(socNetName, accountData);
-    if (acc.isEncrypted) {
-      accountData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
-      if (!this.isSocNetSessionKeyCorrect(acc)) {
-        accountData.sessionKey = '';
-      }
+    if (!acc.isEncrypted) {
+      return acc.sessionKey;
     }
+    const sessionHash = commonHelper.hash(acc.sessionKey);
+    if (!this.decryptedSocNetCache[sessionHash]) {
+      this.decryptSessionKey(acc.sessionKey);
+    }
+    const sessionKey = this.decryptedSocNetCache[sessionHash];
+    return this.isSessionKeyCorrect(sessionKey) ? sessionKey : '';
   }
 
   async socNetUserInfo(socNetName, accountData, username = 'me') {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setSessionKeyToAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/user-info`, { accountData, username });
   }
 
   async socNetUpdateAccount(socNetName, accountData) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setSessionKeyToAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/update-account`, { accountData });
   }
 
   async socNetGetChannels(socNetName, accountData) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setSessionKeyToAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channels`, { accountData });
   }
 
   async socNetGetChannelInfo(socNetName, accountData, channelId) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setSessionKeyToAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
   async socNetUpdateDbChannel(socNetName, id, updateData) {
-    return this.postRequest(`soc-net/${socNetName}/update-db-channel`, { channelData: {id}, updateData });
-  }
-
-  async socNetUpdateDbAccount(socNetName, id, updateData) {
-    return this.postRequest(`soc-net/${socNetName}/update-db-account`, { accountData: {id}, updateData });
+    return this.postRequest(`soc-net-import/get-channel`, { channelData: {id}, updateData });
   }
 
   async socNetRunChannelImport(socNetName, accountData, channelId, advancedSettings = {}) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setSessionKeyToAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
@@ -288,12 +296,12 @@ class GeesomeClient {
     return this.postRequest(`render/static-site-generator/run`, { entityType, entityId, options });
   }
 
-  async staticSiteBind(entityType, entityId, name) {
-    return this.postRequest(`render/static-site-generator/bind-to-static-id`, { entityType, entityId, name });
+  async staticSiteBind(id) {
+    return this.postRequest(`render/static-site-generator/bind-to-static-id/${id}`);
   }
 
-  async updateStaticSiteInfo(entityType, entityId, data) {
-    return this.postRequest(`render/static-site-generator/update-info`, { entityType, entityId, ...data });
+  async updateStaticSiteInfo(staticSiteId, data) {
+    return this.postRequest(`render/static-site-generator/update-info/${staticSiteId}`, data);
   }
 
   async getStaticSiteInfo(entityType, entityId) {
@@ -304,12 +312,29 @@ class GeesomeClient {
     return this.postRequest(`user/add-serial-auto-actions`, actions);
   }
 
-  async getAutoActions() {
-    return this.getRequest(`user/get-auto-actions`);
+  async getAutoActions(params) {
+    return this.getRequest(`user/get-auto-actions`, {params});
   }
 
   async updateAutoAction(id, updateData) {
     return this.postRequest(`user/update-auto-action/${id}`, updateData);
+  }
+
+  buildAutoActions(actions, runPeriod) {
+    return actions.map((a, i) => {
+      const {funcArgs} = a;
+      return {
+        executePeriod: i ? 0 : runPeriod,
+        executeOn: i || !runPeriod ? null : commonHelper.moveDate(runPeriod, 'second'),
+        isActive: true,
+        isEncrypted: true,
+        position: 1,
+        totalExecuteAttempts: 3,
+        currentExecuteAttempts: 3,
+        ...a,
+        funcArgs: JSON.stringify(funcArgs),
+      }
+    });
   }
 
   updateCurrentUser(userData) {
@@ -399,8 +424,8 @@ class GeesomeClient {
     return this.postRequest('user/cancel-async-operation/' + id);
   }
 
-  findAsyncOperations(name, channelLike) {
-    return this.postRequest('user/find-async-operations', {name, channelLike});
+  findAsyncOperations(name, channelLike, inProcess = true) {
+    return this.postRequest('user/find-async-operations', {name, channelLike, inProcess});
   }
 
   waitForAsyncOperation(asyncOperationId, onProcess) {
@@ -932,8 +957,12 @@ class GeesomeClient {
     return this.getRequest(`user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
 
-  getUserByApiKey(apiKey) {
-    return this.getRequest(`admin/get-user-by-api-key/` + apiKey);
+  getUserByApiToken(token) {
+    return this.postRequest(`get-user-by-api-token`, {token});
+  }
+
+  getCurrentUserApiKey() {
+    return this.getRequest(`user/api-key/current`);
   }
 
   addUserApiKey(data) {
