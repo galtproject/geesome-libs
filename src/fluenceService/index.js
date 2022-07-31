@@ -1,4 +1,4 @@
-import registryApi from './generated/registry-api.js';
+import * as registryApi from './generated/registry-api.js';
 import startsWith from 'lodash/startsWith.js';
 import orderBy from 'lodash/orderBy.js';
 import isArray from 'lodash/isArray.js';
@@ -107,17 +107,17 @@ export default class FluenceService {
         return this.resolveStaticItem(staticStorageId).then(item => item ? item.value : null)
     }
     getUpdatesTopic(cid, type = 'update') {
-        return getFluenceUpdatesTopic(cid, type);
+        return geesomeName.getFluenceUpdatesTopic(cid, type);
     }
     getAccountsGroupUpdatesTopic(accounts, type = 'update') {
-        return getFluenceAccountsGroupUpdatesTopic(accounts, type);
+        return geesomeName.getFluenceAccountsGroupUpdatesTopic(accounts, type);
     }
     async getResourceByPeerId(hostPeerId, topicPeerId) {
-        return registryApi.getResourceId(this.peer, getPeerIdTopic(topicPeerId), peerIdHelper.peerIdToPublicBase58(hostPeerId));
+        return registryApi.retrieveResourceId(this.peer, geesomeName.getPeerIdTopic(topicPeerId), peerIdHelper.peerIdToPublicBase58(hostPeerId));
     }
     async getResourceByTopicAndPeerId(topic, hostPeerId) {
         console.log('getResourceId', 'topic', topic, 'peerId', peerIdHelper.peerIdToPublicBase58(hostPeerId))
-        return registryApi.getResourceId(this.peer, topic, await peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
+        return registryApi.retrieveResourceId(this.peer, topic, await peerIdHelper.peerIdToPublicBase58(hostPeerId)).catch(e => {
             console.error('getResourceId', e);
             return null;
         });
@@ -203,11 +203,6 @@ export default class FluenceService {
         return this.publishEventByPrivateKey(peerId._privKey, topic, data);
     }
 
-    async publishEvent(topic, data) {
-        const selfPeerId = await this.accStorage.getAccountPeerId('self');
-        return this.publishEventByPrivateKey(selfPeerId._privKey, topic, data);
-    }
-
     async subscribeToStaticIdUpdates(ipnsId, callback) {
         return this.subscribeToEvent(this.getUpdatesTopic(ipnsId, 'update'), callback);
     }
@@ -220,10 +215,6 @@ export default class FluenceService {
 
     async publishEvent(topic, data) {
         return this.publishEventByPeerId(await this.accStorage.getAccountPeerId('self'), topic, data);
-    }
-
-    async subscribeToStaticIdUpdates(ipnsId, callback) {
-        return this.subscribeToEvent(geesomeName.getIpnsUpdatesTopic(ipnsId), callback);
     }
 
     async publishEventByData(topic, event) {
@@ -253,6 +244,7 @@ export default class FluenceService {
 
     async createResource(_peer, _topic, tries = 0) {
         try {
+            console.log('_peer', _peer, '_topic', _topic);
             let [resourceId, createError] = await registryApi.createResource(_peer, _topic, {ttl: 20000});
             this.handleError(resourceId, createError, 'createResource_failed');
             return resourceId;
@@ -296,10 +288,7 @@ export default class FluenceService {
         }
         const resource = await this.getResourceByTopicAndPeerId(topic, await this.getPeerId());
         console.log('resource', resource);
-        let subs = await registryApi.resolveProviders(this.peer, resource, 1).catch(e => {
-            console.error(e);
-            return [];
-        });
+        let [subs] = await registryApi.resolveProviders(this.peer, resource, 1);
         return subs;
     }
 }

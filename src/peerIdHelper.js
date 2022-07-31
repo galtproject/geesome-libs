@@ -60,7 +60,9 @@ const peerIdHelper = {
     return (privateKey.bytes ? Buffer.from(privateKey.bytes) : privateKey).toString('base64');
   },
 
-  createPeerId: PeerId.create.bind(PeerId),
+  createPeerId: async (opts) => {
+    return PeerId.create({ keyType: 'Ed25519', ...opts })
+  },
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createFromB58String: PeerId.createFromB58String.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),

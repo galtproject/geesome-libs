@@ -17,13 +17,13 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-import geesomeName from '../src/name.js';
 import waitFor from './utils/wait-for.js';
 import createNodes from './utils/createNodes.js';
 import peerIdHelper from '../src/peerIdHelper.js';
 import commonHelper from'../src/common.js';
 
 describe('ipns', function () {
+  this.timeout(80 * 1000);
   let nodeA;
   let nodeB;
   const pass = 'geesome-is-awesome-software';
@@ -31,30 +31,23 @@ describe('ipns', function () {
   //'ipfs',
   ['fluence'].forEach(service => {
     describe(service, function() {
-      beforeEach(function (done) {
-        this.timeout(40 * 1000);
-
-        (async () => {
-          [nodeA, nodeB] = await createNodes[service]({pass});
-          done();
-        })();
+      beforeEach(async () => {
+        [nodeA, nodeB] = await createNodes[service]({pass});
       });
 
       afterEach((done) => {Promise.all([nodeA.stop && nodeA.stop(), nodeB.stop && nodeB.stop()]).then(() => done())})
 
-      it('should handle signed event and validate signature', function (done) {
-        this.timeout(80 * 1000);
+      it('should handle signed event and validate signature', async (done) => {
+        const testAccountName = commonHelper.random('words');
+        const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
-        (async () => {
-          const testAccountName = commonHelper.random('words');
-          const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
+        const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
+        const testAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey(testAccountIpnsId));
+        await nodeA.createAccountIfNotExists('self');
+        const selfAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey('self'));
 
-          const testAccountIpnsId = await nodeA.createAccountIfNotExists(testAccountName);
-          const testAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey(testAccountIpnsId));
-          await nodeA.createAccountIfNotExists('self');
-          const selfAccountPublicKey = peerIdHelper.publicKeyToBase64(await nodeA.getAccountPublicKey('self'));
-
-          console.log('subscribeToStaticIdUpdates', testAccountIpnsId);
+        console.log('subscribeToStaticIdUpdates', testAccountIpnsId);
+        await new Promise(async (resolve) => {
           await nodeB.subscribeToStaticIdUpdates(testAccountIpnsId, async (message) => {
             assert.equal(message.dataStr, '/ipfs/' + testHash);
             assert.equal(message.from, testAccountPublicKey);
@@ -66,7 +59,7 @@ describe('ipns', function () {
 
             // const ipnsEntry = await nodeA.resolveStaticIdEntry(testAccountIpnsId);
             // assert.deepEqual(Array.from(peerIdHelper.base64ToPublicKey(testAccountPublicKey)), Array.from(ipnsEntry.pubKey));
-            done();
+            resolve();
           });
 
           console.log('getPeers', nodeA.getUpdatesTopic(testAccountIpnsId, 'update'));
@@ -77,33 +70,27 @@ describe('ipns', function () {
           });
 
           await nodeA.bindToStaticId(testAccountIpnsId, testHash, {resolve: false});
-        })();
+        });
       });
 
-      it('bindToStaticId and resolveStaticId', function (done) {
-        this.timeout(80 * 1000);
+      it.only('bindToStaticId and resolveStaticId', async (done) => {
+        const testAccountName = commonHelper.random('words');
+        const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
 
-        (async () => {
-          const testAccountName = commonHelper.random('words');
-          const testHash = 'QmRs9acXTdRqSxEuYcizWZXgHnDAkqiujRBZuXmR565nXr';
+        const staticId = await nodeA.createAccountIfNotExists(testAccountName);
+        console.log('staticId', staticId);
 
-          const staticId = await nodeA.createAccountIfNotExists(testAccountName);
-          console.log('staticId', staticId);
+        let peers = await nodeA.getPeers(staticId);
+        console.log('peers', peers);
+        assert.equal(peers.length, 0);
 
-          let peers = await nodeA.getPeers(staticId);
-          console.log('peers', peers);
-          assert.equal(peers.length, 0);
+        await nodeA.bindToStaticId(testAccountName, testHash);
 
-          await nodeA.bindToStaticId(testAccountName, testHash);
+        peers = await nodeA.getPeers(staticId);
+        assert.equal(peers.length, 1);
 
-          peers = await nodeA.getPeers(staticId);
-          assert.equal(peers.length, 1);
-
-          const resultHash = await nodeB.resolveStaticId(testAccountName);
-          assert.equal(resultHash, testHash);
-
-          done();
-        })();
+        const resultHash = await nodeB.resolveStaticId(testAccountName);
+        assert.equal(resultHash, testHash);
       });
     });
   });

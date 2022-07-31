@@ -2,9 +2,14 @@ module RegistryApi
 
 import registerNodeProvider, createResource, getResourceId, registerProvider, resolveProviders, executeOnProviders from "@fluencelabs/registry/resources-api.aqua"
 
-export registerNodeProvider, createResource, getResourceId, registerProvider, resolveProviders
+export registerNodeProvider, createResource, getResourceId, registerProvider, resolveProviders, retrieveResourceId
 
 import Record from "@fluencelabs/registry/registry-service.aqua"
+
+func retrieveResourceId(label: string, peer_id: string) -> string:
+  on HOST_PEER_ID:
+    id <- getResourceId(label, peer_id)
+  <- id
 
 data Event:
     data: string

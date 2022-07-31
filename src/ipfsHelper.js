@@ -17,20 +17,17 @@ import isString from 'lodash/isString.js';
 import pick from 'lodash/pick.js';
 import isUndefined from 'lodash/isUndefined.js';
 import isDate from 'lodash/isDate.js';
-
-import libp2pCrypto from 'libp2p-crypto';
-import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
-import RPC from 'libp2p-interfaces/src/pubsub/message/rpc.js';
-
-import {encode as dagCborEncode, code as dagCborCode} from '@ipld/dag-cbor';
-import crypto from 'crypto';
-
-import {jwk2pem as jwkToPem} from 'pem-jwk';
 import uint8ArrayConcat from 'uint8arrays/concat.js';
 import uint8ArrayFromString from 'uint8arrays/from-string.js';
 
-import peerIdHelper from './peerIdHelper.js';
+import crypto from 'crypto';
+import libp2pCrypto from 'libp2p-crypto';
+import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
+import RPC from 'libp2p-interfaces/src/pubsub/message/rpc.js';
 import * as codec from "@ipld/dag-cbor";
+import {jwk2pem as jwkToPem} from 'pem-jwk';
+
+import peerIdHelper from './peerIdHelper.js';
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 
 const ipfsHelper = {
