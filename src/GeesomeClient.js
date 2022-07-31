@@ -217,8 +217,8 @@ class GeesomeClient {
     return this.postRequest(`soc-net-account/list`);
   }
 
-  async socNetDbAccount(socNetName, accountData) {
-    const acc = await this.postRequest(`soc-net-account/get`, { accountData });
+  async socNetDbAccount(socNet, accountData) {
+    const acc = await this.postRequest(`soc-net-account/get`, { socNet, accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
       this.decryptSessionKey(acc.sessionKey);
     }
