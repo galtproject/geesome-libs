@@ -212,11 +212,11 @@ class GeesomeClient {
   }
 
   async socNetDbAccountList(socNetName) {
-    return this.postRequest(`soc-net/${socNetName}/db-account-list`);
+    return this.postRequest(`soc-net-account/list`);
   }
 
   async socNetDbAccount(socNetName, accountData) {
-    const acc = await this.postRequest(`soc-net/${socNetName}/db-account`, { accountData });
+    const acc = await this.postRequest(`soc-net-account/get`, { accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
       this.decryptSessionKey(acc.sessionKey);
     }
@@ -230,7 +230,7 @@ class GeesomeClient {
   }
 
   async socNetDbChannel(socNetName, channelData) {
-    return this.postRequest(`soc-net/${socNetName}/db-channel`, {channelData});
+    return this.postRequest(`soc-net-import/get-channel`, {channelData});
   }
 
   isSocNetSessionKeyCorrect(acc) {
