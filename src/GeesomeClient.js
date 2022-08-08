@@ -198,16 +198,16 @@ class GeesomeClient {
     }
     const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
-      const encryptedSessionKey = loginData.encryptedSessionKey;
-      const accId = response.account.id;
+      const {sessionKey, account} = response;
+      const encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), sessionKey);
       if (encryptedSessionKey) {
         // write cache session key from response by hashed encrypted session key
-        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = response.sessionKey;
+        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = sessionKey;
         // remove temp session key by account id
-        delete this.decryptedSocNetCache[accId];
+        delete this.decryptedSocNetCache[account.id];
       } else {
         // write temp session key value by account id(only need for second stage of login)
-        this.decryptedSocNetCache[accId] = response.sessionKey;
+        this.decryptedSocNetCache[account.id] = sessionKey;
       }
     }
     return response;
