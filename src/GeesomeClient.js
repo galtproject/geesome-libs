@@ -198,7 +198,7 @@ class GeesomeClient {
     }
     const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
-      const encryptedSessionKey = response.account.sessionKey;
+      const encryptedSessionKey = loginData.encryptedSessionKey;
       const accId = response.account.id;
       if (encryptedSessionKey) {
         // write cache session key from response by hashed encrypted session key
