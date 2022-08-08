@@ -208,6 +208,9 @@ class GeesomeClient {
         const encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), sessionKey);
         this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = sessionKey;
         delete this.decryptedSocNetCache[account.id];
+        if (account.sessionKey !== encryptedSessionKey) {
+          await this.socNetUpdateDbAccount(account.id, {sessionKey: encryptedSessionKey});
+        }
       }
     }
     return response;
@@ -223,6 +226,10 @@ class GeesomeClient {
       this.decryptSessionKey(acc.sessionKey);
     }
     return acc;
+  }
+
+  async socNetUpdateDbAccount(id, accData) {
+    return this.postRequest(`soc-net-account/update`, {...accData, id});
   }
 
   decryptSessionKey(encryptedSessionKey) {
