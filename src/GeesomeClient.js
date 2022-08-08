@@ -229,7 +229,7 @@ class GeesomeClient {
   }
 
   async socNetUpdateDbAccount(id, accData) {
-    return this.postRequest(`soc-net-account/update`, {...accData, id});
+    return this.postRequest(`soc-net-account/update`, {accountData: {...accData, id}});
   }
 
   decryptSessionKey(encryptedSessionKey) {
