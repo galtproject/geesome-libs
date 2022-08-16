@@ -15,7 +15,16 @@ import * as registryApi from '../src/fluenceService/generated/registry-api.js';
     const res = await registryApi.createResource(pidPeer, label, { ttl: 10000 });
     console.log("resource created", res);
 
-    let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(pidPeer, label, res[0], 'test', 'geesome-registry');
+    const resourceId = res[0];
+    const value = 'test';
+    const serviceId = 'geesome-registry';
+
+    let [success, reg_error] = await registryApi.registerProvider(pidPeer, resourceId, value, serviceId);
+    console.log("registerProvider", success);
+    // assert(success, reg_error.toString());
+    // console.log("peer %s registered as provider successfully", Fluence.getStatus().peerId);
+
+    let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(pidPeer, pid.toB58String(), resourceId, value, serviceId);
     console.log("registerNodeProvider", nodeSuccess);
 
     // const info = await getInfo(pidPeer, testNet[0].peerId, { ttl: 10000 });

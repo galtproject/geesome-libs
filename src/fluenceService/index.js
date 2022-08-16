@@ -90,13 +90,19 @@ export default class FluenceService {
                     reject('timeout');
                 }
             }, 3000);
+            console.log('bindToStaticId:getAccountPeerId');
             const peerId = await this.getAccountPeerId(accountKey);
+            console.log('bindToStaticId:buildPeerAndConnect');
             const peer = await this.buildPeerAndConnect(peerId);
             const topic = geesomeName.getPeerIdTopic(peerId);
             console.log('bindToStaticId:createResource');
             const resourceId = await this.createResource(peer, topic, options.tries || 0);
             console.log('bindToStaticId:registerResourceProvider');
-            await this.registerResourceProvider(peer, resourceId, storageId);
+            try {
+                await this.registerResourceProvider(peer, resourceId, storageId);
+            } catch (e) {
+                console.error(e);
+            }
             console.log('bindToStaticId:publishEventByPeerId');
             await this.publishEventByPeerId(peerId, topic, storageId);
             resolved = true;
@@ -217,7 +223,7 @@ export default class FluenceService {
         return this.publishEventByPeerId(await this.accStorage.getAccountPeerId('self'), topic, data);
     }
 
-    async publishEventByData(topic, event) {
+    async  publishEventByData(topic, event) {
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
             registryApi.fanout_event(this.peer, this.geesomeCryptoResourceId, 1, topic, event, (res) => {
@@ -261,7 +267,8 @@ export default class FluenceService {
     }
 
     async registerResourceProvider(_peer, _resourceId, _value) {
-        let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, await this.getPeerIdString(), _resourceId, _value, this.registryService);
+        const peerId = this.peer.peerId;
+        let [nodeSuccess, regNodeError] = await registryApi.registerNodeProvider(_peer, peerId, _resourceId, _value, this.registryService);
         this.handleError(nodeSuccess, regNodeError, 'registerNodeProvider_failed');
     }
 
@@ -288,7 +295,12 @@ export default class FluenceService {
         }
         const resource = await this.getResourceByTopicAndPeerId(topic, await this.getPeerId());
         console.log('resource', resource);
-        let [subs] = await registryApi.resolveProviders(this.peer, resource, 1);
-        return subs;
+        try {
+            let [subs] = await registryApi.resolveProviders(this.peer, resource, 1);
+            return subs;
+        } catch (e) {
+            console.error('getPeers', e);
+            return [];
+        }
     }
 }
