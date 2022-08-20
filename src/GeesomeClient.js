@@ -22,6 +22,7 @@ const find = require('lodash/find');
 const filter = require('lodash/filter');
 const startsWith = require('lodash/startsWith');
 const pick = require('lodash/pick');
+const isEmpty = require('lodash/isEmpty');
 
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
@@ -198,21 +199,28 @@ class GeesomeClient {
     }
     const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
-      const {sessionKey, account} = response;
-      if (!sessionKey) {
-        return;
-      }
+      const {account} = response;
       if (loginData.stage === 1) {
         // write temp session key value by account id(only need for second stage of login)
         this.decryptedSocNetCache[account.id] = sessionKey;
       } else {
         // write cache session key from response by hashed encrypted session key
         // remove temp session key by account id
-        const encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), sessionKey);
-        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = sessionKey;
         delete this.decryptedSocNetCache[account.id];
-        if (account.sessionKey !== encryptedSessionKey) {
-          await this.socNetUpdateDbAccount(account.id, {sessionKey: encryptedSessionKey});
+        const updateData = {};
+        ['sessionKey', 'apiKey'].forEach(name => {
+          const key = response[name];
+          if (!key) {
+            return;
+          }
+          const encryptedKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), key);
+          this.decryptedSocNetCache[commonHelper.hash(encryptedKey)] = key;
+          if (account[name] !== encryptedKey) {
+            updateData[name] = encryptedKey;
+          }
+        });
+        if (!isEmpty(updateData)) {
+          await this.socNetUpdateDbAccount(account.id, updateData);
         }
       }
     }
