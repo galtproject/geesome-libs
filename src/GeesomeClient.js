@@ -248,7 +248,7 @@ class GeesomeClient {
   }
 
   isSessionKeyCorrect(sessionKey) {
-    return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=]*$/.test(sessionKey);
+    return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=/%]*$/.test(sessionKey);
   }
 
   async setSessionKeyToAccountData(socNetName, accountData) {
