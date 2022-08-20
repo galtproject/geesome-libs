@@ -199,6 +199,9 @@ class GeesomeClient {
     const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
       const {sessionKey, account} = response;
+      if (!sessionKey) {
+        return;
+      }
       if (loginData.stage === 1) {
         // write temp session key value by account id(only need for second stage of login)
         this.decryptedSocNetCache[account.id] = sessionKey;
