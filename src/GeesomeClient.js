@@ -251,40 +251,56 @@ class GeesomeClient {
     return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=/%]*$/.test(sessionKey);
   }
 
-  async setSessionKeyToAccountData(socNetName, accountData) {
-    accountData.sessionKey = await this.getSocNetSessionKey(socNetName, accountData);
+  async setKeysToSocNetAccountData(socNetName, accountData) {
+    const acc = await this.socNetDbAccount(socNetName, accountData);
+    const keysFields = ['sessionKey', 'apiKey'];
+    if (!acc.isEncrypted) {
+      keysFields.forEach(name => {
+        accountData[name] = acc[name];
+      });
+      return;
+    }
+    keysFields.forEach(name => {
+      if (!acc[name]) {
+        return;
+      }
+      const keyHash = commonHelper.hash(acc[name]);
+      if (!this.decryptedSocNetCache[keyHash]) {
+        this.decryptSessionKey(acc[name]);
+      }
+      const key = this.decryptedSocNetCache[keyHash];
+      accountData[name] = this.isSessionKeyCorrect(key) ? key : '';
+    });
+    return accountData;
   }
 
   async getSocNetSessionKey(socNetName, accountData) {
-    const acc = await this.socNetDbAccount(socNetName, accountData);
-    if (!acc.isEncrypted) {
-      return acc.sessionKey;
-    }
-    const sessionHash = commonHelper.hash(acc.sessionKey);
-    if (!this.decryptedSocNetCache[sessionHash]) {
-      this.decryptSessionKey(acc.sessionKey);
-    }
-    const sessionKey = this.decryptedSocNetCache[sessionHash];
-    return this.isSessionKeyCorrect(sessionKey) ? sessionKey : '';
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
+    return accountData.sessionKey;
+  }
+
+  async getSocNetApiKey(socNetName, accountData) {
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
+    return accountData.sessionKey;
   }
 
   async socNetUserInfo(socNetName, accountData, username = 'me') {
-    await this.setSessionKeyToAccountData(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/user-info`, { accountData, username });
   }
 
   async socNetUpdateAccount(socNetName, accountData) {
-    await this.setSessionKeyToAccountData(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/update-account`, { accountData });
   }
 
   async socNetGetChannels(socNetName, accountData) {
-    await this.setSessionKeyToAccountData(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channels`, { accountData });
   }
 
   async socNetGetChannelInfo(socNetName, accountData, channelId) {
-    await this.setSessionKeyToAccountData(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
@@ -293,7 +309,7 @@ class GeesomeClient {
   }
 
   async socNetRunChannelImport(socNetName, accountData, channelId, advancedSettings = {}) {
-    await this.setSessionKeyToAccountData(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
