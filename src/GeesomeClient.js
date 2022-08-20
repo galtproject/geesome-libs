@@ -183,7 +183,7 @@ class GeesomeClient {
 
   async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
     if (loginData.isEncrypted) {
-      const acc = await this.socNetDbAccount(socNetName, pick(loginData, ['phoneNumber']));
+      const acc = await this.socNetDbAccount(socNetName, pick(loginData, [loginData['id'] ? 'phoneNumber' : 'id']));
       if (acc && !acc.sessionKey) { // second stage: submitting phone code
         loginData.sessionKey = this.decryptedSocNetCache[acc.id];
         loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), loginData.sessionKey);
