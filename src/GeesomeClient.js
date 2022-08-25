@@ -202,7 +202,7 @@ class GeesomeClient {
       const {account} = response;
       if (loginData.stage === 1) {
         // write temp session key value by account id(only need for second stage of login)
-        this.decryptedSocNetCache[account.id] = sessionKey;
+        this.decryptedSocNetCache[account.id] = response['sessionKey'];
       } else {
         // write cache session key from response by hashed encrypted session key
         // remove temp session key by account id
