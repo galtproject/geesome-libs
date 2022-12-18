@@ -1063,6 +1063,10 @@ class GeesomeClient {
     return this.postRequest(`admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
+  adminSetCorePermission(userId, permissionNameList) {
+    return this.postRequest(`admin/permissions/core/set_permissions`, {userId, permissionNameList});
+  }
+
   adminGetCorePermissionList(userId) {
     return this.postRequest(`admin/permissions/core/get_list`, {userId});
   }
