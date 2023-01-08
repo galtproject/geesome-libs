@@ -104,11 +104,11 @@ module.exports.makeCode = (length) => {
 };
 
 module.exports.getFilenameFromPath = (path) => {
-  return trim(path, '/').split('/').slice(-1)[0];
+  return (trim(path, '/').split('/').slice(-1)[0] || '').split('?')[0];
 }
 
 module.exports.getExtensionFromName = (fileName) => {
-  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase() : null
+  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase().split('?')[0] : null
 }
 
 module.exports.isVideoType = (fullType) => {
