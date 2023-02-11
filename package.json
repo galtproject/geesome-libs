@@ -25,7 +25,7 @@
     "eth-crypto": "^1.8.0",
     "geesome-wallet-client": "https://github.com/galtproject/geesome-wallet-client#c95cf1c",
     "hat": "^0.0.3",
-    "ipfs": "0.58.4",
+    "ipfs": "0.66.0",
     "ipfs-http-client": "52.0.3",
     "ipfs-utils": "8.1.6",
     "ipfsd-ctl": "10.0.3",
