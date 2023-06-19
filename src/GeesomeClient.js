@@ -40,6 +40,9 @@ class GeesomeClient {
 
   constructor(config = {}) {
     this.server = config.server;
+    if (commonHelper.isUndefined(this.server)) {
+      this.setServerByDocumentLocation();
+    }
     this.apiKey = config.apiKey;
     this.ipfsNode = config.ipfsNode;
 
@@ -1129,11 +1132,11 @@ class GeesomeClient {
   }
 
   setServerByDocumentLocation() {
-    let port = 2053;
+    let postfix = '/api';
     if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
-      port = 2052;
+      postfix = ':2052';
     }
-    this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
+    this.server = document.location.protocol + "//" + document.location.hostname + postfix;
   }
 
   isLocalServer() {
