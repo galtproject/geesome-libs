@@ -230,8 +230,16 @@ class GeesomeClient {
     return response;
   }
 
-  async socNetDbAccountList(socNetName) {
-    return this.postRequest(`soc-net-account/list`);
+  async socNetDbAccountList(params) {
+    return this.postRequest(`soc-net-account/list`, params);
+  }
+
+  contentBotList(params) {
+    return this.postRequest(`content-bot/list`, params);
+  }
+
+  contentBotAdd(botData) {
+    return this.postRequest(`content-bot/add`, botData);
   }
 
   async socNetDbAccount(socNet, accountData) {
