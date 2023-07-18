@@ -234,6 +234,10 @@ class GeesomeClient {
     return this.postRequest(`soc-net-account/list`, params);
   }
 
+  addUserTg(params) {
+    return this.postRequest(`content-bot/addUser`, params);
+  }
+
   contentBotList(params) {
     return this.postRequest(`content-bot/list`, params);
   }
