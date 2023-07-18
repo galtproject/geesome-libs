@@ -233,6 +233,10 @@ class GeesomeClient {
   async socNetDbAccountList(params) {
     return this.postRequest(`soc-net-account/list`, params);
   }
+  
+  addUserTg(params) {
+    return this.postRequest(`content-bot/addUser`, params)
+  }
 
   addUserTg(params) {
     return this.postRequest(`content-bot/addUser`, params);
