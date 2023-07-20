@@ -242,6 +242,10 @@ class GeesomeClient {
     return this.postRequest(`content-bot/add`, botData);
   }
 
+  addUserTg(params) {
+    return this.postRequest(`content-bot/addUser`, params);
+  }
+
   async socNetDbAccount(socNet, accountData) {
     const acc = await this.postRequest(`soc-net-account/get`, { socNet, accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
