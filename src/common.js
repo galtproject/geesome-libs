@@ -10,6 +10,7 @@
 const isNaN = require('lodash/isNaN');
 const isString = require('lodash/isString');
 const isObject = require('lodash/isObject');
+const isUndefined = require('lodash/isUndefined');
 const isArray = require('lodash/isArray');
 const includes = require('lodash/includes');
 const startsWith = require('lodash/startsWith');
@@ -104,11 +105,15 @@ module.exports.makeCode = (length) => {
 };
 
 module.exports.getFilenameFromPath = (path) => {
-  return trim(path, '/').split('/').slice(-1)[0];
+  return (trim(path, '/').split('/').slice(-1)[0] || '').split('?')[0];
 }
 
 module.exports.getExtensionFromName = (fileName) => {
-  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase() : null
+  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase().split('?')[0] : null
+}
+
+module.exports.isUndefined = (v) => {
+  return !v || v === 'null' || v === 'undefined' || isUndefined(v);
 }
 
 module.exports.isVideoType = (fullType) => {

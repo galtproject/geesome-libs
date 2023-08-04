@@ -22,6 +22,7 @@ const find = require('lodash/find');
 const filter = require('lodash/filter');
 const startsWith = require('lodash/startsWith');
 const pick = require('lodash/pick');
+const isEmpty = require('lodash/isEmpty');
 
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
@@ -39,6 +40,9 @@ class GeesomeClient {
 
   constructor(config = {}) {
     this.server = config.server;
+    if (commonHelper.isUndefined(this.server)) {
+      this.setServerByDocumentLocation();
+    }
     this.apiKey = config.apiKey;
     this.ipfsNode = config.ipfsNode;
 
@@ -183,12 +187,12 @@ class GeesomeClient {
 
   async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
     if (loginData.isEncrypted) {
-      const acc = await this.socNetDbAccount(socNetName, pick(loginData, ['phoneNumber']));
-      if (acc && !acc.sessionKey) { // second stage: submitting phone code
+      const acc = await this.socNetDbAccount(socNetName, pick(loginData, [loginData['id'] ? 'id' : 'phoneNumber']));
+      if (acc && !acc.sessionKey && loginData.stage === 2) { // second stage: submitting phone code
         loginData.sessionKey = this.decryptedSocNetCache[acc.id];
         loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), loginData.sessionKey);
       }
-      if (acc && acc.sessionKey) { // third stage: input password
+      if (acc && acc.sessionKey && loginData.stage === 3) { // third stage: input password
         loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
       }
       if (!this.isSessionKeyCorrect(loginData.sessionKey)) {
@@ -198,36 +202,70 @@ class GeesomeClient {
     }
     const response = await this.postRequest(`soc-net/${socNetName}/login`, loginData);
     if (loginData.isEncrypted) {
-      const encryptedSessionKey = response.account.sessionKey;
-      const accId = response.account.id;
-      if (encryptedSessionKey) {
-        // write cache session key from response by hashed encrypted session key
-        this.decryptedSocNetCache[commonHelper.hash(encryptedSessionKey)] = response.sessionKey;
-        // remove temp session key by account id
-        delete this.decryptedSocNetCache[accId];
-      } else {
+      const {account} = response;
+      if (loginData.stage === 1) {
         // write temp session key value by account id(only need for second stage of login)
-        this.decryptedSocNetCache[accId] = response.sessionKey;
+        this.decryptedSocNetCache[account.id] = response['sessionKey'];
+      } else {
+        // write cache session key from response by hashed encrypted session key
+        // remove temp session key by account id
+        delete this.decryptedSocNetCache[account.id];
+        const updateData = {};
+        ['sessionKey', 'apiKey'].forEach(name => {
+          const key = response[name];
+          if (!key) {
+            return;
+          }
+          const encryptedKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), key);
+          this.decryptedSocNetCache[commonHelper.hash(encryptedKey)] = key;
+          if (account[name] !== encryptedKey) {
+            updateData[name] = encryptedKey;
+          }
+        });
+        if (!isEmpty(updateData)) {
+          await this.socNetUpdateDbAccount(account.id, updateData);
+        }
       }
     }
     return response;
   }
 
-  async socNetDbAccountList(socNetName) {
-    return this.postRequest(`soc-net/${socNetName}/db-account-list`);
+  async socNetDbAccountList(params) {
+    return this.postRequest(`soc-net-account/list`, params);
   }
 
-  async socNetDbAccount(socNetName, accountData) {
-    const acc = await this.postRequest(`soc-net/${socNetName}/db-account`, { accountData });
+  contentBotList(params) {
+    return this.postRequest(`content-bot/list`, params);
+  }
+
+  contentBotAdd(botData) {
+    return this.postRequest(`content-bot/add`, botData);
+  }
+
+  addUserTg(params) {
+    return this.postRequest(`content-bot/addUser`, params);
+  }
+
+  async socNetDbAccount(socNet, accountData) {
+    const acc = await this.postRequest(`soc-net-account/get`, { socNet, accountData });
     if (acc && acc.sessionKey && acc.isEncrypted) {
-      const sessionHash = commonHelper.hash(acc.sessionKey);
-      this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), acc.sessionKey);
+      this.decryptSessionKey(acc.sessionKey);
     }
     return acc;
   }
 
+  async socNetUpdateDbAccount(id, accData) {
+    return this.postRequest(`soc-net-account/update`, {accountData: {...accData, id}});
+  }
+
+  decryptSessionKey(encryptedSessionKey) {
+    const sessionHash = commonHelper.hash(encryptedSessionKey);
+    this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), encryptedSessionKey);
+    return this.decryptedSocNetCache[sessionHash];
+  }
+
   async socNetDbChannel(socNetName, channelData) {
-    return this.postRequest(`soc-net/${socNetName}/db-channel`, {channelData});
+    return this.postRequest(`soc-net-import/get-channel`, {channelData});
   }
 
   isSocNetSessionKeyCorrect(acc) {
@@ -236,49 +274,68 @@ class GeesomeClient {
   }
 
   isSessionKeyCorrect(sessionKey) {
-    return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=]*$/.test(sessionKey);
+    return sessionKey !== 'undefined' && /^[A-Za-z0-9+/=/%]*$/.test(sessionKey);
   }
 
-  async setSessionKey(socNetName, accountData) {
+  async setKeysToSocNetAccountData(socNetName, accountData) {
     const acc = await this.socNetDbAccount(socNetName, accountData);
-    if (acc.isEncrypted) {
-      accountData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
-      if (!this.isSocNetSessionKeyCorrect(acc)) {
-        accountData.sessionKey = '';
-      }
+    const keysFields = ['sessionKey', 'apiKey'];
+    if (!acc.isEncrypted) {
+      keysFields.forEach(name => {
+        accountData[name] = acc[name];
+      });
+      return;
     }
+    keysFields.forEach(name => {
+      if (!acc[name]) {
+        return;
+      }
+      const keyHash = commonHelper.hash(acc[name]);
+      if (!this.decryptedSocNetCache[keyHash]) {
+        this.decryptSessionKey(acc[name]);
+      }
+      const key = this.decryptedSocNetCache[keyHash];
+      accountData[name] = this.isSessionKeyCorrect(key) ? key : '';
+    });
+    return accountData;
+  }
+
+  async getSocNetSessionKey(socNetName, accountData) {
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
+    return accountData.sessionKey;
+  }
+
+  async getSocNetApiKey(socNetName, accountData) {
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
+    return accountData.sessionKey;
   }
 
   async socNetUserInfo(socNetName, accountData, username = 'me') {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/user-info`, { accountData, username });
   }
 
   async socNetUpdateAccount(socNetName, accountData) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/update-account`, { accountData });
   }
 
   async socNetGetChannels(socNetName, accountData) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channels`, { accountData });
   }
 
   async socNetGetChannelInfo(socNetName, accountData, channelId) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/channel-info`, { accountData, channelId });
   }
 
   async socNetUpdateDbChannel(socNetName, id, updateData) {
-    return this.postRequest(`soc-net/${socNetName}/update-db-channel`, { channelData: {id}, updateData });
-  }
-
-  async socNetUpdateDbAccount(socNetName, id, updateData) {
-    return this.postRequest(`soc-net/${socNetName}/update-db-account`, { accountData: {id}, updateData });
+    return this.postRequest(`soc-net-import/get-channel`, { channelData: {id}, updateData });
   }
 
   async socNetRunChannelImport(socNetName, accountData, channelId, advancedSettings = {}) {
-    await this.setSessionKey(socNetName, accountData);
+    await this.setKeysToSocNetAccountData(socNetName, accountData);
     return this.postRequest(`soc-net/${socNetName}/run-channel-import`, { accountData, channelId, advancedSettings });
   }
 
@@ -290,12 +347,12 @@ class GeesomeClient {
     return this.postRequest(`render/static-site-generator/run`, { entityType, entityId, options });
   }
 
-  async staticSiteBind(entityType, entityId, name) {
-    return this.postRequest(`render/static-site-generator/bind-to-static-id`, { entityType, entityId, name });
+  async staticSiteBind(id) {
+    return this.postRequest(`render/static-site-generator/bind-to-static-id/${id}`);
   }
 
-  async updateStaticSiteInfo(entityType, entityId, data) {
-    return this.postRequest(`render/static-site-generator/update-info`, { entityType, entityId, ...data });
+  async updateStaticSiteInfo(staticSiteId, data) {
+    return this.postRequest(`render/static-site-generator/update-info/${staticSiteId}`, data);
   }
 
   async getStaticSiteInfo(entityType, entityId) {
@@ -306,12 +363,29 @@ class GeesomeClient {
     return this.postRequest(`user/add-serial-auto-actions`, actions);
   }
 
-  async getAutoActions() {
-    return this.getRequest(`user/get-auto-actions`);
+  async getAutoActions(params) {
+    return this.getRequest(`user/get-auto-actions`, {params});
   }
 
   async updateAutoAction(id, updateData) {
     return this.postRequest(`user/update-auto-action/${id}`, updateData);
+  }
+
+  buildAutoActions(actions, runPeriod) {
+    return actions.map((a, i) => {
+      const {funcArgs} = a;
+      return {
+        executePeriod: i ? 0 : runPeriod,
+        executeOn: i || !runPeriod ? null : commonHelper.moveDate(runPeriod, 'second'),
+        isActive: true,
+        isEncrypted: true,
+        position: 1,
+        totalExecuteAttempts: 3,
+        currentExecuteAttempts: 3,
+        ...a,
+        funcArgs: JSON.stringify(funcArgs),
+      }
+    });
   }
 
   updateCurrentUser(userData) {
@@ -401,8 +475,8 @@ class GeesomeClient {
     return this.postRequest('user/cancel-async-operation/' + id);
   }
 
-  findAsyncOperations(name, channelLike) {
-    return this.postRequest('user/find-async-operations', {name, channelLike});
+  findAsyncOperations(name, channelLike, inProcess = true) {
+    return this.postRequest('user/find-async-operations', {name, channelLike, inProcess});
   }
 
   waitForAsyncOperation(asyncOperationId, onProcess) {
@@ -934,8 +1008,12 @@ class GeesomeClient {
     return this.getRequest(`user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
 
-  getUserByApiKey(apiKey) {
-    return this.getRequest(`admin/get-user-by-api-key/` + apiKey);
+  getUserByApiToken(token) {
+    return this.postRequest(`get-user-by-api-token`, {token});
+  }
+
+  getCurrentUserApiKey() {
+    return this.getRequest(`user/api-key/current`);
   }
 
   addUserApiKey(data) {
@@ -1000,6 +1078,10 @@ class GeesomeClient {
     return this.postRequest(`admin/permissions/core/remove_permission`, {userId, permissionName});
   }
 
+  adminSetCorePermission(userId, permissionNameList) {
+    return this.postRequest(`admin/permissions/core/set_permissions`, {userId, permissionNameList});
+  }
+
   adminGetCorePermissionList(userId) {
     return this.postRequest(`admin/permissions/core/get_list`, {userId});
   }
@@ -1062,11 +1144,11 @@ class GeesomeClient {
   }
 
   setServerByDocumentLocation() {
-    let port = 2053;
+    let postfix = '/api';
     if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
-      port = 2052;
+      postfix = ':2052';
     }
-    this.server = document.location.protocol + "//" + document.location.hostname + ":" + port;
+    this.server = document.location.protocol + "//" + document.location.hostname + postfix;
   }
 
   isLocalServer() {
