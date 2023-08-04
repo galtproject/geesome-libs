@@ -164,9 +164,10 @@ module.exports = class JsIpfsService {
   }
 
   async getFileStream(filePath, options = {}) {
-    if(ipfsHelper.isIpfsHash(trim(filePath, '/'))) {
+    const firstPart = trim(filePath, '/').split('/')[0];
+    if (ipfsHelper.isIpfsHash(firstPart) && filePath.slice(-1) === '/') {
       filePath = trim(filePath, '/');
-      const stat = await this.getFileStat(filePath);
+      const stat = await this.getFileStat(firstPart);
       if(stat.type === 'directory') {
         filePath += '/index.html';
       }
