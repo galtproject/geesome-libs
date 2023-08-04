@@ -1300,7 +1300,7 @@
   resolved "https://registry.yarnpkg.com/@fluencelabs/fluence-network-environment/-/fluence-network-environment-1.0.13.tgz#696a59a877faf90f678a1544f498159c41c8a339"
   integrity sha512-2pci3T0sUHE08jwEs1r/vHKVT4XUh/A3j/QJ0eIhddsxyIjEksjdn05X7DF6STD14CF8GgBVOJEPgav8qaUMpA==
 
-"@fluencelabs/fluence-network-environment@1.1.0":
+"@fluencelabs/fluence-network-environment@1.0.14":
   version "1.0.14"
   resolved "https://registry.yarnpkg.com/@fluencelabs/fluence-network-environment/-/fluence-network-environment-1.0.14.tgz#361ec650afc7c83c5086f31aa61e752ab44f645c"
   integrity sha512-lMiH+7obmJW2Q+PMUR/vNAuX6TcVqlKmsWAHvnBogH7s8IeMT+UGN8qrweILWmE57G7MfauB302dIFQowR9tug==
@@ -9775,7 +9775,7 @@ multicodec@^3.0.1:
     uint8arrays "^2.1.3"
     varint "^5.0.2"
 
-multiformats@^9.0.0, multiformats@^9.0.2, multiformats@^9.0.4, multiformats@^9.1.0, multiformats@^9.1.2, multiformats@^9.4.1, multiformats@^9.4.2, multiformats@^9.4.5, multiformats@^9.4.7:
+multiformats@9.4.7, multiformats@^9.0.0, multiformats@^9.0.2, multiformats@^9.0.4, multiformats@^9.1.0, multiformats@^9.1.2, multiformats@^9.4.1, multiformats@^9.4.2, multiformats@^9.4.5:
   version "9.4.7"
   resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-9.4.7.tgz#df2caa6ccd975218bbbacd69e45bb76cc2a53654"
   integrity sha512-fZbcdf7LnvokPAZYkv4TLXe7PAg9sQ5qLXcwrAmZOloEb2+5FtFiAY+l3/9wsu4oTJXTV3JSggFQQ2dJLS01vA==
