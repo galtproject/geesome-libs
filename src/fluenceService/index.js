@@ -20,7 +20,7 @@ module.exports = class FluenceService {
         }
     }
 
-    async initClient(relay, keyPair) {
+    async initClient(keyPair, relay = null) {
         await Fluence.connect(relay || randomKras(), {
             keyPair,
         });
