@@ -1,4 +1,18 @@
-import initTopicAndSubscribe, initTopicAndSubscribeBlocking, findSubscribers from "@fluencelabs/aqua-dht/pubsub.aqua"
+import resolveResource, registerService, getResourceId, createResource from "@fluencelabs/registry/resources-api.aqua"
+import "@fluencelabs/aqua-lib/builtin.aqua"
 
-export initTopicAndSubscribe, initTopicAndSubscribeBlocking, findSubscribers
+alias ResourceId: string
+alias Error: string
 
+func createResourceToRegisterService(label: string, value: string, peer_id: PeerId, service_id: ?string) -> ?ResourceId, ?Error:
+  success: *bool
+
+  res_id, err <- createResource(label)
+  resource_id = res_id!
+  if res_id == nil:
+    success <<- false
+  else:
+    success, err <- registerService(resource_id, value, peer_id, service_id)
+
+  error = err!
+  <- resource_id, error

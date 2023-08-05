@@ -1,0 +1,8 @@
+import resolveResource, registerService, getResourceId, createResource from "@fluencelabs/registry/resources-api.aqua"
+
+export getBool, resolveResource, registerService, getResourceId, createResource
+
+func getBool() -> *bool:
+  suc: *bool
+  suc <<- true
+  <- suc
