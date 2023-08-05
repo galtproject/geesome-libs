@@ -6,8 +6,12 @@ const ipfsHelper = require('../ipfsHelper');
 const log = require('loglevel');
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
 
+import '@fluencelabs/js-client.node';
+import { Fluence } from "@fluencelabs/js-client.api";
+import { randomKras } from '@fluencelabs/fluence-network-environment';
+
 module.exports = class FluenceService {
-    constructor(accStorage, peer = null, options = {}) {
+    constructor(accStorage = null, options = {}) {
         this.accStorage = accStorage;
         this.peer = peer;
         this.subscribesByTopics = {};
@@ -20,6 +24,15 @@ module.exports = class FluenceService {
             log.setLevel(options.logLevel);
         }
     }
+
+    async initClient(relay, keyPair) {
+        await Fluence.connect(relay || randomKras(), {
+            keyPair,
+        });
+
+        this.client = await Fluence.getClient();
+    }
+
     async isReady() {
         return !!this.peer;
     }
