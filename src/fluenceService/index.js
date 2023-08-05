@@ -1,28 +1,29 @@
-const dhtApi = require('./generated/resources');
 // const geesomeCrypto = require('./generated/geesome-crypto');
 const pIteration = require('p-iteration');
 const pubSubHelper = require('../pubSubHelper');
 const ipfsHelper = require('../ipfsHelper');
-const log = require('loglevel');
+// const log = require('loglevel');
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
 
-import '@fluencelabs/js-client.node';
-import { Fluence } from "@fluencelabs/js-client.api";
-import { randomKras } from '@fluencelabs/fluence-network-environment';
 
 module.exports = class FluenceService {
     constructor(accStorage = null, options = {}) {
         this.accStorage = accStorage;
         this.subscribesByTopics = {};
 
-        if (options.logLevel) {
-            log.setLevel(options.logLevel);
-        }
+        // if (options.logLevel) {
+        //     log.setLevel(options.logLevel);
+        // }
     }
 
     async initClient(keyPair, relay = null) {
+        this.dhtApi = await import('./generated/resources.mjs');
+        await import('@fluencelabs/js-client.node');
+        const {Fluence} = await import("@fluencelabs/js-client.api");
+        const {randomKras} = await import("@fluencelabs/fluence-network-environment");
+
         await Fluence.connect(relay || randomKras(), {
-            keyPair,
+            // keyPair,
         });
 
         this.client = await Fluence.getClient();
@@ -190,7 +191,7 @@ module.exports = class FluenceService {
 
     async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
         try {
-            await dhtApi.createResource(this.peer, _topic); //, _value, this.getClientRelayId(), null, () => {}, {}
+            await this.dhtApi.createResource(this.peer, _topic); //, _value, this.getClientRelayId(), null, () => {}, {}
         } catch (e) {
             tries--;
             if (tries <= 0) {
@@ -207,7 +208,7 @@ module.exports = class FluenceService {
         if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
         }
-        return dhtApi.resolveResource(this.client, staticStorageId).then(results => {
+        return this.dhtApi.resolveResource(this.client, staticStorageId).then(results => {
             // console.log("subscriber", results[0]);
             let lastItem;
             results.forEach(item => {
@@ -223,7 +224,7 @@ module.exports = class FluenceService {
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await dhtApi.findSubscribers(this.client, this.getUpdatesTopic(ipnsId, 'update'));
+        let subs = await this.dhtApi.findSubscribers(this.client, this.getUpdatesTopic(ipnsId, 'update'));
         return subs;
     }
 
@@ -235,7 +236,7 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        let subs = await dhtApi.findSubscribers(this.client, topic);
+        let subs = await this.dhtApi.findSubscribers(this.client, topic);
         return subs;
     }
 
