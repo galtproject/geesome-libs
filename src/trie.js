@@ -49,4 +49,4 @@ const trieLib = {
   }
 };
 
-module.exports = trieLib;
+export default trieLib;

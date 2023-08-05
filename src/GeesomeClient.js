@@ -27,12 +27,11 @@ const isEmpty = require('lodash/isEmpty');
 const pIteration = require('p-iteration');
 const ipfsHelper = require('./ipfsHelper');
 const pgpHelper = require('./pgpHelper');
-const commonHelper = require('./common');
 const trie = require('./base36Trie');
 const JsIpfsService = require('./JsIpfsService');
 const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
 
-const {extractHostname, isIpAddress, isNumber} = require('./common');
+import {extractHostname, isIpAddress, isNumber, isUndefinedOrNull, hash, moveDate} from './common';
 const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
 
 class GeesomeClient {
@@ -40,7 +39,7 @@ class GeesomeClient {
 
   constructor(config = {}) {
     this.server = config.server;
-    if (commonHelper.isUndefined(this.server)) {
+    if (isUndefinedOrNull(this.server)) {
       this.setServerByDocumentLocation();
     }
     this.apiKey = config.apiKey;
@@ -182,7 +181,7 @@ class GeesomeClient {
   }
 
   apiKeyHash() {
-    return commonHelper.hash(this.apiKey);
+    return hash(this.apiKey);
   }
 
   async socNetLogin(socNetName, loginData) { // phoneNumber, phoneCodeHash, phoneCode, password for telegram
@@ -193,7 +192,7 @@ class GeesomeClient {
         loginData.encryptedSessionKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), loginData.sessionKey);
       }
       if (acc && acc.sessionKey && loginData.stage === 3) { // third stage: input password
-        loginData.sessionKey = this.decryptedSocNetCache[commonHelper.hash(acc.sessionKey)];
+        loginData.sessionKey = this.decryptedSocNetCache[hash(acc.sessionKey)];
       }
       if (!this.isSessionKeyCorrect(loginData.sessionKey)) {
         loginData.sessionKey = '';
@@ -217,7 +216,7 @@ class GeesomeClient {
             return;
           }
           const encryptedKey = geesomeWalletClientLib.encrypt(this.apiKeyHash(), key);
-          this.decryptedSocNetCache[commonHelper.hash(encryptedKey)] = key;
+          this.decryptedSocNetCache[hash(encryptedKey)] = key;
           if (account[name] !== encryptedKey) {
             updateData[name] = encryptedKey;
           }
@@ -259,7 +258,7 @@ class GeesomeClient {
   }
 
   decryptSessionKey(encryptedSessionKey) {
-    const sessionHash = commonHelper.hash(encryptedSessionKey);
+    const sessionHash = hash(encryptedSessionKey);
     this.decryptedSocNetCache[sessionHash] = geesomeWalletClientLib.decrypt(this.apiKeyHash(), encryptedSessionKey);
     return this.decryptedSocNetCache[sessionHash];
   }
@@ -269,7 +268,7 @@ class GeesomeClient {
   }
 
   isSocNetSessionKeyCorrect(acc) {
-    const sessionHash = commonHelper.hash(acc.sessionKey);
+    const sessionHash = hash(acc.sessionKey);
     return this.isSessionKeyCorrect(this.decryptedSocNetCache[sessionHash]);
   }
 
@@ -290,7 +289,7 @@ class GeesomeClient {
       if (!acc[name]) {
         return;
       }
-      const keyHash = commonHelper.hash(acc[name]);
+      const keyHash = hash(acc[name]);
       if (!this.decryptedSocNetCache[keyHash]) {
         this.decryptSessionKey(acc[name]);
       }
@@ -376,7 +375,7 @@ class GeesomeClient {
       const {funcArgs} = a;
       return {
         executePeriod: i ? 0 : runPeriod,
-        executeOn: i || !runPeriod ? null : commonHelper.moveDate(runPeriod, 'second'),
+        executeOn: i || !runPeriod ? null : moveDate(runPeriod, 'second'),
         isActive: true,
         isEncrypted: true,
         position: 1,

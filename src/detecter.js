@@ -7,9 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-module.exports = {
-  isYoutubeUrl(url) {
-    const includes = require('lodash/includes');
-    return includes(url, 'youtube.');
-  }
-};
+export default function isYoutubeUrl(url) {
+  const includes = require('lodash/includes');
+  return includes(url, 'youtube.');
+}

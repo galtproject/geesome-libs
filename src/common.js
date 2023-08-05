@@ -23,45 +23,45 @@ const uuidv4 = require('uuid/v4');
 const bip39 = require("ethereum-cryptography/bip39");
 const bip39Wordlist = require("ethereum-cryptography/bip39/wordlists/english").wordlist;
 
-module.exports.isNumber = (str) => {
+export function isNumber (str) {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {
     return false;
   }
   return !isNaN(parseFloat(str));
-};
+}
 
-module.exports.moveFromDate = (fromDate, value, unit) => {
+export function moveFromDate (fromDate, value, unit) {
   value = parseFloat(value);
-  if(includes(unit, 'second')) {
+  if (includes(unit, 'second')) {
     return new Date(fromDate.getTime() + value * 1000);
   }
-  if(includes(unit, 'minute')) {
+  if (includes(unit, 'minute')) {
     return new Date(fromDate.getTime() + value * 60 * 1000);
   }
-  if(includes(unit, 'hour')) {
+  if (includes(unit, 'hour')) {
     return new Date(fromDate.getTime() + value * 60 * 60 * 1000);
   }
-  if(includes(unit, 'day')) {
+  if (includes(unit, 'day')) {
     return new Date(fromDate.getTime() + value * 24 * 60 * 60 * 1000);
   }
-  if(includes(unit, 'week')) {
+  if (includes(unit, 'week')) {
     return new Date(fromDate.getTime() + value * 7 * 24 * 60 * 60 * 1000);
   }
-  if(includes(unit, 'month')) {
+  if (includes(unit, 'month')) {
     return new Date(fromDate.getTime() + value * 30 * 24 * 60 * 60 * 1000);
   }
   return null;
-};
+}
 
-module.exports.moveDate = (value, unit) => {
+export function moveDate (value, unit) {
   return module.exports.moveFromDate(new Date(), value, unit);
-};
+}
 
-module.exports.extractHostname = (url) => {
+export function extractHostname (url) {
   return (new URL(url)).hostname;
-};
+}
 
-function sortObject (objectData) {
+export function sortObject (objectData) {
   if(isArray(objectData)) {
     return objectData.map(i => sortObject(i));
   }
@@ -77,46 +77,45 @@ function sortObject (objectData) {
     return arr;
   }))
 }
-module.exports.sortObject = sortObject;
 
-module.exports.isIpAddress = (str) => {
+export function isIpAddress (str) {
   return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
-};
+}
 
-module.exports.random = (mode = 'hash') => {
+export function random (mode = 'hash') {
   if (mode === 'words') {
     return bip39.generateMnemonic(bip39Wordlist);
   } else {
     return uuidv4();
   }
-};
+}
 
-module.exports.hash = (input, algo = 'sha256') => {
+export function hash (input, algo = 'sha256') {
   return createHash(algo).update(input).digest('hex');
 }
 
-module.exports.makeCode = (length) => {
+export function  makeCode (length) {
   let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let res = '';
   for (let i = 0; i < length; i++) {
     res += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return res;
-};
+}
 
-module.exports.getFilenameFromPath = (path) => {
+export function getFilenameFromPath (path) {
   return (trim(path, '/').split('/').slice(-1)[0] || '').split('?')[0];
 }
 
-module.exports.getExtensionFromName = (fileName) => {
+export function getExtensionFromName (fileName) {
   return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase().split('?')[0] : null
 }
 
-module.exports.isUndefined = (v) => {
+export function isUndefinedOrNull (v) {
   return !v || v === 'null' || v === 'undefined' || isUndefined(v);
 }
 
-module.exports.isVideoType = (fullType) => {
+export function isVideoType (fullType) {
   //TODO: detect more video types
   return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
 }
