@@ -7,15 +7,15 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const { CID } = require('multiformats/cid');
-const { sha256 } = require('multiformats/hashes/sha2');
-const startsWith = require('lodash/startsWith');
-const isString = require('lodash/isString');
-const libp2pCrypto = require('libp2p-crypto');
-const dagCBOR = require('@ipld/dag-cbor')
-const pick = require('lodash/pick');
-const isUndefined = require('lodash/isUndefined');
-const isDate = require('lodash/isDate');
+import { CID } from 'multiformats/cid';
+import { sha256 } from'multiformats/hashes/sha2';
+import startsWith from 'lodash/startsWith';
+import isString from 'lodash/isString';
+import libp2pCrypto from 'libp2p-crypto';
+import dagCBOR from '@ipld/dag-cbor';
+import pick from 'lodash/pick';
+import isUndefined from 'lodash/isUndefined';
+import isDate from'lodash/isDate';
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -137,4 +137,4 @@ const ipfsHelper = {
     return storageId;
   }
 };
-module.exports = ipfsHelper;
+export default ipfsHelper;

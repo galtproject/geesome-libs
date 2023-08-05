@@ -7,25 +7,25 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const ipfsHelper = require('./ipfsHelper');
-const peerIdHelper = require('./peerIdHelper');
-const pubSubHelper = require('./pubSubHelper');
+import ipfsHelper from './ipfsHelper';
+import peerIdHelper from './peerIdHelper';
+import pubSubHelper from './pubSubHelper';
 import {sortObject} from './common';
 
-const trim = require('lodash/trim');
-const pick = require('lodash/pick');
-const isObject = require('lodash/isObject');
-const find = require('lodash/find');
-const startsWith = require('lodash/startsWith');
-const includes = require('lodash/includes');
-const isString = require('lodash/isString');
-const isBuffer = require('lodash/isBuffer');
-const get = require('lodash/get');
-const urlSource = require('ipfs-utils/src/files/url-source');
-const itFirst = require('it-first');
-const itConcat = require('it-concat');
-const itToStream = require('it-to-stream');
-const { CID } = require('multiformats/cid');
+import trim from 'lodash/trim';
+import pick from 'lodash/pick';
+import isObject from 'lodash/isObject';
+import find from 'lodash/find';
+import startsWith from 'lodash/startsWith';
+import includes from 'lodash/includes';
+import isString from 'lodash/isString';
+import isBuffer from 'lodash/isBuffer';
+import get from 'lodash/get';
+import urlSource from 'ipfs-utils/src/files/url-source';
+import itFirst from 'it-first';
+import itConcat from 'it-concat';
+import itToStream from 'it-to-stream';
+import { CID } from 'multiformats/cid';
 // const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
 // const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 

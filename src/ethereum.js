@@ -7,10 +7,10 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import web3Utils = require('web3-utils');
-const EthCrypto = require('eth-crypto');
-const stripHexPrefix = require('strip-hex-prefix');
-const BN = require('bn.js');
+import web3Utils from 'web3-utils';
+import EthCrypto from 'eth-crypto';
+import stripHexPrefix from 'strip-hex-prefix';
+import BN from 'bn.js';
 
 const Ethereum = {
     getAccountAddressBySignature(signature, message, fieldName) {
