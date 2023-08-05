@@ -190,6 +190,9 @@ module.exports = class FluenceService {
     }
 
     async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
+        if(!this.dhtApi) {
+            return;
+        }
         try {
             await this.dhtApi.createResource(this.peer, _topic); //, _value, this.getClientRelayId(), null, () => {}, {}
         } catch (e) {
@@ -207,6 +210,9 @@ module.exports = class FluenceService {
     async resolveStaticItem(staticStorageId) {
         if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
             staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
+        }
+        if(!this.dhtApi) {
+            return;
         }
         return this.dhtApi.resolveResource(this.client, staticStorageId).then(results => {
             // console.log("subscriber", results[0]);
