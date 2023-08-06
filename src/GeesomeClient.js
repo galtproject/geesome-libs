@@ -979,7 +979,7 @@ class GeesomeClient {
   }
 
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
-    return this.postRequest(`file-catalog/get-contents-ids`, fileCatalogIds);
+    return this.postRequest(`user/file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
   saveContentByPath(contentId, path) {
