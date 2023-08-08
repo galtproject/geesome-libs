@@ -20,9 +20,9 @@ module.exports = class FluenceService {
         this.dhtApi = await import('./generated/resources.mjs');
         await import('@fluencelabs/js-client.node');
         const {Fluence} = await import("@fluencelabs/js-client.api");
-        const {randomKras} = await import("@fluencelabs/fluence-network-environment");
+        const {testNet} = await import("@fluencelabs/fluence-network-environment");
 
-        await Fluence.connect(relay || randomKras(), {
+        await Fluence.connect(relay || testNet[1], {
             // keyPair,
         });
 
@@ -78,8 +78,8 @@ module.exports = class FluenceService {
             }
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
-            console.log('bindToStaticId:fanout_event');
-            await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
+            // console.log('bindToStaticId:fanout_event');
+            // await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
         });
@@ -189,12 +189,16 @@ module.exports = class FluenceService {
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
+    async initTopicAndSubscribeBlocking(topic, value, tries = 0) {
         if(!this.dhtApi) {
             return;
         }
         try {
-            await this.dhtApi.createResource(this.peer, _topic); //, _value, this.getClientRelayId(), null, () => {}, {}
+            const [resId, errors] = await this.dhtApi.createResource(topic); //, value, this.getClientRelayId(), null, () => {}, {}
+            if (errors.length) {
+                throw new Error(errors[0]);
+            }
+            await this.dhtApi.registerService(resId, JSON.stringify({value}), this.client.getPeerId(), 'ipns')
         } catch (e) {
             tries--;
             if (tries <= 0) {
@@ -203,7 +207,7 @@ module.exports = class FluenceService {
             console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
             await this.client.stop().catch(e => console.warn('peer.stop failed', e));
             await this.client.start();
-            return this.initTopicAndSubscribeBlocking(_topic, _value, tries);
+            return this.initTopicAndSubscribeBlocking(topic, value, tries);
         }
     }
 
@@ -214,7 +218,7 @@ module.exports = class FluenceService {
         if(!this.dhtApi) {
             return;
         }
-        return this.dhtApi.resolveResource(this.client, staticStorageId).then(results => {
+        return this.dhtApi.resolveResource(staticStorageId, 1).then(results => {
             // console.log("subscriber", results[0]);
             let lastItem;
             results.forEach(item => {

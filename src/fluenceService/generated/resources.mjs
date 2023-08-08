@@ -19,48 +19,321 @@ import {
 // Services
 
 // Functions
-export const getBool_script = `
+export const resolveResource_script = `
                     (xor
                      (seq
                       (seq
-                       (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
-                       (ap true $suc)
+                       (seq
+                        (seq
+                         (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                         (call %init_peer_id% ("getDataSrv" "resource_id") [] resource_id)
+                        )
+                        (call %init_peer_id% ("getDataSrv" "ack") [] ack)
+                       )
+                       (new $records
+                        (new $successful
+                         (new $result
+                          (seq
+                           (seq
+                            (xor
+                             (seq
+                              (seq
+                               (seq
+                                (seq
+                                 (call -relay- ("op" "string_to_b58") [resource_id] k)
+                                 (call -relay- ("kad" "neighborhood") [k [] []] nodes)
+                                )
+                                (par
+                                 (fold nodes n-0
+                                  (par
+                                   (seq
+                                    (xor
+                                     (xor
+                                      (seq
+                                       (seq
+                                        (call n-0 ("peer" "timestamp_sec") [] t)
+                                        (call n-0 ("registry" "get_records") [resource_id t] get_result)
+                                       )
+                                       (xor
+                                        (match get_result.$.success true
+                                         (seq
+                                          (ap get_result.$.result $records)
+                                          (ap true $successful)
+                                         )
+                                        )
+                                        (ap get_result.$.error $error)
+                                       )
+                                      )
+                                      (call n-0 ("op" "noop") [])
+                                     )
+                                     (seq
+                                      (call -relay- ("op" "noop") [])
+                                      (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                                     )
+                                    )
+                                    (call -relay- ("op" "noop") [])
+                                   )
+                                   (next n-0)
+                                  )
+                                  (never)
+                                 )
+                                 (null)
+                                )
+                               )
+                               (new $status
+                                (new $result-0
+                                 (seq
+                                  (seq
+                                   (seq
+                                    (par
+                                     (seq
+                                      (seq
+                                       (seq
+                                        (call -relay- ("math" "sub") [ack 1] sub)
+                                        (new $successful_test
+                                         (seq
+                                          (seq
+                                           (seq
+                                            (call -relay- ("math" "add") [sub 1] successful_incr)
+                                            (fold $successful successful_fold_var
+                                             (seq
+                                              (seq
+                                               (ap successful_fold_var $successful_test)
+                                               (canon -relay- $successful_test  #successful_iter_canon)
+                                              )
+                                              (xor
+                                               (match #successful_iter_canon.length successful_incr
+                                                (null)
+                                               )
+                                               (next successful_fold_var)
+                                              )
+                                             )
+                                             (never)
+                                            )
+                                           )
+                                           (canon -relay- $successful_test  #successful_result_canon)
+                                          )
+                                          (ap #successful_result_canon successful_gate)
+                                         )
+                                        )
+                                       )
+                                       (call -relay- ("math" "sub") [ack 1] sub-0)
+                                      )
+                                      (ap "ok" $status)
+                                     )
+                                     (call -relay- ("peer" "timeout") [6000 "timeout"] $status)
+                                    )
+                                    (new $status_test
+                                     (seq
+                                      (seq
+                                       (seq
+                                        (call -relay- ("math" "add") [0 1] status_incr)
+                                        (fold $status status_fold_var
+                                         (seq
+                                          (seq
+                                           (ap status_fold_var $status_test)
+                                           (canon -relay- $status_test  #status_iter_canon)
+                                          )
+                                          (xor
+                                           (match #status_iter_canon.length status_incr
+                                            (null)
+                                           )
+                                           (next status_fold_var)
+                                          )
+                                         )
+                                         (never)
+                                        )
+                                       )
+                                       (canon -relay- $status_test  #status_result_canon)
+                                      )
+                                      (ap #status_result_canon status_gate)
+                                     )
+                                    )
+                                   )
+                                   (xor
+                                    (match status_gate.$.[0] "ok"
+                                     (ap true $result-0)
+                                    )
+                                    (ap false $result-0)
+                                   )
+                                  )
+                                  (new $result-0_test
+                                   (seq
+                                    (seq
+                                     (seq
+                                      (call -relay- ("math" "add") [0 1] result-0_incr)
+                                      (fold $result-0 result-0_fold_var
+                                       (seq
+                                        (seq
+                                         (ap result-0_fold_var $result-0_test)
+                                         (canon -relay- $result-0_test  #result-0_iter_canon)
+                                        )
+                                        (xor
+                                         (match #result-0_iter_canon.length result-0_incr
+                                          (null)
+                                         )
+                                         (next result-0_fold_var)
+                                        )
+                                       )
+                                       (never)
+                                      )
+                                     )
+                                     (canon -relay- $result-0_test  #result-0_result_canon)
+                                    )
+                                    (ap #result-0_result_canon result-0_gate)
+                                   )
+                                  )
+                                 )
+                                )
+                               )
+                              )
+                              (xor
+                               (match result-0_gate.$.[0] false
+                                (ap "timeout exceeded" $error)
+                               )
+                               (seq
+                                (seq
+                                 (canon -relay- $records  #records_canon)
+                                 (call -relay- ("registry" "merge") [#records_canon] merged)
+                                )
+                                (xor
+                                 (match merged.$.success false
+                                  (ap merged.$.error $error)
+                                 )
+                                 (ap merged.$.result $result)
+                                )
+                               )
+                              )
+                             )
+                             (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                            )
+                            (canon %init_peer_id% $result  #-result-fix-0)
+                           )
+                           (ap #-result-fix-0 -result-flat-0)
+                          )
+                         )
+                        )
+                       )
                       )
                       (xor
                        (seq
-                        (canon %init_peer_id% $suc  #suc_canon)
-                        (call %init_peer_id% ("callbackSrv" "response") [#suc_canon])
+                        (canon %init_peer_id% $error  #error_canon)
+                        (call %init_peer_id% ("callbackSrv" "response") [-result-flat-0 #error_canon])
                        )
-                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
                       )
                      )
-                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
                     )
     `
 
-export function getBool(...args) {
+export function resolveResource(...args) {
 
 
     return callFunction$$(
         args,
         {
-    "functionName" : "getBool",
+    "functionName" : "resolveResource",
     "arrow" : {
         "tag" : "arrow",
         "domain" : {
             "tag" : "labeledProduct",
             "fields" : {
-                
+                "resource_id" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                },
+                "ack" : {
+                    "tag" : "scalar",
+                    "name" : "i16"
+                }
             }
         },
         "codomain" : {
             "tag" : "unlabeledProduct",
             "items" : [
                 {
+                    "tag" : "option",
+                    "type" : {
+                        "tag" : "array",
+                        "type" : {
+                            "tag" : "struct",
+                            "name" : "Record",
+                            "fields" : {
+                                "metadata" : {
+                                    "tag" : "struct",
+                                    "name" : "RecordMetadata",
+                                    "fields" : {
+                                        "relay_id" : {
+                                            "tag" : "array",
+                                            "type" : {
+                                                "tag" : "scalar",
+                                                "name" : "string"
+                                            }
+                                        },
+                                        "issued_by" : {
+                                            "tag" : "scalar",
+                                            "name" : "string"
+                                        },
+                                        "peer_id" : {
+                                            "tag" : "scalar",
+                                            "name" : "string"
+                                        },
+                                        "timestamp_issued" : {
+                                            "tag" : "scalar",
+                                            "name" : "u64"
+                                        },
+                                        "service_id" : {
+                                            "tag" : "array",
+                                            "type" : {
+                                                "tag" : "scalar",
+                                                "name" : "string"
+                                            }
+                                        },
+                                        "value" : {
+                                            "tag" : "scalar",
+                                            "name" : "string"
+                                        },
+                                        "key_id" : {
+                                            "tag" : "scalar",
+                                            "name" : "string"
+                                        },
+                                        "solution" : {
+                                            "tag" : "array",
+                                            "type" : {
+                                                "tag" : "scalar",
+                                                "name" : "u8"
+                                            }
+                                        },
+                                        "issuer_signature" : {
+                                            "tag" : "array",
+                                            "type" : {
+                                                "tag" : "scalar",
+                                                "name" : "u8"
+                                            }
+                                        }
+                                    }
+                                },
+                                "signature" : {
+                                    "tag" : "array",
+                                    "type" : {
+                                        "tag" : "scalar",
+                                        "name" : "u8"
+                                    }
+                                },
+                                "timestamp_created" : {
+                                    "tag" : "scalar",
+                                    "name" : "u64"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
                     "tag" : "array",
                     "type" : {
                         "tag" : "scalar",
-                        "name" : "bool"
+                        "name" : "string"
                     }
                 }
             ]
@@ -76,7 +349,1028 @@ export function getBool(...args) {
         "errorFnName" : "error"
     }
 },
-        getBool_script
+        resolveResource_script
+    )
+}
+
+export const registerService_script = `
+                    (xor
+                     (seq
+                      (seq
+                       (seq
+                        (seq
+                         (seq
+                          (seq
+                           (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                           (call %init_peer_id% ("getDataSrv" "resource_id") [] resource_id)
+                          )
+                          (call %init_peer_id% ("getDataSrv" "value") [] value)
+                         )
+                         (call %init_peer_id% ("getDataSrv" "peer_id") [] peer_id)
+                        )
+                        (call %init_peer_id% ("getDataSrv" "service_id") [] service_id)
+                       )
+                       (new $success
+                        (new $relay_id
+                         (seq
+                          (seq
+                           (seq
+                            (xor
+                             (match peer_id %init_peer_id%
+                              (ap -relay- $relay_id)
+                             )
+                             (call %init_peer_id% ("op" "noop") [])
+                            )
+                            (xor
+                             (seq
+                              (new $error-0
+                               (new $result
+                                (seq
+                                 (seq
+                                  (seq
+                                   (seq
+                                    (seq
+                                     (seq
+                                      (seq
+                                       (seq
+                                        (call -relay- ("peer" "timestamp_sec") [] t-0)
+                                        (canon -relay- $relay_id  #relay_id_canon)
+                                       )
+                                       (call -relay- ("registry" "get_record_metadata_bytes") [resource_id %init_peer_id% t-0 value peer_id #relay_id_canon service_id []] bytes)
+                                      )
+                                      (xor
+                                       (call %init_peer_id% ("sig" "sign") [bytes] sig_result)
+                                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                                      )
+                                     )
+                                     (xor
+                                      (match sig_result.$.success true
+                                       (xor
+                                        (seq
+                                         (canon -relay- $relay_id  #relay_id_canon-0)
+                                         (call -relay- ("registry" "create_record_metadata") [resource_id %init_peer_id% t-0 value peer_id #relay_id_canon-0 service_id [] sig_result.$.signature.[0]] $result)
+                                        )
+                                        (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                                       )
+                                      )
+                                      (ap sig_result.$.error.[0] $error-0)
+                                     )
+                                    )
+                                    (canon -relay- $result  #-result-fix-0)
+                                   )
+                                   (ap #-result-fix-0 -result-flat-0)
+                                  )
+                                  (canon -relay- $error-0  #-error-fix-1)
+                                 )
+                                 (ap #-error-fix-1 -error-flat-1)
+                                )
+                               )
+                              )
+                              (xor
+                               (match -result-flat-0 []
+                                (seq
+                                 (ap false $success)
+                                 (ap -error-flat-1.$.[0] $error)
+                                )
+                               )
+                               (seq
+                                (seq
+                                 (call -relay- ("peer" "timestamp_sec") [] t)
+                                 (new $signature
+                                  (seq
+                                   (xor
+                                    (mismatch -result-flat-0.$.[0].peer_id %init_peer_id%
+                                     (xor
+                                      (xor
+                                       (seq
+                                        (call -result-flat-0.$.[0].peer_id ("registry" "get_record_bytes") [-result-flat-0.$.[0] t] bytes-0)
+                                        (call -result-flat-0.$.[0].peer_id ("sig" "sign") [bytes-0] $signature)
+                                       )
+                                       (seq
+                                        (call -relay- ("op" "noop") [])
+                                        (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                                       )
+                                      )
+                                      (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
+                                     )
+                                    )
+                                    (xor
+                                     (seq
+                                      (call -relay- ("registry" "get_record_bytes") [-result-flat-0.$.[0] t] bytess)
+                                      (xor
+                                       (call %init_peer_id% ("sig" "sign") [bytess] $signature)
+                                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 5])
+                                      )
+                                     )
+                                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 6])
+                                    )
+                                   )
+                                   (new $signature_test
+                                    (seq
+                                     (seq
+                                      (seq
+                                       (call -relay- ("math" "add") [0 1] signature_incr)
+                                       (fold $signature signature_fold_var
+                                        (seq
+                                         (seq
+                                          (ap signature_fold_var $signature_test)
+                                          (canon -relay- $signature_test  #signature_iter_canon)
+                                         )
+                                         (xor
+                                          (match #signature_iter_canon.length signature_incr
+                                           (null)
+                                          )
+                                          (next signature_fold_var)
+                                         )
+                                        )
+                                        (never)
+                                       )
+                                      )
+                                      (canon -relay- $signature_test  #signature_result_canon)
+                                     )
+                                     (ap #signature_result_canon signature_gate)
+                                    )
+                                   )
+                                  )
+                                 )
+                                )
+                                (xor
+                                 (match signature_gate.$.[0].success false
+                                  (seq
+                                   (ap signature_gate.$.[0].error.[0] $error)
+                                   (ap false $success)
+                                  )
+                                 )
+                                 (seq
+                                  (new $resources
+                                   (new $successful-0
+                                    (new $result-0
+                                     (seq
+                                      (seq
+                                       (seq
+                                        (seq
+                                         (seq
+                                          (seq
+                                           (call -relay- ("op" "string_to_b58") [resource_id] k)
+                                           (call -relay- ("kad" "neighborhood") [k [] []] nodes-1)
+                                          )
+                                          (par
+                                           (fold nodes-1 n-0-0
+                                            (par
+                                             (seq
+                                              (xor
+                                               (xor
+                                                (seq
+                                                 (call n-0-0 ("registry" "get_key_metadata") [resource_id] get_result)
+                                                 (xor
+                                                  (match get_result.$.success true
+                                                   (seq
+                                                    (ap get_result.$.key $resources)
+                                                    (ap true $successful-0)
+                                                   )
+                                                  )
+                                                  (seq
+                                                   (call n-0-0 ("op" "concat_strings") [get_result.$.error " on "] e)
+                                                   (call n-0-0 ("op" "concat_strings") [e n-0-0] $error-1)
+                                                  )
+                                                 )
+                                                )
+                                                (call n-0-0 ("op" "noop") [])
+                                               )
+                                               (seq
+                                                (call -relay- ("op" "noop") [])
+                                                (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 7])
+                                               )
+                                              )
+                                              (call -relay- ("op" "noop") [])
+                                             )
+                                             (next n-0-0)
+                                            )
+                                            (never)
+                                           )
+                                           (null)
+                                          )
+                                         )
+                                         (new $status
+                                          (new $result-1
+                                           (seq
+                                            (seq
+                                             (seq
+                                              (par
+                                               (seq
+                                                (seq
+                                                 (seq
+                                                  (call -relay- ("math" "sub") [1 1] sub)
+                                                  (new $successful-0_test
+                                                   (seq
+                                                    (seq
+                                                     (seq
+                                                      (call -relay- ("math" "add") [sub 1] successful-0_incr)
+                                                      (fold $successful-0 successful-0_fold_var
+                                                       (seq
+                                                        (seq
+                                                         (ap successful-0_fold_var $successful-0_test)
+                                                         (canon -relay- $successful-0_test  #successful-0_iter_canon)
+                                                        )
+                                                        (xor
+                                                         (match #successful-0_iter_canon.length successful-0_incr
+                                                          (null)
+                                                         )
+                                                         (next successful-0_fold_var)
+                                                        )
+                                                       )
+                                                       (never)
+                                                      )
+                                                     )
+                                                     (canon -relay- $successful-0_test  #successful-0_result_canon)
+                                                    )
+                                                    (ap #successful-0_result_canon successful-0_gate)
+                                                   )
+                                                  )
+                                                 )
+                                                 (call -relay- ("math" "sub") [1 1] sub-0)
+                                                )
+                                                (ap "ok" $status)
+                                               )
+                                               (call -relay- ("peer" "timeout") [6000 "timeout"] $status)
+                                              )
+                                              (new $status_test
+                                               (seq
+                                                (seq
+                                                 (seq
+                                                  (call -relay- ("math" "add") [0 1] status_incr)
+                                                  (fold $status status_fold_var
+                                                   (seq
+                                                    (seq
+                                                     (ap status_fold_var $status_test)
+                                                     (canon -relay- $status_test  #status_iter_canon)
+                                                    )
+                                                    (xor
+                                                     (match #status_iter_canon.length status_incr
+                                                      (null)
+                                                     )
+                                                     (next status_fold_var)
+                                                    )
+                                                   )
+                                                   (never)
+                                                  )
+                                                 )
+                                                 (canon -relay- $status_test  #status_result_canon)
+                                                )
+                                                (ap #status_result_canon status_gate)
+                                               )
+                                              )
+                                             )
+                                             (xor
+                                              (match status_gate.$.[0] "ok"
+                                               (ap true $result-1)
+                                              )
+                                              (ap false $result-1)
+                                             )
+                                            )
+                                            (new $result-1_test
+                                             (seq
+                                              (seq
+                                               (seq
+                                                (call -relay- ("math" "add") [0 1] result-1_incr)
+                                                (fold $result-1 result-1_fold_var
+                                                 (seq
+                                                  (seq
+                                                   (ap result-1_fold_var $result-1_test)
+                                                   (canon -relay- $result-1_test  #result-1_iter_canon)
+                                                  )
+                                                  (xor
+                                                   (match #result-1_iter_canon.length result-1_incr
+                                                    (null)
+                                                   )
+                                                   (next result-1_fold_var)
+                                                  )
+                                                 )
+                                                 (never)
+                                                )
+                                               )
+                                               (canon -relay- $result-1_test  #result-1_result_canon)
+                                              )
+                                              (ap #result-1_result_canon result-1_gate)
+                                             )
+                                            )
+                                           )
+                                          )
+                                         )
+                                        )
+                                        (xor
+                                         (match result-1_gate.$.[0] false
+                                          (ap "resource not found: timeout exceeded" $error-1)
+                                         )
+                                         (seq
+                                          (seq
+                                           (canon -relay- $resources  #resources_canon)
+                                           (call -relay- ("registry" "merge_keys") [#resources_canon] merge_result)
+                                          )
+                                          (xor
+                                           (match merge_result.$.success true
+                                            (ap merge_result.$.key $result-0)
+                                           )
+                                           (ap merge_result.$.error $error-1)
+                                          )
+                                         )
+                                        )
+                                       )
+                                       (canon -relay- $result-0  #-result-fix-0-0)
+                                      )
+                                      (ap #-result-fix-0-0 -result-flat-0-0)
+                                     )
+                                    )
+                                   )
+                                  )
+                                  (xor
+                                   (match -result-flat-0-0 []
+                                    (xor
+                                     (seq
+                                      (seq
+                                       (canon -relay- $error-1  #error-1_canon)
+                                       (fold #error-1_canon e-0-0
+                                        (seq
+                                         (ap e-0-0 $error)
+                                         (next e-0-0)
+                                        )
+                                       )
+                                      )
+                                      (ap false $success)
+                                     )
+                                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 8])
+                                    )
+                                   )
+                                   (seq
+                                    (seq
+                                     (seq
+                                      (seq
+                                       (seq
+                                        (seq
+                                         (call -relay- ("op" "noop") [])
+                                         (xor
+                                          (mismatch peer_id %init_peer_id%
+                                           (xor
+                                            (xor
+                                             (seq
+                                              (seq
+                                               (seq
+                                                (call peer_id ("peer" "timestamp_sec") [] t-1)
+                                                (call peer_id ("trust-graph" "get_weight") [-result-flat-0-0.$.[0].owner_peer_id t-1] weight)
+                                               )
+                                               (call peer_id ("registry" "republish_key") [-result-flat-0-0.$.[0] weight t-1] result-2)
+                                              )
+                                              (xor
+                                               (match result-2.$.success false
+                                                (ap result-2.$.error $error)
+                                               )
+                                               (seq
+                                                (seq
+                                                 (seq
+                                                  (call peer_id ("peer" "timestamp_sec") [] t-2)
+                                                  (call peer_id ("trust-graph" "get_weight") [-result-flat-0.$.[0].issued_by t-2] weight-0)
+                                                 )
+                                                 (call peer_id ("registry" "put_record") [-result-flat-0.$.[0] t signature_gate.$.[0].signature.[0] weight-0 t-2] result-3)
+                                                )
+                                                (xor
+                                                 (match result-3.$.success false
+                                                  (seq
+                                                   (ap result-3.$.error $error)
+                                                   (ap false $success)
+                                                  )
+                                                 )
+                                                 (call peer_id ("op" "noop") [])
+                                                )
+                                               )
+                                              )
+                                             )
+                                             (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 9])
+                                            )
+                                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 10])
+                                           )
+                                          )
+                                          (call -relay- ("op" "noop") [])
+                                         )
+                                        )
+                                        (call -relay- ("op" "string_to_b58") [resource_id] k-0)
+                                       )
+                                       (call -relay- ("kad" "neighborhood") [k-0 [] []] nodes)
+                                      )
+                                      (par
+                                       (fold nodes n-1
+                                        (par
+                                         (seq
+                                          (xor
+                                           (xor
+                                            (seq
+                                             (seq
+                                              (seq
+                                               (call n-1 ("peer" "timestamp_sec") [] t-3)
+                                               (call n-1 ("trust-graph" "get_weight") [-result-flat-0-0.$.[0].owner_peer_id t-3] weight-1)
+                                              )
+                                              (call n-1 ("registry" "republish_key") [-result-flat-0-0.$.[0] weight-1 t-3] result-4)
+                                             )
+                                             (xor
+                                              (match result-4.$.success false
+                                               (ap result-4.$.error $error)
+                                              )
+                                              (seq
+                                               (seq
+                                                (seq
+                                                 (call n-1 ("peer" "timestamp_sec") [] t-4)
+                                                 (call n-1 ("trust-graph" "get_weight") [-result-flat-0.$.[0].issued_by t-4] weight-2)
+                                                )
+                                                (call n-1 ("registry" "put_record") [-result-flat-0.$.[0] t signature_gate.$.[0].signature.[0] weight-2 t-4] result-5)
+                                               )
+                                               (xor
+                                                (match result-5.$.success true
+                                                 (ap true $successful)
+                                                )
+                                                (ap result-5.$.error $error)
+                                               )
+                                              )
+                                             )
+                                            )
+                                            (call n-1 ("op" "noop") [])
+                                           )
+                                           (seq
+                                            (call -relay- ("op" "noop") [])
+                                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 11])
+                                           )
+                                          )
+                                          (call -relay- ("op" "noop") [])
+                                         )
+                                         (next n-1)
+                                        )
+                                        (never)
+                                       )
+                                       (null)
+                                      )
+                                     )
+                                     (new $status-0
+                                      (new $result-6
+                                       (seq
+                                        (seq
+                                         (seq
+                                          (par
+                                           (seq
+                                            (seq
+                                             (seq
+                                              (call -relay- ("math" "sub") [1 1] sub-1)
+                                              (new $successful_test
+                                               (seq
+                                                (seq
+                                                 (seq
+                                                  (call -relay- ("math" "add") [sub-1 1] successful_incr)
+                                                  (fold $successful successful_fold_var
+                                                   (seq
+                                                    (seq
+                                                     (ap successful_fold_var $successful_test)
+                                                     (canon -relay- $successful_test  #successful_iter_canon)
+                                                    )
+                                                    (xor
+                                                     (match #successful_iter_canon.length successful_incr
+                                                      (null)
+                                                     )
+                                                     (next successful_fold_var)
+                                                    )
+                                                   )
+                                                   (never)
+                                                  )
+                                                 )
+                                                 (canon -relay- $successful_test  #successful_result_canon)
+                                                )
+                                                (ap #successful_result_canon successful_gate)
+                                               )
+                                              )
+                                             )
+                                             (call -relay- ("math" "sub") [1 1] sub-2)
+                                            )
+                                            (ap "ok" $status-0)
+                                           )
+                                           (call -relay- ("peer" "timeout") [6000 "timeout"] $status-0)
+                                          )
+                                          (new $status-0_test
+                                           (seq
+                                            (seq
+                                             (seq
+                                              (call -relay- ("math" "add") [0 1] status-0_incr)
+                                              (fold $status-0 status-0_fold_var
+                                               (seq
+                                                (seq
+                                                 (ap status-0_fold_var $status-0_test)
+                                                 (canon -relay- $status-0_test  #status-0_iter_canon)
+                                                )
+                                                (xor
+                                                 (match #status-0_iter_canon.length status-0_incr
+                                                  (null)
+                                                 )
+                                                 (next status-0_fold_var)
+                                                )
+                                               )
+                                               (never)
+                                              )
+                                             )
+                                             (canon -relay- $status-0_test  #status-0_result_canon)
+                                            )
+                                            (ap #status-0_result_canon status-0_gate)
+                                           )
+                                          )
+                                         )
+                                         (xor
+                                          (match status-0_gate.$.[0] "ok"
+                                           (ap true $result-6)
+                                          )
+                                          (ap false $result-6)
+                                         )
+                                        )
+                                        (new $result-6_test
+                                         (seq
+                                          (seq
+                                           (seq
+                                            (call -relay- ("math" "add") [0 1] result-6_incr)
+                                            (fold $result-6 result-6_fold_var
+                                             (seq
+                                              (seq
+                                               (ap result-6_fold_var $result-6_test)
+                                               (canon -relay- $result-6_test  #result-6_iter_canon)
+                                              )
+                                              (xor
+                                               (match #result-6_iter_canon.length result-6_incr
+                                                (null)
+                                               )
+                                               (next result-6_fold_var)
+                                              )
+                                             )
+                                             (never)
+                                            )
+                                           )
+                                           (canon -relay- $result-6_test  #result-6_result_canon)
+                                          )
+                                          (ap #result-6_result_canon result-6_gate)
+                                         )
+                                        )
+                                       )
+                                      )
+                                     )
+                                    )
+                                    (ap result-6_gate.$.[0] $success)
+                                   )
+                                  )
+                                 )
+                                )
+                               )
+                              )
+                             )
+                             (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 12])
+                            )
+                           )
+                           (new $success_test
+                            (seq
+                             (seq
+                              (seq
+                               (call %init_peer_id% ("math" "add") [0 1] success_incr)
+                               (fold $success success_fold_var
+                                (seq
+                                 (seq
+                                  (ap success_fold_var $success_test)
+                                  (canon %init_peer_id% $success_test  #success_iter_canon)
+                                 )
+                                 (xor
+                                  (match #success_iter_canon.length success_incr
+                                   (null)
+                                  )
+                                  (next success_fold_var)
+                                 )
+                                )
+                                (never)
+                               )
+                              )
+                              (canon %init_peer_id% $success_test  #success_result_canon)
+                             )
+                             (ap #success_result_canon success_gate)
+                            )
+                           )
+                          )
+                          (xor
+                           (match success_gate.$.[0] false
+                            (ap "service hasn't registered: timeout exceeded" $error)
+                           )
+                           (call %init_peer_id% ("op" "noop") [])
+                          )
+                         )
+                        )
+                       )
+                      )
+                      (xor
+                       (seq
+                        (canon %init_peer_id% $error  #error_canon)
+                        (call %init_peer_id% ("callbackSrv" "response") [success_gate.$.[0] #error_canon])
+                       )
+                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 13])
+                      )
+                     )
+                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 14])
+                    )
+    `
+
+export function registerService(...args) {
+
+
+    return callFunction$$(
+        args,
+        {
+    "functionName" : "registerService",
+    "arrow" : {
+        "tag" : "arrow",
+        "domain" : {
+            "tag" : "labeledProduct",
+            "fields" : {
+                "resource_id" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                },
+                "value" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                },
+                "peer_id" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                },
+                "service_id" : {
+                    "tag" : "option",
+                    "type" : {
+                        "tag" : "scalar",
+                        "name" : "string"
+                    }
+                }
+            }
+        },
+        "codomain" : {
+            "tag" : "unlabeledProduct",
+            "items" : [
+                {
+                    "tag" : "scalar",
+                    "name" : "bool"
+                },
+                {
+                    "tag" : "array",
+                    "type" : {
+                        "tag" : "scalar",
+                        "name" : "string"
+                    }
+                }
+            ]
+        }
+    },
+    "names" : {
+        "relay" : "-relay-",
+        "getDataSrv" : "getDataSrv",
+        "callbackSrv" : "callbackSrv",
+        "responseSrv" : "callbackSrv",
+        "responseFnName" : "response",
+        "errorHandlingSrv" : "errorHandlingSrv",
+        "errorFnName" : "error"
+    }
+},
+        registerService_script
+    )
+}
+
+export const getResourceId_script = `
+                    (xor
+                     (seq
+                      (seq
+                       (seq
+                        (seq
+                         (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                         (call %init_peer_id% ("getDataSrv" "label") [] label)
+                        )
+                        (call %init_peer_id% ("getDataSrv" "peer_id") [] peer_id)
+                       )
+                       (xor
+                        (call -relay- ("registry" "get_key_id") [label peer_id] resource_id)
+                        (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                       )
+                      )
+                      (xor
+                       (call %init_peer_id% ("callbackSrv" "response") [resource_id])
+                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                      )
+                     )
+                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                    )
+    `
+
+export function getResourceId(...args) {
+
+
+    return callFunction$$(
+        args,
+        {
+    "functionName" : "getResourceId",
+    "arrow" : {
+        "tag" : "arrow",
+        "domain" : {
+            "tag" : "labeledProduct",
+            "fields" : {
+                "label" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                },
+                "peer_id" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                }
+            }
+        },
+        "codomain" : {
+            "tag" : "unlabeledProduct",
+            "items" : [
+                {
+                    "tag" : "scalar",
+                    "name" : "string"
+                }
+            ]
+        }
+    },
+    "names" : {
+        "relay" : "-relay-",
+        "getDataSrv" : "getDataSrv",
+        "callbackSrv" : "callbackSrv",
+        "responseSrv" : "callbackSrv",
+        "responseFnName" : "response",
+        "errorHandlingSrv" : "errorHandlingSrv",
+        "errorFnName" : "error"
+    }
+},
+        getResourceId_script
+    )
+}
+
+export const createResource_script = `
+                    (xor
+                     (seq
+                      (seq
+                       (seq
+                        (call %init_peer_id% ("getDataSrv" "-relay-") [] -relay-)
+                        (call %init_peer_id% ("getDataSrv" "label") [] label)
+                       )
+                       (new $resource_id
+                        (seq
+                         (seq
+                          (seq
+                           (call %init_peer_id% ("peer" "timestamp_sec") [] t)
+                           (xor
+                            (seq
+                             (seq
+                              (call -relay- ("registry" "get_key_bytes") [label [] t [] ""] bytes)
+                              (xor
+                               (call %init_peer_id% ("sig" "sign") [bytes] result)
+                               (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                              )
+                             )
+                             (xor
+                              (match result.$.success false
+                               (ap result.$.error.[0] $error)
+                              )
+                              (seq
+                               (seq
+                                (seq
+                                 (seq
+                                  (seq
+                                   (seq
+                                    (ap result.$.signature result_flat)
+                                    (call -relay- ("registry" "get_key_id") [label %init_peer_id%] id)
+                                   )
+                                   (call -relay- ("op" "string_to_b58") [id] k)
+                                  )
+                                  (call -relay- ("kad" "neighborhood") [k [] []] nodes)
+                                 )
+                                 (par
+                                  (fold nodes n-0
+                                   (par
+                                    (seq
+                                     (xor
+                                      (xor
+                                       (seq
+                                        (seq
+                                         (seq
+                                          (call n-0 ("peer" "timestamp_sec") [] t-0)
+                                          (call n-0 ("trust-graph" "get_weight") [%init_peer_id% t-0] weight)
+                                         )
+                                         (call n-0 ("registry" "register_key") [label [] t [] "" result_flat.$.[0] weight t-0] result-0)
+                                        )
+                                        (xor
+                                         (match result-0.$.success true
+                                          (ap true $successful)
+                                         )
+                                         (ap result-0.$.error $error)
+                                        )
+                                       )
+                                       (call n-0 ("op" "noop") [])
+                                      )
+                                      (seq
+                                       (call -relay- ("op" "noop") [])
+                                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                                      )
+                                     )
+                                     (call -relay- ("op" "noop") [])
+                                    )
+                                    (next n-0)
+                                   )
+                                   (never)
+                                  )
+                                  (null)
+                                 )
+                                )
+                                (new $status
+                                 (new $result-1
+                                  (seq
+                                   (seq
+                                    (seq
+                                     (par
+                                      (seq
+                                       (seq
+                                        (seq
+                                         (call -relay- ("math" "sub") [1 1] sub)
+                                         (new $successful_test
+                                          (seq
+                                           (seq
+                                            (seq
+                                             (call -relay- ("math" "add") [sub 1] successful_incr)
+                                             (fold $successful successful_fold_var
+                                              (seq
+                                               (seq
+                                                (ap successful_fold_var $successful_test)
+                                                (canon -relay- $successful_test  #successful_iter_canon)
+                                               )
+                                               (xor
+                                                (match #successful_iter_canon.length successful_incr
+                                                 (null)
+                                                )
+                                                (next successful_fold_var)
+                                               )
+                                              )
+                                              (never)
+                                             )
+                                            )
+                                            (canon -relay- $successful_test  #successful_result_canon)
+                                           )
+                                           (ap #successful_result_canon successful_gate)
+                                          )
+                                         )
+                                        )
+                                        (call -relay- ("math" "sub") [1 1] sub-0)
+                                       )
+                                       (ap "ok" $status)
+                                      )
+                                      (call -relay- ("peer" "timeout") [6000 "timeout"] $status)
+                                     )
+                                     (new $status_test
+                                      (seq
+                                       (seq
+                                        (seq
+                                         (call -relay- ("math" "add") [0 1] status_incr)
+                                         (fold $status status_fold_var
+                                          (seq
+                                           (seq
+                                            (ap status_fold_var $status_test)
+                                            (canon -relay- $status_test  #status_iter_canon)
+                                           )
+                                           (xor
+                                            (match #status_iter_canon.length status_incr
+                                             (null)
+                                            )
+                                            (next status_fold_var)
+                                           )
+                                          )
+                                          (never)
+                                         )
+                                        )
+                                        (canon -relay- $status_test  #status_result_canon)
+                                       )
+                                       (ap #status_result_canon status_gate)
+                                      )
+                                     )
+                                    )
+                                    (xor
+                                     (match status_gate.$.[0] "ok"
+                                      (ap true $result-1)
+                                     )
+                                     (ap false $result-1)
+                                    )
+                                   )
+                                   (new $result-1_test
+                                    (seq
+                                     (seq
+                                      (seq
+                                       (call -relay- ("math" "add") [0 1] result-1_incr)
+                                       (fold $result-1 result-1_fold_var
+                                        (seq
+                                         (seq
+                                          (ap result-1_fold_var $result-1_test)
+                                          (canon -relay- $result-1_test  #result-1_iter_canon)
+                                         )
+                                         (xor
+                                          (match #result-1_iter_canon.length result-1_incr
+                                           (null)
+                                          )
+                                          (next result-1_fold_var)
+                                         )
+                                        )
+                                        (never)
+                                       )
+                                      )
+                                      (canon -relay- $result-1_test  #result-1_result_canon)
+                                     )
+                                     (ap #result-1_result_canon result-1_gate)
+                                    )
+                                   )
+                                  )
+                                 )
+                                )
+                               )
+                               (xor
+                                (match result-1_gate.$.[0] false
+                                 (ap "resource wasn't created: timeout exceeded" $error)
+                                )
+                                (ap id $resource_id)
+                               )
+                              )
+                             )
+                            )
+                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                           )
+                          )
+                          (canon %init_peer_id% $resource_id  #-resource_id-fix-0)
+                         )
+                         (ap #-resource_id-fix-0 -resource_id-flat-0)
+                        )
+                       )
+                      )
+                      (xor
+                       (seq
+                        (canon %init_peer_id% $error  #error_canon)
+                        (call %init_peer_id% ("callbackSrv" "response") [-resource_id-flat-0 #error_canon])
+                       )
+                       (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
+                      )
+                     )
+                     (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 5])
+                    )
+    `
+
+export function createResource(...args) {
+
+
+    return callFunction$$(
+        args,
+        {
+    "functionName" : "createResource",
+    "arrow" : {
+        "tag" : "arrow",
+        "domain" : {
+            "tag" : "labeledProduct",
+            "fields" : {
+                "label" : {
+                    "tag" : "scalar",
+                    "name" : "string"
+                }
+            }
+        },
+        "codomain" : {
+            "tag" : "unlabeledProduct",
+            "items" : [
+                {
+                    "tag" : "option",
+                    "type" : {
+                        "tag" : "scalar",
+                        "name" : "string"
+                    }
+                },
+                {
+                    "tag" : "array",
+                    "type" : {
+                        "tag" : "scalar",
+                        "name" : "string"
+                    }
+                }
+            ]
+        }
+    },
+    "names" : {
+        "relay" : "-relay-",
+        "getDataSrv" : "getDataSrv",
+        "callbackSrv" : "callbackSrv",
+        "responseSrv" : "callbackSrv",
+        "responseFnName" : "response",
+        "errorHandlingSrv" : "errorHandlingSrv",
+        "errorFnName" : "error"
+    }
+},
+        createResource_script
     )
 }
 

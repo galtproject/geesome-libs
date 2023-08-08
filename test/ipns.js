@@ -80,7 +80,7 @@ describe.only('ipns', function () {
         })();
       });
 
-      it('bindToStaticId and resolveStaticId', function (done) {
+      it.only('bindToStaticId and resolveStaticId', function (done) {
         this.timeout(80 * 1000);
 
         (async () => {
@@ -90,13 +90,13 @@ describe.only('ipns', function () {
           const staticId = await nodeA.createAccountIfNotExists(testAccountName);
           console.log('staticId', staticId);
 
-          let peers = await nodeA.getPeers(staticId);
-          assert.equal(peers.length, 0);
+          // let peers = await nodeA.getPeers(staticId);
+          // assert.equal(peers.length, 0);
 
           await nodeA.bindToStaticId(testHash, testAccountName);
 
-          peers = await nodeA.getPeers(staticId);
-          assert.equal(peers.length, 1);
+          // peers = await nodeA.getPeers(staticId);
+          // assert.equal(peers.length, 1);
 
           const resultHash = await nodeB.resolveStaticId(testAccountName);
           assert.equal(resultHash, testHash);

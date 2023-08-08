@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/mocha",
-    "compile-fluence": "fluence aqua -i ./src/fluenceService/aqua/resources.aqua -o ./src/fluenceService/generated --js"
+    "compile-fluence": "fluence aqua -i ./src/fluenceService/aqua/resources.aqua -o ./src/fluenceService/generated --js && mv src/fluenceService/generated/resources.js src/fluenceService/generated/resources.mjs"
   },
   "author": "",
   "license": "ISC",
@@ -26,7 +26,7 @@
     "geesome-wallet-client": "https://github.com/galtproject/geesome-wallet-client#c95cf1c",
     "hat": "^0.0.3",
     "ipfs": "0.58.4",
-    "ipfs-http-client": "52.0.3",
+    "ipfs-http-client": "60.0.1",
     "ipfs-utils": "8.1.6",
     "ipfsd-ctl": "10.0.3",
     "ipns": "0.15.0",
