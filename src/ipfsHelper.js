@@ -107,7 +107,7 @@ const ipfsHelper = {
     const factory = createFactory({
       type: 'proc', // or 'js' to run in a separate process
       // type: 'js',
-      ipfsHttpModule: await import('ipfs-http-client'),
+      ipfsHttpModule: require('ipfs-http-client'),
       ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
       ...options
     })
