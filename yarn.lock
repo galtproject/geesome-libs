@@ -10361,9 +10361,9 @@ onetime@^5.1.2:
     mimic-fn "^2.1.0"
 
 openpgp@^4.10.0:
-  version "4.10.10"
-  resolved "https://registry.yarnpkg.com/openpgp/-/openpgp-4.10.10.tgz#65b58d24466c278120c7f2d1ebc88ef9b15d6361"
-  integrity sha512-Ub48OogGPjNsr0G/wnJ/SyAQzt/tfcXZTWVZdjKFpXCQV1Ca+upFdSPPkBlGG3lb9EQGOKZJ2tzYNH6ZyKMkDQ==
+  version "4.10.11"
+  resolved "https://registry.yarnpkg.com/openpgp/-/openpgp-4.10.11.tgz#3e005cfadb08e664e0c98be2fe7824af601241a0"
+  integrity sha512-ec8m6xkuBqTaSSoNEr7CK0AepeVvKkgvMxs0KVAtEHlFDd1fA93Q+jYls6vRfrZDl0UEAEmcvRUa4W8VuGey2w==
   dependencies:
     asn1.js "^5.0.0"
     node-fetch "^2.1.2"
