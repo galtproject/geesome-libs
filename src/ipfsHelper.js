@@ -16,6 +16,7 @@ const dagCBOR = require('@ipld/dag-cbor')
 const pick = require('lodash/pick');
 const isUndefined = require('lodash/isUndefined');
 const isDate = require('lodash/isDate');
+import { createHelia } from 'helia';
 
 const ipfsHelper = {
   isIpfsHash(value) {

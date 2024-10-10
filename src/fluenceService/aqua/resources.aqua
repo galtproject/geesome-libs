@@ -1,0 +1,21 @@
+import ResourceId, Error from "@fluencelabs/registry/resources-api.aqua"
+import Record from "@fluencelabs/registry/registry-service.aqua"
+
+use "@fluencelabs/registry/resources-api.aqua" as Resources
+
+export resolveResource, registerService, getResourceId, createResource
+
+func resolveResource(resource_id: ResourceId, ack: i16) -> ?[]Record, *Error:
+  record, err <- Resources.resolveResource(resource_id, ack)
+  <- record, err
+
+func registerService(resource_id: ResourceId, value: string, peer_id: string, service_id: ?string) -> bool, *Error:
+  ok, err <- Resources.registerService(resource_id, value, peer_id, service_id)
+  <- ok, err
+
+func getResourceId(label: string, peer_id: string) -> ResourceId:
+  <- Resources.getResourceId(label, peer_id)
+
+func createResource(label: string) -> ?ResourceId, *Error:
+  id, err <- Resources.createResource(label)
+  <- id, err

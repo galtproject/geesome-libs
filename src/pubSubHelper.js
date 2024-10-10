@@ -1,7 +1,9 @@
 const PeerId = require('peer-id');
 const ipns = require('ipns');
-const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
-const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
+// const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
+// const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
+const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
+const randomBytes = require('libp2p-crypto/src/random-bytes');
 
 const isBuffer = require('lodash/isBuffer');
 const isObject = require('lodash/isObject');
@@ -10,25 +12,24 @@ const jwkToPem = require('pem-jwk').jwk2pem;
 const uint8ArrayConcat = require('uint8arrays/concat');
 const libp2pKeys = require('libp2p-crypto/src/keys');
 const crypto = require('crypto')
-const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
 const uint8ArrayFromString = require('uint8arrays/from-string');
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 const peerIdHelper = require('./peerIdHelper.js');
 const startsWith = require('lodash/startsWith');
 
 const pubSubHelper = {
-    async buildAndSignPubSubMessage(privateKey, topics, data) {
-        const peerId = await peerIdHelper.createPeerIdFromPrivKey(privateKey);
-        const from = peerId.toB58String();
-        let msgObject = {
-            data,
-            from,
-            receivedFrom: from,
-            seqno: randomSeqno(),
-            topicIDs: ensureArray(topics)
-        }
-        return signMessage(peerId, normalizeOutRpcMessage(msgObject));
-    },
+    // async buildAndSignPubSubMessage(privateKey, topics, data) {
+    //     const peerId = await peerIdHelper.createPeerIdFromPrivKey(privateKey);
+    //     const from = peerId.toB58String();
+    //     let msgObject = {
+    //         data,
+    //         from,
+    //         receivedFrom: from,
+    //         seqno: randomSeqno(),
+    //         topicIDs: ensureArray(topics)
+    //     }
+    //     return signMessage(peerId, normalizeOutRpcMessage(msgObject));
+    // },
 
     async buildAndSignFluenceMessage(privateKeyBase64, data) {
         if (isObject(data)) {
@@ -55,53 +56,53 @@ const pubSubHelper = {
         }
     },
 
-    async parsePubSubEvent(event) {
-        if(event.key) {
-            event.keyPeerId = await peerIdHelper.createPeerIdFromPubKey(event.key);
-            event.key = event.keyPeerId._pubKey;
-            event.keyIpns = event.keyPeerId.toB58String();
+    // async parsePubSubEvent(event) {
+    //     if(event.key) {
+    //         event.keyPeerId = await peerIdHelper.createPeerIdFromPubKey(event.key);
+    //         event.key = event.keyPeerId._pubKey;
+    //         event.keyIpns = event.keyPeerId.toB58String();
+    //
+    //         const pubSubSignatureValid = await pubSubHelper.checkPubSubSignature(event.key, event);
+    //         if(!pubSubSignatureValid) {
+    //             throw "pubsub_signature_invalid";
+    //         }
+    //     }
+    //
+    //     try {
+    //         event.data = ipns.unmarshal(event.data);
+    //         event.data.valueStr = event.data.value.toString('utf8');
+    //         event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
+    //
+    //         const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
+    //     } catch (e) {
+    //         // not ipns event
+    //         // console.warn('Failed unmarshal ipns of event', event);
+    //         event.dataStr = event.data.toString('utf8');
+    //         try {
+    //             event.dataJson = JSON.parse(event.dataStr);
+    //         } catch (e) {}
+    //     }
+    //     return event;
+    // },
 
-            const pubSubSignatureValid = await pubSubHelper.checkPubSubSignature(event.key, event);
-            if(!pubSubSignatureValid) {
-                throw "pubsub_signature_invalid";
-            }
-        }
-
-        try {
-            event.data = ipns.unmarshal(event.data);
-            event.data.valueStr = event.data.value.toString('utf8');
-            event.data.peerId = await peerIdHelper.createPeerIdFromPubKey(event.data.pubKey);
-
-            const validateRes = await ipns.validate(event.data.peerId._pubKey, event.data);
-        } catch (e) {
-            // not ipns event
-            // console.warn('Failed unmarshal ipns of event', event);
-            event.dataStr = event.data.toString('utf8');
-            try {
-                event.dataJson = JSON.parse(event.dataStr);
-            } catch (e) {}
-        }
-        return event;
-    },
-
-    checkPubSubSignature(pubKey, message) {
-        // const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
-
-        // Get message sans the signature
-        const bytes = uint8ArrayConcat([
-            Libp2pSignPrefix,
-            RPC.Message.encode({
-                ...message,
-                // @ts-ignore message.from needs to exist
-                from: PeerId.createFromCID(message.from).toBytes(),
-                signature: undefined,
-                key: undefined
-            }).finish()
-        ])
-
-        // verify the base message
-        return pubKey.verify(bytes, message.signature)
-    },
+    // checkPubSubSignature(pubKey, message) {
+    //     // const checkMessage = pick(message, ['from', 'data', 'seqno', 'topicIDs']);
+    //
+    //     // Get message sans the signature
+    //     const bytes = uint8ArrayConcat([
+    //         Libp2pSignPrefix,
+    //         RPC.Message.encode({
+    //             ...message,
+    //             // @ts-ignore message.from needs to exist
+    //             from: PeerId.createFromCID(message.from).toBytes(),
+    //             signature: undefined,
+    //             key: undefined
+    //         }).finish()
+    //     ])
+    //
+    //     // verify the base message
+    //     return pubKey.verify(bytes, message.signature)
+    // },
 
     async parseFluenceEvent(topic, event) {
         event.dataBuffer = Buffer.from(event.data, 'base64');
@@ -164,5 +165,9 @@ const pubSubHelper = {
     },
 
 };
+
+function randomSeqno() {
+    return randomBytes(8)
+}
 
 module.exports = pubSubHelper;

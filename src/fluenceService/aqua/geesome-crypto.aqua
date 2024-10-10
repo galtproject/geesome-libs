@@ -1,4 +1,4 @@
-import findSubscribers from "@fluencelabs/aqua-dht/pubsub.aqua"
+import resolveRoute from "@fluencelabs/registry/registry-api.aqua"
 
 service GeesomeCrypto("GeesomeCrypto"):
   checkSignature(from: string, data: string, seqno: string, signature: string) -> bool
@@ -23,7 +23,7 @@ func fanout_event(topic: string, event: Event, call: string -> ()):
         call("signature_not_valid")
     else:
         call("signature is valid")
-        subs <- findSubscribers(topic)
+        subs <- resolveRoute(topic)
         for r <- subs par:
             on r.peer_id via r.relay_id!:
                 ClientAPI.receive_event(topic, event)

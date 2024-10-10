@@ -1,50 +1,55 @@
-const dhtApi = require('./generated/dht-api');
-const geesomeCrypto = require('./generated/geesome-crypto');
+// const geesomeCrypto = require('./generated/geesome-crypto');
 const pIteration = require('p-iteration');
 const pubSubHelper = require('../pubSubHelper');
 const ipfsHelper = require('../ipfsHelper');
-const log = require('loglevel');
+// const log = require('loglevel');
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
 
+
 module.exports = class FluenceService {
-    constructor(accStorage, peer = null, options = {}) {
+    constructor(accStorage = null, options = {}) {
         this.accStorage = accStorage;
-        this.peer = peer;
         this.subscribesByTopics = {};
 
-        if (this.peer) {
-            this.registerEvents();
-        }
-
-        if (options.logLevel) {
-            log.setLevel(options.logLevel);
-        }
+        // if (options.logLevel) {
+        //     log.setLevel(options.logLevel);
+        // }
     }
+
+    async initClient(keyPair, relay = null) {
+        this.dhtApi = await import('./generated/resources.mjs');
+        const {Fluence, randomKras} = await import("@fluencelabs/js-client.api");
+
+        await Fluence.connect(randomKras(), {
+            // keyPair,
+        });
+
+        this.client = await Fluence.getClient();
+        this.registerEvents();
+    }
+
     async isReady() {
         return !!this.peer;
     }
-    setPeer(peer) {
-        this.peer = peer;
-    }
     registerEvents() {
-        geesomeCrypto.registerClientAPI(this.peer, 'api', {
-            receive_event: (topic, e) => {
-                this.emitTopicSubscribers(topic, e);
-            }
-        });
-
-        geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
-            checkSignature: (from, data, seqno, signature) => {
-                try {
-                    return pubSubHelper.checkFluenceSignature(from, data, seqno, signature);
-                } catch (e) {
-                    console.error('registerGeesomeCrypto', e);
-                }
-            }
-        });
+        // geesomeCrypto.registerClientAPI(this.peer, 'api', {
+        //     receive_event: (topic, e) => {
+        //         this.emitTopicSubscribers(topic, e);
+        //     }
+        // });
+        //
+        // geesomeCrypto.registerGeesomeCrypto(this.peer, 'GeesomeCrypto', {
+        //     checkSignature: (from, data, seqno, signature) => {
+        //         try {
+        //             return pubSubHelper.checkFluenceSignature(from, data, seqno, signature);
+        //         } catch (e) {
+        //             console.error('registerGeesomeCrypto', e);
+        //         }
+        //     }
+        // });
     }
     getClientRelayId() {
-        return this.peer.getStatus().relayPeerId;
+        return this.client.getStatus().relayPeerId;
     }
     addTopicSubscriber(topic, callback) {
         if (!this.subscribesByTopics[topic]) {
@@ -71,8 +76,8 @@ module.exports = class FluenceService {
             }
             console.log('bindToStaticId:initTopicAndSubscribeBlocking');
             await this.initTopicAndSubscribeBlocking(accountKey, storageId, options.tries || 0);
-            console.log('bindToStaticId:fanout_event');
-            await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
+            // console.log('bindToStaticId:fanout_event');
+            // await this.publishEventByStaticId(accountKey, this.getUpdatesTopic(accountKey, 'update'), '/ipfs/' + storageId);
             resolved = true;
             resolve(accountKey);
         });
@@ -85,24 +90,6 @@ module.exports = class FluenceService {
     }
     getAccountsGroupUpdatesTopic(accounts, type = 'update') {
         return getFluenceAccountsGroupUpdatesTopic(accounts, type);
-    }
-    async resolveStaticItem(staticStorageId) {
-        if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
-            staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
-        }
-        return dhtApi.findSubscribers(this.peer, staticStorageId).then(results => {
-            // console.log("subscriber", results[0]);
-            let lastItem;
-            results.forEach(item => {
-                if (!lastItem || item.timestamp_created > lastItem.timestamp_created) {
-                    lastItem = item;
-                }
-            });
-            if (lastItem) {
-                lastItem.createdAt = lastItem.timestamp_created;
-            }
-            return lastItem;
-        });
     }
     async removeAccountIfExists(name) {
         return this.accStorage.destroyStaticId(name);
@@ -183,14 +170,14 @@ module.exports = class FluenceService {
     async publishEventByData(topic, event) {
         // console.log('fanout_event', this.peer.relayPeerId, topic, event);
         return new Promise((resolve, reject) => {
-            geesomeCrypto.fanout_event(this.peer, topic, event, (res) => {
-                // console.log("fanout_event", res);
-                if (res === 'done') {
-                    return resolve();
-                } else if (res === 'signature_not_valid') {
-                    return reject('fanout_event failed: signature isnt valid');
-                }
-            });
+            // geesomeCrypto.fanout_event(this.peer, topic, event, (res) => {
+            //     // console.log("fanout_event", res);
+            //     if (res === 'done') {
+            //         return resolve();
+            //     } else if (res === 'signature_not_valid') {
+            //         return reject('fanout_event failed: signature isnt valid');
+            //     }
+            // });
         });
     }
 
@@ -200,27 +187,52 @@ module.exports = class FluenceService {
         return this.addTopicSubscriber(_topic, _callback);
     }
 
-    async initTopicAndSubscribeBlocking(_topic, _value, tries = 0) {
+    async initTopicAndSubscribeBlocking(topic, value, tries = 0) {
+        if(!this.dhtApi) {
+            return;
+        }
         try {
-            await dhtApi.initTopicAndSubscribeBlocking(this.peer, _topic, _value, this.getClientRelayId(), null, () => {}, {}); // ttl: 20000
+            const [resId, errors] = await this.dhtApi.createResource(topic); //, value, this.getClientRelayId(), null, () => {}, {}
+            if (errors.length) {
+                throw new Error(errors[0]);
+            }
+            await this.dhtApi.registerService(resId, JSON.stringify({value}), this.client.getPeerId(), 'ipns')
         } catch (e) {
             tries--;
             if (tries <= 0) {
                 return console.warn('initTopicAndSubscribeBlocking failed', e);
             }
             console.warn('initTopicAndSubscribeBlocking failed, try again...', e);
-            await this.peer.stop().catch(e => console.warn('peer.stop failed', e));
-            await this.peer.start();
-            return this.initTopicAndSubscribeBlocking(_topic, _value, tries);
+            await this.client.stop().catch(e => console.warn('peer.stop failed', e));
+            await this.client.start();
+            return this.initTopicAndSubscribeBlocking(topic, value, tries);
         }
     }
 
-    async stop() {
-        return this.peer.stop();
+    async resolveStaticItem(staticStorageId) {
+        if (!ipfsHelper.isAccountCidHash(staticStorageId)) {
+            staticStorageId = await this.accStorage.getAccountStaticId(staticStorageId);
+        }
+        if(!this.dhtApi) {
+            return;
+        }
+        return this.dhtApi.resolveResource(staticStorageId, 1).then(results => {
+            // console.log("subscriber", results[0]);
+            let lastItem;
+            results.forEach(item => {
+                if (!lastItem || item.timestamp_created > lastItem.timestamp_created) {
+                    lastItem = item;
+                }
+            });
+            if (lastItem) {
+                lastItem.createdAt = lastItem.timestamp_created;
+            }
+            return lastItem;
+        });
     }
 
     async getStaticIdPeers(ipnsId) {
-        let subs = await dhtApi.findSubscribers(this.peer, this.getUpdatesTopic(ipnsId, 'update'));
+        let subs = await this.dhtApi.findSubscribers(this.client, this.getUpdatesTopic(ipnsId, 'update'));
         return subs;
     }
 
@@ -232,7 +244,11 @@ module.exports = class FluenceService {
         if (!topic) {
             return [];
         }
-        let subs = await dhtApi.findSubscribers(this.peer, topic);
+        let subs = await this.dhtApi.findSubscribers(this.client, topic);
         return subs;
+    }
+
+    async stop() {
+        return this.client.stop();
     }
 }
