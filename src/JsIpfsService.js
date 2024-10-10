@@ -9,7 +9,7 @@
 
 const ipfsHelper = require('./ipfsHelper');
 const peerIdHelper = require('./peerIdHelper');
-const pubSubHelper = require('./pubSubHelper');
+// const pubSubHelper = require('./pubSubHelper');
 const common = require('./common');
 
 const trim = require('lodash/trim');
@@ -26,21 +26,15 @@ const itFirst = require('it-first');
 const itConcat = require('it-concat');
 const itToStream = require('it-to-stream');
 const { CID } = require('multiformats/cid');
-// const routingConfig = require('ipfs/packages/ipfs-core/src/ipns/routing/config')
-// const resolver = require('ipfs/packages/ipfs-core/src/ipns/resolver')
 
-
-const IPNS = require('ipns');
+const Helia = require('helia');
 
 const { getIpnsUpdatesTopic } = require('./name');
 
 module.exports = class JsIpfsService {
-  constructor(node) {
+  constructor(node, type = 'helia') {
     this.node = node;
-    // const {libp2p, peerId} = this.node;
-    // const repo = {datastore: libp2p.datastore};
-    // this.ipnsRouting = routingConfig({ libp2p, repo, peerId, options: { EXPERIMENTAL: {ipnsPubsub: true} } })
-    // this.ipnsResolver = new resolver(this.ipnsRouting)
+    this.type = type;
     this.id = node.id.bind(node);
     this.stop = node.stop.bind(node);
     this.swarmConnect = node.swarm.connect.bind(node.swarm);
@@ -238,18 +232,18 @@ module.exports = class JsIpfsService {
     return itFirst(this.node.name.resolve(name)).then(h => h.replace('/ipfs/', ''));
   }
 
-  async resolveStaticIdEntry(staticStorageId) {
-    const peerId = peerIdHelper.createPeerIdFromIpns(staticStorageId);
-    const { routingKey } = IPNS.getIdKeys(peerId.toBytes());
-    const record = await this.ipnsRouting.get(routingKey.uint8Array());
-    const ipnsEntry = IPNS.unmarshal(record);
-    const valid = await this.ipnsResolver._validateRecord(peerId, ipnsEntry);
-    if(valid) {
-      return ipnsEntry;
-    } else {
-      throw "record not valid"
-    }
-  }
+  // async resolveStaticIdEntry(staticStorageId) {
+  //   const peerId = peerIdHelper.createPeerIdFromIpns(staticStorageId);
+  //   const { routingKey } = IPNS.getIdKeys(peerId.toBytes());
+  //   const record = await this.ipnsRouting.get(routingKey.uint8Array());
+  //   const ipnsEntry = IPNS.unmarshal(record);
+  //   const valid = await this.ipnsResolver._validateRecord(peerId, ipnsEntry);
+  //   if(valid) {
+  //     return ipnsEntry;
+  //   } else {
+  //     throw "record not valid"
+  //   }
+  // }
 
   async getBootNodeList() {
     return new Promise((resolve, reject) => {
@@ -314,30 +308,30 @@ module.exports = class JsIpfsService {
     return this.node.files.rm('/ipfs/' + hash, options);
   }
 
-  subscribeToStaticIdUpdates(staticId, callback) {
-    const topic = getIpnsUpdatesTopic(staticId);
-    return this.subscribeToEvent(topic, callback);
-  }
+  // subscribeToStaticIdUpdates(staticId, callback) {
+  //   const topic = getIpnsUpdatesTopic(staticId);
+  //   return this.subscribeToEvent(topic, callback);
+  // }
 
-  async publishEventByPrivateKey(privateKey, topic, data) {
-    if(isObject(data)) {
-      data = JSON.stringify(data);
-    }
-    if(isString(data)) {
-      data = Buffer.from(data);
-    }
-    privateKey = privateKey.bytes || privateKey;
-    const message = await pubSubHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
-    return this.node.pubsub.publishMessage(message);
-  }
+  // async publishEventByPrivateKey(privateKey, topic, data) {
+  //   if(isObject(data)) {
+  //     data = JSON.stringify(data);
+  //   }
+  //   if(isString(data)) {
+  //     data = Buffer.from(data);
+  //   }
+  //   privateKey = privateKey.bytes || privateKey;
+  //   const message = await pubSubHelper.buildAndSignPubSubMessage(privateKey, [topic], data);
+  //   return this.node.pubsub.publishMessage(message);
+  // }
 
-  async publishEventByStaticId(staticId, topic, data, pass) {
-    return this.publishEventByPrivateKey(await this.keyLookup(staticId, pass), topic, data);
-  }
+  // async publishEventByStaticId(staticId, topic, data, pass) {
+  //   return this.publishEventByPrivateKey(await this.keyLookup(staticId, pass), topic, data);
+  // }
 
-  async publishEventByPeerId(peerId, topic, data) {
-    return this.publishEventByPrivateKey(peerId._privKey, topic, data);
-  }
+  // async publishEventByPeerId(peerId, topic, data) {
+  //   return this.publishEventByPrivateKey(peerId._privKey, topic, data);
+  // }
 
   getStaticIdPeers(staticId) {
     const topic = getIpnsUpdatesTopic(staticId);
@@ -362,15 +356,15 @@ module.exports = class JsIpfsService {
     return this.node.pubsub.publish(topic, data);
   }
 
-  subscribeToEvent(topic, callback) {
-    return this.node.pubsub.subscribe(topic, async (event) => {
-      pubSubHelper.parsePubSubEvent(event).then(parsedEvent => {
-        callback(parsedEvent);
-      }).catch((error) => {
-        console.warn("PubSub ipns validation failed", event, error);
-      })
-    });
-  }
+  // subscribeToEvent(topic, callback) {
+  //   return this.node.pubsub.subscribe(topic, async (event) => {
+  //     pubSubHelper.parsePubSubEvent(event).then(parsedEvent => {
+  //       callback(parsedEvent);
+  //     }).catch((error) => {
+  //       console.warn("PubSub ipns validation failed", event, error);
+  //     })
+  //   });
+  // }
 
   async keyLookup(accountKey, pass) {
     if (startsWith(accountKey, 'Qm')) {

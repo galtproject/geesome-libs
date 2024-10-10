@@ -23,7 +23,7 @@ const waitFor = require('./utils/wait-for');
 const createNodes = require('./utils/createNodes');
 const {randomSeqno} = require('libp2p-interfaces/src/pubsub/utils');
 
-describe('pubsub', function () {
+describe.only('pubsub', function () {
   let nodeA
   let nodeB
   const pass = 'ipfs-is-awesome-software';

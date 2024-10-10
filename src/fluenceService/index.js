@@ -18,11 +18,9 @@ module.exports = class FluenceService {
 
     async initClient(keyPair, relay = null) {
         this.dhtApi = await import('./generated/resources.mjs');
-        await import('@fluencelabs/js-client.node');
-        const {Fluence} = await import("@fluencelabs/js-client.api");
-        const {testNet} = await import("@fluencelabs/fluence-network-environment");
+        const {Fluence, randomKras} = await import("@fluencelabs/js-client.api");
 
-        await Fluence.connect(relay || testNet[1], {
+        await Fluence.connect(randomKras(), {
             // keyPair,
         });
 
