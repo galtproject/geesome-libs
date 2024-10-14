@@ -7,22 +7,28 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const JsIpfsService = require('./JsIpfsService');
-const globSource = require('ipfs-utils/src/files/glob-source');
+import JsIpfsService from './JsIpfsService';
+import { globSource } from '@helia/unixfs';
+import fs from 'node:fs';
 
-module.exports = class JsIpfsServiceNode extends JsIpfsService {
+export default class JsIpfsServiceNode extends JsIpfsService {
   async saveFileByPath(path, options = {}) {
-    const fs = require('fs');
-    return this.saveFile({content: fs.createReadStream(path)}, options);
+    return this.saveFile(fs.createReadStream(path), options);
   }
 
   async saveDirectory(path, options = {}) {
-    const res = await this.node.add(globSource(path, { recursive: true }), {pin: false, cidVersion: 1});
-    const dirResult = this.wrapIpfsItem(res);
-    const pinPromise = this.addPin(dirResult.id);
-    if (options.waitForPin) {
-      await pinPromise;
+    if (this.type === 'helia') {
+      for await (const entry of this.heliaFs.addAll(globSource(path, '**/*', {}))) {
+        console.info(entry)
+      }
+    } else {
+      const res = await this.node.add(globSource(path, '**/*',{ }), {pin: false, cidVersion: 1});
+      const dirResult = this.wrapIpfsItem(res);
+      const pinPromise = this.addPin(dirResult.id);
+      if (options.waitForPin) {
+        await pinPromise;
+      }
+      return dirResult;
     }
-    return dirResult;
   }
 };

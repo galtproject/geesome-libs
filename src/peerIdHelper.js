@@ -6,14 +6,14 @@
  * (Founded by [Nikolai Popeka](https://github.com/npopeka) by
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
-const crypto = require('libp2p-crypto');
-const PeerId = require('peer-id');
-const cryptoKeys = require('libp2p-crypto/src/keys')
+import crypto from 'libp2p-crypto';
+import PeerId from 'peer-id';
+import cryptoKeys from 'libp2p-crypto/src/keys';
 // TODO: use @libp2p/peer-id
 // https://github.com/libp2p/js-libp2p-interfaces/blob/d72b30cfca4b9145e0b31db28e8fa3329a180e83/packages/libp2p-peer-id-factory/test/index.spec.ts
 //import { peerIdFromString, peerIdFromBytes, peerIdFromCID, createPeerId } from '@libp2p/peer-id';
 
-const peerIdHelper = {
+export default {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
     return (await this.createPeerIdFromPrivateBase64(privateBase64)).privKey.export(pass)
   },
@@ -63,4 +63,3 @@ const peerIdHelper = {
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),
   createPeerIdFromIpns: PeerId.createFromCID.bind(PeerId)
 };
-module.exports = peerIdHelper;

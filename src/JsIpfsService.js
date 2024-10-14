@@ -7,63 +7,73 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const ipfsHelper = require('./ipfsHelper');
-const peerIdHelper = require('./peerIdHelper');
+global.CustomEvent = class CustomEvent extends Event {
+  #detail;
+
+  constructor(type, options) {
+    super(type, options);
+    this.#detail = options?.detail ?? null;
+  }
+
+  get detail() {
+    return this.#detail;
+  }
+}
+
+import ipfsHelper from './ipfsHelper';
+import peerIdHelper from './peerIdHelper';
 // const pubSubHelper = require('./pubSubHelper');
-const common = require('./common');
+import common from './common';
 
-const trim = require('lodash/trim');
-const pick = require('lodash/pick');
-const isObject = require('lodash/isObject');
-const find = require('lodash/find');
-const startsWith = require('lodash/startsWith');
-const includes = require('lodash/includes');
-const isString = require('lodash/isString');
-const isBuffer = require('lodash/isBuffer');
-const get = require('lodash/get');
-const urlSource = require('ipfs-utils/src/files/url-source');
-const itFirst = require('it-first');
-const itConcat = require('it-concat');
-const itToStream = require('it-to-stream');
-const { CID } = require('multiformats/cid');
+import trim from 'lodash/trim.js';
+import pick from 'lodash/pick';
+import isObject from 'lodash/isObject';
+import find from 'lodash/find';
+import startsWith from 'lodash/startsWith';
+import includes from 'lodash/includes';
+import isString from 'lodash/isString';
+import isBuffer from 'lodash/isBuffer';
+import get from 'lodash/get';
+// const urlSource = require('ipfs-utils/src/files/url-source');
+import itFirst from 'it-first';
+import itConcat from 'it-concat';
+import itToStream from 'it-to-stream';
+import { CID } from 'multiformats/cid';
 
-const Helia = require('helia');
+// const Helia = require('helia');
+import got from 'got';
 
-const { getIpnsUpdatesTopic } = require('./name');
+import name from './name';
+const { getIpnsUpdatesTopic } = name;
+import { unixfs } from '@helia/unixfs';
 
-module.exports = class JsIpfsService {
+export default class JsIpfsService {
   constructor(node, type = 'helia') {
     this.node = node;
     this.type = type;
-    this.id = node.id.bind(node);
+    if (type === 'helia') {
+      this.id = async () => ({
+        id: node.libp2p.peerId,
+        multiaddrs: node.libp2p.getMultiaddrs()
+      });
+      this.swarmConnect = node.libp2p.dial.bind(node.libp2p);
+      this.heliaFs = unixfs(this.node);
+    } else {
+      this.id = node.id.bind(node);
+      this.swarmConnect = node.swarm.connect.bind(node.swarm);
+    }
     this.stop = node.stop.bind(node);
-    this.swarmConnect = node.swarm.connect.bind(node.swarm);
+  }
+
+  async init() {
   }
 
   isStreamAddSupport() {
     return true;
   }
 
-  wrapIpfsItem(ipfsItem) {
-    if(!ipfsItem.hash) {
-      ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
-    }
-    return {
-      id: ipfsItem.hash,
-      path: ipfsItem.path,
-      size: ipfsItem.size,
-      // storageAccountId: await this.getCurrentAccountId()
-    }
-  }
-
   async saveFileByUrl(url, options = {}) {
-    let result = await this.node.add(urlSource(url), {pin: false, cidVersion: 1});
-    result = this.wrapIpfsItem(result);
-    const pinPromise = this.addPin(result.id);
-    if(options.waitForPin) {
-      await pinPromise;
-    }
-    return result;
+    return this.saveFile(got.stream(url));
   }
 
   async saveBrowserFile(fileObject, options = {}) {
@@ -86,17 +96,28 @@ module.exports = class JsIpfsService {
         // TODO: figure out why its not working
         content.on('error', reject);
       }
-      this.saveFile({content}, options).then(resolve).catch(reject);
+      if (this.type === 'helia') {
+        if (content.pipe) {
+          //https://github.com/ipfs-examples/helia-examples/blob/main/examples/helia-create-car/test/index.spec.js
+          return resolve(this.heliaFs.addByteStream(content));
+        } else {
+          //https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS
+          console.log('this.heliaFs.addBytes');
+          return resolve(this.heliaFs.addBytes(content));
+        }
+      } else {
+        //https://github.com/ipfs/js-kubo-rpc-client
+      }
     });
   }
 
   async saveFile(data, options = {}) {
-    let result = await this.node.add([data], {pin: false, cidVersion: 1});
-    result = this.wrapIpfsItem(result);
-    const pinPromise = this.addPin(result.id);
-    if (options.waitForPin) {
-      await pinPromise;
-    }
+    let result = await this.saveFileByData(data);
+    result = this.wrapIpfsItem(await this.heliaFs.stat(result));
+    // const pinPromise = this.addPin(result.id);
+    // if (options.waitForPin) {
+    //   await pinPromise;
+    // }
     return result;
   }
 
@@ -414,5 +435,17 @@ module.exports = class JsIpfsService {
       hash = ipfsHelper.cidToIpfsHash(cid);
     }
     return hash;
+  }
+
+  wrapIpfsItem(ipfsItem) {
+    if(!ipfsItem.hash) {
+      ipfsItem.hash = ipfsHelper.cidToIpfsHash(ipfsItem.cid);
+    }
+    return {
+      id: ipfsItem.hash,
+      path: '/ipfs/' + ipfsItem.hash, //ipfsItem.path,
+      size: ipfsItem.fileSize,
+      // storageAccountId: await this.getCurrentAccountId()
+    }
   }
 };

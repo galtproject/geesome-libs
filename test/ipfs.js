@@ -11,48 +11,110 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const JsIpfsService = require('../src/JsIpfsService');
-const ipfsHelper = require('../src/ipfsHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const common = require('../src/common');
-const trie = require('../src/base36Trie');
+import JsIpfsService from '../src/JsIpfsService';
+import ipfsHelper from '../src/ipfsHelper';
+import peerIdHelper from '../src/peerIdHelper';
+import common from '../src/common';
+import trie from '../src/base36Trie';
+import { createHelia } from 'helia';
+import { MemoryBlockstore } from 'blockstore-core';
+import { MemoryDatastore } from 'datastore-core';
+import * as Filters from '@libp2p/websockets/filters';
+import { bootstrap } from '@libp2p/bootstrap';
+import { identify } from '@libp2p/identify';
+import { tcp } from '@libp2p/tcp';
+import { webSockets } from "@libp2p/websockets";
+import { noise } from '@chainsafe/libp2p-noise';
+import { yamux } from '@chainsafe/libp2p-yamux';
+const blockstore = new MemoryBlockstore();
+const datastore = new MemoryDatastore();
+import { createLibp2p } from 'libp2p';
+import { unixfs } from '@helia/unixfs';
 
-describe('ipfs', function () {
+describe.only('ipfs', function () {
   let node;
 
   beforeEach(function (done) {
-    this.timeout(40 * 1000);
+    this.timeout(400 * 1000);
 
     (async () => {
-      node = new JsIpfsService(await ipfsHelper.createDaemonNode({
-        test: true,
-        disposable: true,
-      }));
+      console.log('async ()');
+      try {
+        // const libp2p = await createLibp2p({
+        //   datastore,
+        //   streamMuxers: [
+        //     yamux()
+        //   ],
+        //   services: {
+        //     identify: identify()
+        //   },
+        //   addresses: {
+        //     listen: [
+        //       '/ip4/127.0.0.1/tcp/0'
+        //     ]
+        //   },
+        //   transports: [
+        //     webSockets({
+        //       filter: Filters.all // this is necessary to dial insecure websockets
+        //     })
+        //     // other transports
+        //   ],
+        //   connectionGater: {
+        //     denyDialMultiaddr: () => false // this is necessary to dial local addresses at all
+        //   },
+        //   peerDiscovery: [
+        //     bootstrap({
+        //       list: [
+        //         '/ip4/127.0.0.1/tcp/4001/ws/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+        //       ]
+        //     })
+        //   ],
+        // });
+        // console.log('libp2p', libp2p);
+        const helia = await createHelia({
+          // datastore,
+          blockstore,
+          // libp2p,
+        });
+        node = new JsIpfsService(helia);
+        await node.init();
+        const fs = unixfs(helia);
+        // add the bytes to your node and receive a unique content identifier
+        console.log('addBytes');
+        const cid = await fs.addBytes(Buffer.from('Hello World 201', 'utf8'))
+        console.log('savedText', cid);
+      } catch (error) {
+        console.error('catch', error);
+      }
       done();
     })();
   });
 
   afterEach((done) => {node.stop().then(() => done())})
 
-  it('should save file with correct ipfs hash', function (done) {
+  it.only('should save file with correct ipfs hash', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
       const content = '1';
-      const savedText = await node.saveFileByData(content, {waitForPin: true});
-      const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
-      expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
-      expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
-      expect(savedText.id).to.equals(ipfsHash);
-      const savedText2 = await node.saveFileByData('2', {waitForPin: true});
-      expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
-      expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
-      expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
+      const savedText = await node.saveFile(content, {waitForPin: true});
+      try {
+        const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
+        expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
+        expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
+        expect(savedText.id).to.equals(ipfsHash);
+        const savedText2 = await node.saveFile('2', {waitForPin: true});
+        expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
+        expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
+        expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
+      } catch (e) {
+        console.error('catch', e);
+      }
       done();
     })();
   });

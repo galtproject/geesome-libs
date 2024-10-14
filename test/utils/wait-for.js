@@ -11,7 +11,7 @@
 
 // Wait for async function `test` to callback(null, true) or timeout after
 // options.timeout milliseconds.
-module.exports = function waitFor (test, options, callback) {
+function waitFor (test, options, callback) {
   return new Promise((resolve, reject) => {
     if (typeof options === 'function') {
       callback = options
@@ -47,7 +47,7 @@ module.exports = function waitFor (test, options, callback) {
   })
 }
 
-module.exports.promises = async (test, options) => {
+async function promises (test, options) {
   options = Object.assign({ timeout: 5000, interval: 0, name: 'event' }, options)
   const start = Date.now()
 
@@ -64,4 +64,9 @@ module.exports.promises = async (test, options) => {
 
     await new Promise(resolve => setTimeout(resolve, options.interval))
   }
+}
+
+export default {
+  waitFor,
+  promises
 }

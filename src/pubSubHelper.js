@@ -1,21 +1,23 @@
-const PeerId = require('peer-id');
-const ipns = require('ipns');
+// const PeerId = require('peer-id');
+// const ipns = require('ipns');
 // const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 // const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-const {RPC} = require('libp2p-interfaces/src/pubsub/message/rpc');
-const randomBytes = require('libp2p-crypto/src/random-bytes');
+import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc';
+const {RPC} = rpcPkg;
+import randomBytes from 'libp2p-crypto/src/random-bytes';
 
-const isBuffer = require('lodash/isBuffer');
-const isObject = require('lodash/isObject');
-const isString = require('lodash/isString');
-const jwkToPem = require('pem-jwk').jwk2pem;
-const uint8ArrayConcat = require('uint8arrays/concat');
-const libp2pKeys = require('libp2p-crypto/src/keys');
-const crypto = require('crypto')
-const uint8ArrayFromString = require('uint8arrays/from-string');
+import isBuffer from 'lodash/isBuffer';
+import isObject from 'lodash/isObject';
+import isString from 'lodash/isString';
+import startsWith from 'lodash/startsWith';
+import pemJwk from 'pem-jwk';
+const {jwk2pem: jwkToPem} = pemJwk;
+import uint8ArrayConcat from 'uint8arrays/concat';
+import libp2pKeys from 'libp2p-crypto/src/keys';
+import crypto from 'crypto';
+import uint8ArrayFromString from 'uint8arrays/from-string';
+import peerIdHelper from './peerIdHelper.js';
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
-const peerIdHelper = require('./peerIdHelper.js');
-const startsWith = require('lodash/startsWith');
 
 const pubSubHelper = {
     // async buildAndSignPubSubMessage(privateKey, topics, data) {
@@ -170,4 +172,4 @@ function randomSeqno() {
     return randomBytes(8)
 }
 
-module.exports = pubSubHelper;
+export default pubSubHelper;

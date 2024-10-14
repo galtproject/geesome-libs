@@ -1,12 +1,13 @@
 // const geesomeCrypto = require('./generated/geesome-crypto');
-const pIteration = require('p-iteration');
-const pubSubHelper = require('../pubSubHelper');
-const ipfsHelper = require('../ipfsHelper');
+import pIteration from 'p-iteration';
+import pubSubHelper from '../pubSubHelper';
+import ipfsHelper from '../ipfsHelper';
 // const log = require('loglevel');
-const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = require('../name');
+import name from '../name';
+const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = name;
 
 
-module.exports = class FluenceService {
+export default class FluenceService {
     constructor(accStorage = null, options = {}) {
         this.accStorage = accStorage;
         this.subscribesByTopics = {};

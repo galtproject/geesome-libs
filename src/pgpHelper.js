@@ -7,10 +7,10 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const openpgp = require('openpgp');
-const forge = require('node-forge');
-const BN = require('bn.js');
-const extend = require('lodash/extend');
+import openpgp from 'openpgp';
+import forge from 'node-forge';
+import BN from 'bn.js';
+import extend from 'lodash/extend';
 
 // https://github.com/openpgpjs/openpgpjs/issues/1126
 openpgp.config.allow_insecure_decryption_with_signing_keys = true;
@@ -177,8 +177,6 @@ const pgpHelper = {
 
 };
 
-module.exports = pgpHelper;
-
 function createdPreferredAlgos(algos, configAlgo) {
   if (configAlgo) { // Not `uncompressed` / `plaintext`
     const configIndex = algos.indexOf(configAlgo);
@@ -206,3 +204,5 @@ async function getLatestValidSignature(signatures, primaryKey, signatureType, da
   // }
   // return signature;
 }
+
+export default pgpHelper;

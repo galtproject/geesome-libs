@@ -7,30 +7,31 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const isNaN = require('lodash/isNaN');
-const isString = require('lodash/isString');
-const isObject = require('lodash/isObject');
-const isUndefined = require('lodash/isUndefined');
-const isArray = require('lodash/isArray');
-const includes = require('lodash/includes');
-const startsWith = require('lodash/startsWith');
-const endsWith = require('lodash/endsWith');
-const last = require('lodash/last');
-const trim = require('lodash/trim');
-const createHash = require('create-hash');
-const stableSort = require('stable');
-const uuidv4 = require('uuid/v4');
-const bip39 = require("ethereum-cryptography/bip39");
-const bip39Wordlist = require("ethereum-cryptography/bip39/wordlists/english").wordlist;
+import isNaN from 'lodash/isNaN.js';
+import isString from 'lodash/isString';
+import isObject from 'lodash/isObject';
+import isUndefined from 'lodash/isUndefined';
+import isArray from 'lodash/isArray';
+import includes from 'lodash/includes';
+import startsWith from 'lodash/startsWith';
+import endsWith from 'lodash/endsWith';
+import last from 'lodash/last';
+import trim from 'lodash/trim';
+import createHash from 'create-hash';
+import stableSort from 'stable';
+import uuidv4 from 'uuid/v4';
+import bip39 from "ethereum-cryptography/bip39";
+import englishWords from "ethereum-cryptography/bip39/wordlists/english";
+const bip39Wordlist = englishWords.wordlist;
 
-module.exports.isNumber = (str) => {
+const isNumber = (str) => {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {
     return false;
   }
   return !isNaN(parseFloat(str));
 };
 
-module.exports.moveFromDate = (fromDate, value, unit) => {
+const moveFromDate = (fromDate, value, unit) => {
   value = parseFloat(value);
   if(includes(unit, 'second')) {
     return new Date(fromDate.getTime() + value * 1000);
@@ -53,11 +54,11 @@ module.exports.moveFromDate = (fromDate, value, unit) => {
   return null;
 };
 
-module.exports.moveDate = (value, unit) => {
+const moveDate = (value, unit) => {
   return module.exports.moveFromDate(new Date(), value, unit);
 };
 
-module.exports.extractHostname = (url) => {
+const extractHostname = (url) => {
   return (new URL(url)).hostname;
 };
 
@@ -77,13 +78,12 @@ function sortObject (objectData) {
     return arr;
   }))
 }
-module.exports.sortObject = sortObject;
 
-module.exports.isIpAddress = (str) => {
+const isIpAddress = (str) => {
   return /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(str);
 };
 
-module.exports.random = (mode = 'hash') => {
+const random = (mode = 'hash') => {
   if (mode === 'words') {
     return bip39.generateMnemonic(bip39Wordlist);
   } else {
@@ -91,11 +91,11 @@ module.exports.random = (mode = 'hash') => {
   }
 };
 
-module.exports.hash = (input, algo = 'sha256') => {
+const hash = (input, algo = 'sha256') => {
   return createHash(algo).update(input).digest('hex');
 }
 
-module.exports.makeCode = (length) => {
+const makeCode = (length) => {
   let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let res = '';
   for (let i = 0; i < length; i++) {
@@ -104,19 +104,33 @@ module.exports.makeCode = (length) => {
   return res;
 };
 
-module.exports.getFilenameFromPath = (path) => {
+const getFilenameFromPath = (path) => {
   return (trim(path, '/').split('/').slice(-1)[0] || '').split('?')[0];
 }
 
-module.exports.getExtensionFromName = (fileName) => {
+const getExtensionFromName = (fileName) => {
   return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase().split('?')[0] : null
 }
 
-module.exports.isUndefined = (v) => {
-  return !v || v === 'null' || v === 'undefined' || isUndefined(v);
-}
-
-module.exports.isVideoType = (fullType) => {
+const isVideoType = (fullType) => {
   //TODO: detect more video types
   return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
+}
+
+export default {
+  isNumber,
+  moveFromDate,
+  moveDate,
+  extractHostname,
+  sortObject,
+  isIpAddress,
+  random,
+  hash,
+  makeCode,
+  getFilenameFromPath,
+  getExtensionFromName,
+  isVideoType,
+  isUndefined: (v) => {
+    return !v || v === 'null' || v === 'undefined' || isUndefined(v);
+  },
 }

@@ -1,7 +1,7 @@
-const Ethereum = require('./ethereum');
-const EthCrypto = require('eth-crypto');
+import Ethereum from './ethereum';
+import EthCrypto from 'eth-crypto';
 
-const Web3Manager = {
+export default {
     currentAccountAddress: null,
     accountAddressInterval: null,
     onAccountAddressChangeCallbacks: [],
@@ -89,5 +89,3 @@ const Web3Manager = {
         }, 1000);
     }
 };
-
-module.exports = Web3Manager;

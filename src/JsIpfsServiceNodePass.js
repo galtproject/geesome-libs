@@ -7,9 +7,9 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const JsIpfsServiceNode = require('./JsIpfsServiceNode');
+import JsIpfsServiceNode from './JsIpfsServiceNode';
 
-module.exports = function (node, pass) {
+export default function (node, pass) {
   class JsIpfsServiceNodePass extends JsIpfsServiceNode {
     constructor(node) {
       super(node);

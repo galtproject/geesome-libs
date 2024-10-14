@@ -11,12 +11,12 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const Ethereum = require('../src/ethereum');
+import Ethereum from '../src/ethereum.js';
 
 describe('ethereum', function () {
     it('should handle signed event and validate signature', function (done) {

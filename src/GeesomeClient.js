@@ -7,33 +7,35 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const axios = require('axios');
+import axios from 'axios';
 
-const extend = require('lodash/extend');
-const get = require('lodash/get');
-const set = require('lodash/set');
-const isObject = require('lodash/isObject');
-const forEach = require('lodash/forEach');
-const isUndefined = require('lodash/isUndefined');
-const range = require('lodash/range');
-const includes = require('lodash/includes');
-const merge = require('lodash/merge');
-const find = require('lodash/find');
-const filter = require('lodash/filter');
-const startsWith = require('lodash/startsWith');
-const pick = require('lodash/pick');
-const isEmpty = require('lodash/isEmpty');
+import extend from 'lodash/extend';
+import get from 'lodash/get';
+import set from 'lodash/set';
+import isObject from 'lodash/isObject';
+import forEach from 'lodash/forEach';
+import isUndefined from 'lodash/isUndefined';
+import range from 'lodash/range';
+import includes from 'lodash/includes';
+import merge from 'lodash/merge';
+import find from 'lodash/find';
+import filter from 'lodash/filter';
+import startsWith from 'lodash/startsWith';
+import pick from 'lodash/pick';
+import isEmpty from 'lodash/isEmpty';
 
-const pIteration = require('p-iteration');
-const ipfsHelper = require('./ipfsHelper');
-const pgpHelper = require('./pgpHelper');
-const commonHelper = require('./common');
-const trie = require('./base36Trie');
-const JsIpfsService = require('./JsIpfsService');
-const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
+import pIteration from 'p-iteration';
+import ipfsHelper from './ipfsHelper';
+import pgpHelper from './pgpHelper';
+import commonHelper from './common';
+import trie from './base36Trie';
+import JsIpfsService from './JsIpfsService';
+import geesomeWalletClientLib from 'geesome-wallet-client/src/lib';
 
-const {extractHostname, isIpAddress, isNumber} = require('./common');
-const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
+import common from './common';
+const {extractHostname, isIpAddress, isNumber} = common;
+import name from './name';
+const {getGroupUpdatesTopic, getPersonalChatTopic} = name;
 
 class GeesomeClient {
   decryptedSocNetCache = {};
@@ -1271,9 +1273,4 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
-module.exports = {
-  GeesomeClient,
-  AbstractClientStorage,
-  SimpleClientStorage,
-  BrowserLocalClientStorage
-};
+export default GeesomeClient;

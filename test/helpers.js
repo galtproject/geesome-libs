@@ -11,13 +11,13 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const commonHelper = require('../src/common');
-const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
+import commonHelper from '../src/common.js';
+import geesomeWalletClientLib from 'geesome-wallet-client/src/lib.js';
 
 describe('helpers', function () {
     it('hash', function (done) {

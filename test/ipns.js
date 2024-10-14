@@ -11,18 +11,18 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const assert = require('assert');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import assert from 'assert';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const waitFor = require('./utils/wait-for');
-const createNodes = require('./utils/createNodes');
-const peerIdHelper = require('../src/peerIdHelper');
-const commonHelper = require('../src/common');
+import waitFor from './utils/wait-for';
+import createNodes from './utils/createNodes';
+import peerIdHelper from '../src/peerIdHelper';
+import commonHelper from '../src/common';
 
-describe.only('ipns', function () {
+describe('ipns', function () {
   let nodeA;
   let nodeB;
   const pass = 'geesome-is-awesome-software';
@@ -80,7 +80,7 @@ describe.only('ipns', function () {
         })();
       });
 
-      it.only('bindToStaticId and resolveStaticId', function (done) {
+      it('bindToStaticId and resolveStaticId', function (done) {
         this.timeout(80 * 1000);
 
         (async () => {

@@ -1,7 +1,7 @@
-const peerIdHelper = require('./peerIdHelper');
-const find = require('lodash/find');
+import peerIdHelper from './peerIdHelper';
+import find from 'lodash/find';
 
-module.exports = class SimpleAccountStorage {
+export default class SimpleAccountStorage {
     getStorage() {
         // return JSON.parse(fs.existsSync(storagePath) ? fs.readFileSync(storagePath, {encoding: 'utf8'}) : '{}');
         return this.storageData || {};
