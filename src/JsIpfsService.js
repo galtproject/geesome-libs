@@ -46,6 +46,7 @@ import got from 'got';
 import name from './name';
 const { getIpnsUpdatesTopic } = name;
 import { unixfs } from '@helia/unixfs';
+import { dagCbor } from '@helia/dag-cbor';
 
 export default class JsIpfsService {
   constructor(node, type = 'helia') {
@@ -58,6 +59,7 @@ export default class JsIpfsService {
       });
       this.swarmConnect = node.libp2p.dial.bind(node.libp2p);
       this.heliaFs = unixfs(this.node);
+      this.heliaCbor = dagCbor(this.node);
     } else {
       this.id = node.id.bind(node);
       this.swarmConnect = node.swarm.connect.bind(node.swarm);
@@ -202,14 +204,46 @@ export default class JsIpfsService {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
 
     objectData = common.sortObject(objectData);
-    const savedObj = await this.node.dag.put(objectData, {storeCodec: 'dag-cbor', inputCodec: 'dag-cbor', format: 'dag-cbor', hashAlg: 'sha2-256'});
-    const ipldHash = ipfsHelper.cidToHash(savedObj);
+    let cid;
+    if (this.type === 'helia') {
+      cid = await this.heliaCbor.add(objectData);
+    } else {
+      cid = await this.node.dag.put(objectData, {storeCodec: 'dag-cbor', inputCodec: 'dag-cbor', format: 'dag-cbor', hashAlg: 'sha2-256'});
+    }
+    const ipldHash = ipfsHelper.cidToHash(cid);
 
     const pinPromise = this.addPin(ipldHash);
-    if(options.waitForPin) {
+    if (options.waitForPin) {
       await pinPromise;
     }
     return ipldHash;
+  }
+
+  async getObjectPure(cid, options = {}) {
+    if (this.type === 'helia') {
+      return this.heliaCbor.get(cid, options).then(response => {
+        if (!options.path) {
+          return {value: response};
+        }
+        let splitPath = options.path.split('/'), pathIndex = 0;
+        while (!ipfsHelper.isIpfsHash(response)) {
+          response = response[splitPath[pathIndex]];
+          if (pathIndex === splitPath.length - 1) {
+            return {value: response, remainderPath: splitPath.slice(pathIndex + 1).join('/')};
+          }
+          pathIndex++;
+        }
+        return {value: response, remainderPath: splitPath.slice(pathIndex).join('/')};
+      });
+    } else {
+      return this.node.dag.get(cid, options).then(({value, remainderPath}) => {
+        if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
+          value = get(value, remainderPath.replace('/', '.'));
+          remainderPath = undefined;
+        }
+        return {value, remainderPath};
+      });
+    }
   }
 
   async getObject(storageId, resolveProp = true) {
@@ -218,23 +252,24 @@ export default class JsIpfsService {
       return this.getObjectProp(splitStorageId[0], splitStorageId.slice(1).join('/'), resolveProp);
     }
     if (!ipfsHelper.isCid(storageId)) {
-      storageId = CID.parse(storageId)
+      storageId = CID.parse(storageId);
     }
-    return this.node.dag.get(storageId).then(response => response.value);
+    return this.getObjectPure(storageId).then(response => response.value);
   }
 
   async getObjectProp(storageId, propName, resolveProp = true) {
     if (!ipfsHelper.isCid(storageId)) {
       storageId = CID.parse(storageId)
     }
-    const path = '/' + propName + '/';
-    const result = await this.node.dag.get(storageId, {path, localResolve: true});
-    let {value, remainderPath} = result;
-    if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
-      value = get(value, remainderPath.replace('/', '.'));
-      remainderPath = undefined;
+    let {value, remainderPath} = await this.getObjectPure(storageId, {
+      path: this.type === 'helia' ? propName : '/' + propName + '/',
+      localResolve: true
+    });
+    if (ipfsHelper.isIpfsHash(value) && resolveProp) {
+      return this.getObjectProp(ipfsHelper.ipfsHashToCid(value), remainderPath, true);
+    } else {
+      return value;
     }
-    return ipfsHelper.isIpfsHash(value) && resolveProp ? this.node.dag.get(ipfsHelper.ipfsHashToCid(value), {path: remainderPath, localResolve: !resolveProp}).then(response => response.value) : value;
   }
 
   async bindToStaticId(storageId, accountKey, options = {}) {
@@ -311,10 +346,18 @@ export default class JsIpfsService {
     });
   }
 
-  addPin(hash) {
-    return this.node.pin.add(hash).then(() => {
-      console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', hash);
-    });
+  async addPin(hash) {
+    // console.log('this.node', this.node);
+    hash = ipfsHelper.ipfsHashToCid(hash);
+    if (this.type === 'helia') {
+      for await (const val of this.node.pins.add(hash)) {
+        console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', hash);
+      }
+    } else {
+      this.node.pin.add(hash).then(() => {
+        console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), 'pinned:', hash);
+      });
+    }
   }
 
   getPins(hash) {

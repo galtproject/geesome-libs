@@ -33,7 +33,6 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
 const blockstore = new MemoryBlockstore();
 const datastore = new MemoryDatastore();
-import { createLibp2p } from 'libp2p';
 import { unixfs } from '@helia/unixfs';
 
 describe.only('ipfs', function () {
@@ -43,7 +42,6 @@ describe.only('ipfs', function () {
     this.timeout(400 * 1000);
 
     (async () => {
-      console.log('async ()');
       try {
         // const libp2p = await createLibp2p({
         //   datastore,
@@ -83,11 +81,7 @@ describe.only('ipfs', function () {
         });
         node = new JsIpfsService(helia);
         await node.init();
-        const fs = unixfs(helia);
         // add the bytes to your node and receive a unique content identifier
-        console.log('addBytes');
-        const cid = await fs.addBytes(Buffer.from('Hello World 201', 'utf8'))
-        console.log('savedText', cid);
       } catch (error) {
         console.error('catch', error);
       }
@@ -97,7 +91,7 @@ describe.only('ipfs', function () {
 
   afterEach((done) => {node.stop().then(() => done())})
 
-  it.only('should save file with correct ipfs hash', function (done) {
+  it('should save file with correct ipfs hash', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
@@ -135,7 +129,9 @@ describe.only('ipfs', function () {
       const gotObject = await node.getObject(savedIpld);
       expect(gotObject.foo).to.equals('bar');
       done();
-    })();
+    })().catch(e => {
+      console.error('catch', e);
+    });
   });
 
   it('should resolve object props', function (done) {
@@ -156,7 +152,6 @@ describe.only('ipfs', function () {
         fooArray: arrayId,
         fooObj: nestedObjId
       };
-      console.log('obj', obj);
       const objectId = await node.saveObject(obj);
       expect(await node.getObjectProp(objectId, 'fooArray', true)).to.deep.equal(array);
       expect(await node.getObjectProp(objectId, 'fooArray/0', true)).to.deep.equal(array[0]);
@@ -165,7 +160,7 @@ describe.only('ipfs', function () {
       expect(await node.getObjectProp(objectId, 'fooArray', false)).to.deep.equal(arrayId);
       expect(await node.getObjectProp(objectId, 'fooObj', false)).to.deep.equal(nestedObjId);
       done();
-    })();
+    })().catch(e => console.error('error', e));
   });
 
   it('should resolve trie props', function (done) {
@@ -213,9 +208,8 @@ describe.only('ipfs', function () {
         _type: 'user-manifest'
       };
 
-      const storageId = await ipfsHelper.getIpldHashFromObject(
-          ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
-      );
+      const pickObjectFields = ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type']);
+      const storageId = await ipfsHelper.getIpldHashFromObject(pickObjectFields);
       expect(storageId).to.equals('bafyreidbolvs64moiamhoq4xol5jmrzpgi27wgxgwseiopr7nrkgn4pemu');
       done();
     })();

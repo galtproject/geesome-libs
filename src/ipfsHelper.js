@@ -9,13 +9,17 @@
 
 import { CID } from 'multiformats/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
+import * as jsonCodec from 'multiformats/codecs/json';
 import startsWith from 'lodash/startsWith';
 import isString from 'lodash/isString';
 import pick from 'lodash/pick';
 import isUndefined from 'lodash/isUndefined';
 import isDate from 'lodash/isDate';
 import libp2pCrypto from 'libp2p-crypto';
-import * as dagCBOR from '@ipld/dag-cbor';
+import common from "./common.js";
+import * as codec from "@ipld/dag-cbor";
+// import * as dagCBOR from '@ipld/dag-cbor';
+// import * as dagJSON from '@ipld/dag-json';
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -41,7 +45,7 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return isString(value) && value.length === 59 && /^\w+$/.test(value) && startsWith(value, 'bafyre');
+    return isString(value) && (value.length === 59 || value.length === 61) && /^\w+$/.test(value) && (startsWith(value, 'bafyre') || startsWith(value, 'bagaai'));
   },
   isAccountCidHash(value) {
     if (!value) {
@@ -96,8 +100,20 @@ const ipfsHelper = {
     return sha256.digest(bytes).then(res => CID.createV1(code, res)).then(cid => cid.toString());
   },
 
+  async getJsonHashFromObject(object) {
+    object = common.sortObject(object);
+    const buf = jsonCodec.encode(object);
+    const hash = await sha256.digest(buf);
+    const cid = CID.createV1(jsonCodec.code, hash);
+    return ipfsHelper.cidToHash(cid);
+  },
+
   async getIpldHashFromObject(object) {
-    return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
+    object = common.sortObject(object);
+    const buf = codec.encode(object);
+    const hash = await sha256.digest(buf);
+    const cid = CID.createV1(codec.code, hash);
+    return ipfsHelper.cidToHash(cid);
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {
