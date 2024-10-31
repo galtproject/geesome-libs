@@ -109,17 +109,23 @@ export default class JsIpfsService {
         }
       } else {
         //https://github.com/ipfs/js-kubo-rpc-client
+        this.saveFile({content}).then(resolve).catch(reject);
       }
     });
   }
 
   async saveFile(data, options = {}) {
-    let result = await this.saveFileByData(data);
-    result = this.wrapIpfsItem(await this.heliaFs.stat(result));
-    // const pinPromise = this.addPin(result.id);
-    // if (options.waitForPin) {
-    //   await pinPromise;
-    // }
+    let result;
+    if (this.type === 'helia') {
+      result = await this.saveFileByData(data);
+      result = this.wrapIpfsItem(await this.heliaFs.stat(result));
+    } else {
+      result = this.wrapIpfsItem(await this.node.add([data], {pin: false, cidVersion: 1}));
+    }
+    const pinPromise = this.addPin(result.id);
+    if (options.waitForPin) {
+      await pinPromise;
+    }
     return result;
   }
 
