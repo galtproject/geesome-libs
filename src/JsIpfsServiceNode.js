@@ -18,27 +18,22 @@ export default class JsIpfsServiceNode extends JsIpfsService {
   }
 
   async saveDirectory(path, options = {}) {
-    console.log('path before', path, globSource(path, '**/*',{}));
-    path = Path.resolve(process.cwd(), path);
-    console.log('path after', path, globSource(path, '**/*',{}));
     let res;
+    let asyncGenerator;
     if (this.type === 'helia') {
-      for await (const file of this.heliaFs.addAll(globSource(path, '**/*', {}))) {
-        if (file.path === path) {
-          res = file;
-        }
-        console.log('addAll file', file)
-      }
+      asyncGenerator = this.heliaFs.addAll(globSource(path, '**/*', {}));
     } else {
-      for await (const file of this.node.addAll(globSource(path, '**/*',{}), {
+      asyncGenerator = this.node.addAll(globSource(path, '**/*',{}), {
         pin: false,
         cidVersion: 1
-      })) {
-        if (file.path === path) {
-          res = file;
-        }
-        console.log('addAll file', file)
+      });
+    }
+    path = Path.resolve(process.cwd(), path);
+    for await (const file of asyncGenerator) {
+      if (file.path === path) {
+        res = file;
       }
+      console.log('addAll file', file)
     }
     const dirResult = this.wrapIpfsItem(res);
     const pinPromise = this.addPin(dirResult.id);
