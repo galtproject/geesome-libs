@@ -18,8 +18,9 @@ export default class JsIpfsServiceNode extends JsIpfsService {
   }
 
   async saveDirectory(path, options = {}) {
+    console.log('path before', path, globSource(path, '**/*',{}));
     path = Path.resolve(process.cwd(), path);
-    console.log('path', path);
+    console.log('path after', path, globSource(path, '**/*',{}));
     let res;
     if (this.type === 'helia') {
       for await (const file of this.heliaFs.addAll(globSource(path, '**/*', {}))) {
