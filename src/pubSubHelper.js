@@ -12,10 +12,10 @@ import isString from 'lodash/isString.js';
 import startsWith from 'lodash/startsWith.js';
 import pemJwk from 'pem-jwk';
 const {jwk2pem: jwkToPem} = pemJwk;
-import uint8ArrayConcat from 'uint8arrays/concat';
+import uint8ArrayConcat from 'uint8arrays/concat.js';
 import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
 import crypto from 'crypto';
-import uint8ArrayFromString from 'uint8arrays/from-string';
+import uint8ArrayFromString from 'uint8arrays/from-string.js';
 import peerIdHelper from './peerIdHelper.js';
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
 

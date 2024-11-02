@@ -13,9 +13,9 @@ const { Keccak } = sha3;
 import base64url from 'base64url';
 // const ipns = require('ipns');
 import {fromB58String} from 'multihashes';
-import uint8FromString from 'uint8arrays/from-string';
+import uint8FromString from 'uint8arrays/from-string.js';
 const { fromString: uint8ArrayFromString } = uint8FromString;
-import uint8FromConcat from 'uint8arrays/concat';
+import uint8FromConcat from 'uint8arrays/concat.js';
 const { concat: uint8ArrayConcat } = uint8FromConcat;
 import { base32upper } from 'multiformats/bases/base32';
 
