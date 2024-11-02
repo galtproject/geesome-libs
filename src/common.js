@@ -21,7 +21,7 @@ import createHash from 'create-hash';
 import stableSort from 'stable';
 import uuidv4 from 'uuid/v4.js';
 import bip39 from "ethereum-cryptography/bip39/index.js";
-import englishWords from "ethereum-cryptography/bip39/wordlists/english";
+import englishWords from "ethereum-cryptography/bip39/wordlists/english.js";
 const bip39Wordlist = englishWords.wordlist;
 
 const isNumber = (str) => {
