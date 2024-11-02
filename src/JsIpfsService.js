@@ -214,7 +214,7 @@ export default class JsIpfsService {
     if (this.type === 'helia') {
       cid = await this.heliaCbor.add(objectData);
     } else {
-      cid = await this.node.dag.put(objectData, {storeCodec: 'dag-cbor', inputCodec: 'dag-cbor', format: 'dag-cbor', hashAlg: 'sha2-256'});
+      cid = await this.node.dag.put(objectData, {storeCodec: 'dag-cbor', hashAlg: 'sha2-256'});
     }
     const ipldHash = ipfsHelper.cidToHash(cid);
 
