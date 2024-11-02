@@ -11,6 +11,7 @@ import JsIpfsService from './JsIpfsService.js';
 import { globSource } from '@helia/unixfs';
 import fs from 'node:fs';
 import Path from "path";
+import trim from 'lodash/trim.js';
 
 export default class JsIpfsServiceNode extends JsIpfsService {
   async saveFileByPath(path, options = {}) {
@@ -30,10 +31,10 @@ export default class JsIpfsServiceNode extends JsIpfsService {
     }
     path = Path.resolve(process.cwd(), path);
     for await (const file of asyncGenerator) {
-      if (file.path === path) {
+      if (file.path === path || file.path === trim(path, '/')) {
         res = file;
       }
-      console.log('addAll file', file)
+      console.log('addAll file', JSON.stringify(file))
     }
     const dirResult = this.wrapIpfsItem(res);
     const pinPromise = this.addPin(dirResult.id);
