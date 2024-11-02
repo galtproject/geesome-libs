@@ -19,7 +19,7 @@ import last from 'lodash/last.js';
 import trim from 'lodash/trim.js';
 import createHash from 'create-hash';
 import stableSort from 'stable';
-import uuidv4 from 'uuid/v4';
+import uuidv4 from 'uuid/v4.js';
 import bip39 from "ethereum-cryptography/bip39";
 import englishWords from "ethereum-cryptography/bip39/wordlists/english";
 const bip39Wordlist = englishWords.wordlist;
