@@ -9,27 +9,27 @@
 
 import axios from 'axios';
 
-import extend from 'lodash/extend';
-import get from 'lodash/get';
-import set from 'lodash/set';
-import isObject from 'lodash/isObject';
-import forEach from 'lodash/forEach';
-import isUndefined from 'lodash/isUndefined';
-import range from 'lodash/range';
-import includes from 'lodash/includes';
-import merge from 'lodash/merge';
-import find from 'lodash/find';
-import filter from 'lodash/filter';
-import startsWith from 'lodash/startsWith';
-import pick from 'lodash/pick';
-import isEmpty from 'lodash/isEmpty';
+import extend from 'lodash/extend.js';
+import get from 'lodash/get.js';
+import set from 'lodash/set.js';
+import isObject from 'lodash/isObject.js';
+import forEach from 'lodash/forEach.js';
+import isUndefined from 'lodash/isUndefined.js';
+import range from 'lodash/range.js';
+import includes from 'lodash/includes.js';
+import merge from 'lodash/merge.js';
+import find from 'lodash/find.js';
+import filter from 'lodash/filter.js';
+import startsWith from 'lodash/startsWith.js';
+import pick from 'lodash/pick.js';
+import isEmpty from 'lodash/isEmpty.js';
 
 import pIteration from 'p-iteration';
-import ipfsHelper from './ipfsHelper';
-import pgpHelper from './pgpHelper';
-import commonHelper from './common';
-import trie from './base36Trie';
-import JsIpfsService from './JsIpfsService';
+import ipfsHelper from './ipfsHelper.js';
+import pgpHelper from './pgpHelper.js';
+import commonHelper from './common.js';
+import trie from './base36Trie.js';
+import JsIpfsService from './JsIpfsService.js';
 import geesomeWalletClientLib from 'geesome-wallet-client/src/lib';
 
 import common from './common';

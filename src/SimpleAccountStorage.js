@@ -1,5 +1,5 @@
-import peerIdHelper from './peerIdHelper';
-import find from 'lodash/find';
+import peerIdHelper from './peerIdHelper.js';
+import find from 'lodash/find.js';
 
 export default class SimpleAccountStorage {
     getStorage() {

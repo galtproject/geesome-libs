@@ -6,10 +6,10 @@ import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc';
 const {RPC} = rpcPkg;
 import randomBytes from 'libp2p-crypto/src/random-bytes';
 
-import isBuffer from 'lodash/isBuffer';
-import isObject from 'lodash/isObject';
-import isString from 'lodash/isString';
-import startsWith from 'lodash/startsWith';
+import isBuffer from 'lodash/isBuffer.js';
+import isObject from 'lodash/isObject.js';
+import isString from 'lodash/isString.js';
+import startsWith from 'lodash/startsWith.js';
 import pemJwk from 'pem-jwk';
 const {jwk2pem: jwkToPem} = pemJwk;
 import uint8ArrayConcat from 'uint8arrays/concat';
