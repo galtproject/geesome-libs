@@ -15,7 +15,7 @@ import cryptoKeys from 'libp2p-crypto/src/keys/index.js';
 
 const peerIdHelper = {
   async encryptPrivateBase64WithPass(privateBase64, pass) {
-    return (await this.createPeerIdFromPrivateBase64(privateBase64)).privKey.export(pass)
+    return (await this.createPeerIdFromPrivateBase64(privateBase64)).privKey.export(pass);
   },
 
   async decryptPrivateBase64WithPass(encryptedPrivateKey, pass) {
