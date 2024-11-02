@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import includes from 'lodash/includes';
+import includes from 'lodash/includes.js';
 export default {
   isYoutubeUrl(url) {
     return includes(url, 'youtube.');

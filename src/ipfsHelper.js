@@ -10,11 +10,11 @@
 import { CID } from 'multiformats/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 import * as jsonCodec from 'multiformats/codecs/json';
-import startsWith from 'lodash/startsWith';
-import isString from 'lodash/isString';
-import pick from 'lodash/pick';
-import isUndefined from 'lodash/isUndefined';
-import isDate from 'lodash/isDate';
+import startsWith from 'lodash/startsWith.js';
+import isString from 'lodash/isString.js';
+import pick from 'lodash/pick.js';
+import isUndefined from 'lodash/isUndefined.js';
+import isDate from 'lodash/isDate.js';
 import libp2pCrypto from 'libp2p-crypto';
 import common from "./common.js";
 import * as codec from "@ipld/dag-cbor";

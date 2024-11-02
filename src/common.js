@@ -8,15 +8,15 @@
  */
 
 import isNaN from 'lodash/isNaN.js';
-import isString from 'lodash/isString';
-import isObject from 'lodash/isObject';
-import isUndefined from 'lodash/isUndefined';
-import isArray from 'lodash/isArray';
-import includes from 'lodash/includes';
-import startsWith from 'lodash/startsWith';
-import endsWith from 'lodash/endsWith';
-import last from 'lodash/last';
-import trim from 'lodash/trim';
+import isString from 'lodash/isString.js';
+import isObject from 'lodash/isObject.js';
+import isUndefined from 'lodash/isUndefined.js';
+import isArray from 'lodash/isArray.js';
+import includes from 'lodash/includes.js';
+import startsWith from 'lodash/startsWith.js';
+import endsWith from 'lodash/endsWith.js';
+import last from 'lodash/last.js';
+import trim from 'lodash/trim.js';
 import createHash from 'create-hash';
 import stableSort from 'stable';
 import uuidv4 from 'uuid/v4';

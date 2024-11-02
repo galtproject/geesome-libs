@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import sortBy from 'lodash/sortBy';
+import sortBy from 'lodash/sortBy.js';
 import sha3 from 'sha3';
 const { Keccak } = sha3;
 import base64url from 'base64url';
