@@ -8,7 +8,7 @@
  */
 import crypto from 'libp2p-crypto';
 import PeerId from 'peer-id';
-import cryptoKeys from 'libp2p-crypto/src/keys';
+import cryptoKeys from 'libp2p-crypto/src/keys/index.js';
 // TODO: use @libp2p/peer-id
 // https://github.com/libp2p/js-libp2p-interfaces/blob/d72b30cfca4b9145e0b31db28e8fa3329a180e83/packages/libp2p-peer-id-factory/test/index.spec.ts
 //import { peerIdFromString, peerIdFromBytes, peerIdFromCID, createPeerId } from '@libp2p/peer-id';

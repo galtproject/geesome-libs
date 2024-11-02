@@ -4,7 +4,7 @@
 // const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
 import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc';
 const {RPC} = rpcPkg;
-import randomBytes from 'libp2p-crypto/src/random-bytes';
+import randomBytes from 'libp2p-crypto/src/random-bytes.js';
 
 import isBuffer from 'lodash/isBuffer.js';
 import isObject from 'lodash/isObject.js';
@@ -13,7 +13,7 @@ import startsWith from 'lodash/startsWith.js';
 import pemJwk from 'pem-jwk';
 const {jwk2pem: jwkToPem} = pemJwk;
 import uint8ArrayConcat from 'uint8arrays/concat';
-import libp2pKeys from 'libp2p-crypto/src/keys';
+import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
 import crypto from 'crypto';
 import uint8ArrayFromString from 'uint8arrays/from-string';
 import peerIdHelper from './peerIdHelper.js';
