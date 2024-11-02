@@ -16,12 +16,12 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect
 chai.use(dirtyChai)
 
-import commonHelper from '../src/common';
-import pubSubHelper from '../src/pubSubHelper';
-import peerIdHelper from '../src/peerIdHelper';
-import waitFor from './utils/wait-for';
-import createNodes from './utils/createNodes';
-import {randomSeqno} from 'libp2p-interfaces/src/pubsub/utils';
+import commonHelper from '../src/common.js';
+import pubSubHelper from '../src/pubSubHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import waitFor from './utils/wait-for.js';
+import createNodes from './utils/createNodes.js';
+import {randomSeqno} from 'libp2p-interfaces/src/pubsub/utils.js';
 
 describe('pubsub', function () {
   let nodeA

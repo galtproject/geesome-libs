@@ -10,7 +10,7 @@
 import openpgp from 'openpgp';
 import forge from 'node-forge';
 import BN from 'bn.js';
-import extend from 'lodash/extend';
+import extend from 'lodash/extend.js';
 
 // https://github.com/openpgpjs/openpgpjs/issues/1126
 openpgp.config.allow_insecure_decryption_with_signing_keys = true;

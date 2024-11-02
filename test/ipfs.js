@@ -16,11 +16,11 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-import JsIpfsService from '../src/JsIpfsService';
-import ipfsHelper from '../src/ipfsHelper';
-import peerIdHelper from '../src/peerIdHelper';
-import common from '../src/common';
-import trie from '../src/base36Trie';
+import JsIpfsService from '../src/JsIpfsService.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import common from '../src/common.js';
+import trie from '../src/base36Trie.js';
 import { createHelia } from 'helia';
 import { MemoryBlockstore } from 'blockstore-core';
 import { MemoryDatastore } from 'datastore-core';

@@ -1,9 +1,9 @@
 // const geesomeCrypto = require('./generated/geesome-crypto');
 import pIteration from 'p-iteration';
-import pubSubHelper from '../pubSubHelper';
-import ipfsHelper from '../ipfsHelper';
+import pubSubHelper from '../pubSubHelper.js';
+import ipfsHelper from '../ipfsHelper.js';
 // const log = require('loglevel');
-import name from '../name';
+import name from '../name.js';
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = name;
 
 

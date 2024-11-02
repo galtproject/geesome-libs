@@ -30,11 +30,11 @@ import pgpHelper from './pgpHelper.js';
 import commonHelper from './common.js';
 import trie from './base36Trie.js';
 import JsIpfsService from './JsIpfsService.js';
-import geesomeWalletClientLib from 'geesome-wallet-client/src/lib';
+import geesomeWalletClientLib from 'geesome-wallet-client/src/lib.js';
 
 import common from './common';
 const {extractHostname, isIpAddress, isNumber} = common;
-import name from './name';
+import name from './name.js';
 const {getGroupUpdatesTopic, getPersonalChatTopic} = name;
 
 class GeesomeClient {

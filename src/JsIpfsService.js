@@ -20,10 +20,10 @@ global.CustomEvent = class CustomEvent extends Event {
   }
 }
 
-import ipfsHelper from './ipfsHelper';
-import peerIdHelper from './peerIdHelper';
+import ipfsHelper from './ipfsHelper.js';
+import peerIdHelper from './peerIdHelper.js';
 // const pubSubHelper = require('./pubSubHelper');
-import common from './common';
+import common from './common.js';
 
 import trim from 'lodash/trim.js';
 import pick from 'lodash/pick.js';
@@ -43,7 +43,7 @@ import { CID } from 'multiformats/cid';
 // const Helia = require('helia');
 import got from 'got';
 
-import name from './name';
+import name from './name.js';
 const { getIpnsUpdatesTopic } = name;
 import { unixfs } from '@helia/unixfs';
 import { dagCbor } from '@helia/dag-cbor';

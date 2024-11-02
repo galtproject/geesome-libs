@@ -17,10 +17,10 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-import waitFor from './utils/wait-for';
-import createNodes from './utils/createNodes';
-import peerIdHelper from '../src/peerIdHelper';
-import commonHelper from '../src/common';
+import waitFor from './utils/wait-for.js';
+import createNodes from './utils/createNodes.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import commonHelper from '../src/common.js';
 
 describe('ipns', function () {
   let nodeA;

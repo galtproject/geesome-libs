@@ -16,11 +16,11 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-import GeesomeClient from '../src/GeesomeClient';
-import pgpHelper from '../src/pgpHelper';
-import peerIdHelper from '../src/peerIdHelper';
-import ipfsHelper from '../src/ipfsHelper';
-import pubSubHelper from '../src/pubSubHelper';
+import GeesomeClient from '../src/GeesomeClient.js';
+import pgpHelper from '../src/pgpHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import pubSubHelper from '../src/pubSubHelper.js';
 
 describe('pgp', function () {
   let geesomeClient;

@@ -1,4 +1,4 @@
-import Ethereum from './ethereum';
+import Ethereum from './ethereum.js';
 import EthCrypto from 'eth-crypto';
 
 export default {
