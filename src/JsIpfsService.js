@@ -120,7 +120,7 @@ export default class JsIpfsService {
       result = await this.saveFileByData(data);
       result = this.wrapIpfsItem(await this.heliaFs.stat(result));
     } else {
-      result = this.wrapIpfsItem(await this.node.add(data, {pin: false, cidVersion: 1}));
+      result = this.wrapIpfsItem(await this.node.add([data], {pin: false, cidVersion: 1}));
     }
     const pinPromise = this.addPin(result.id);
     if (options.waitForPin) {

@@ -22,7 +22,7 @@ export default class JsIpfsServiceNode extends JsIpfsService {
         console.info(entry)
       }
     } else {
-      const res = await this.node.add(globSource(path, '**/*',{ }), {pin: false, cidVersion: 1});
+      const res = await this.node.addAll(globSource(path, '**/*',{ }), {pin: false, cidVersion: 1});
       const dirResult = this.wrapIpfsItem(res);
       const pinPromise = this.addPin(dirResult.id);
       if (options.waitForPin) {
