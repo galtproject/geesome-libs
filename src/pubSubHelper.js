@@ -2,7 +2,7 @@
 // const ipns = require('ipns');
 // const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 // const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc';
+import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc.js';
 const {RPC} = rpcPkg;
 import randomBytes from 'libp2p-crypto/src/random-bytes.js';
 
