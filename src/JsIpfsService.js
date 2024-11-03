@@ -7,16 +7,18 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-global.CustomEvent = class CustomEvent extends Event {
-  #detail;
+if (!global.CustomEvent) {
+  global.CustomEvent = class CustomEvent extends Event {
+    #detail;
 
-  constructor(type, options) {
-    super(type, options);
-    this.#detail = options?.detail ?? null;
-  }
+    constructor(type, options) {
+      super(type, options);
+      this.#detail = options?.detail ?? null;
+    }
 
-  get detail() {
-    return this.#detail;
+    get detail() {
+      return this.#detail;
+    }
   }
 }
 
