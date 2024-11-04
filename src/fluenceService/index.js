@@ -21,7 +21,7 @@ export default class FluenceService {
     }
 
     async initClient(keyPair, relay = null) {
-        this.dhtApi = await import('./generated/resources.mjs');
+        // this.dhtApi = await import('./generated/resources.mjs');
         // const {Fluence, randomKras} = await import("@fluencelabs/js-client.api");
 
         await Fluence.connect(randomKras(), {
