@@ -12,7 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "@ethersproject/hash": "^5.7.0",
-    "@fluencelabs/cli": "^0.4.20",
     "@fluencelabs/js-client": "^0.9.0",
     "@helia/dag-cbor": "^4.0.0",
     "@helia/unixfs": "^4.0.0",
