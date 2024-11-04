@@ -118,19 +118,14 @@ const isVideoType = (fullType) => {
 }
 
 function initializeCustomEvent() {
-  if (!global.CustomEvent) {
-    global.CustomEvent = class CustomEvent extends Event {
-      #detail;
-
-      constructor(type, options) {
-        super(type, options);
-        this.#detail = options?.detail ?? null;
+  if (typeof globalThis.CustomEvent !== 'function') {
+    globalThis.CustomEvent = class CustomEvent extends Event {
+      constructor(event, params) {
+        params = params || { bubbles: false, cancelable: false, detail: null };
+        super(event, params);
+        this.detail = params.detail;
       }
-
-      get detail() {
-        return this.#detail;
-      }
-    }
+    };
   }
 }
 
