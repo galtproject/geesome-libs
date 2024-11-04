@@ -117,6 +117,23 @@ const isVideoType = (fullType) => {
   return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
 }
 
+function initializeCustomEvent() {
+  if (!global.CustomEvent) {
+    global.CustomEvent = class CustomEvent extends Event {
+      #detail;
+
+      constructor(type, options) {
+        super(type, options);
+        this.#detail = options?.detail ?? null;
+      }
+
+      get detail() {
+        return this.#detail;
+      }
+    }
+  }
+}
+
 export default {
   isNumber,
   moveFromDate,
@@ -133,4 +150,5 @@ export default {
   isUndefined: (v) => {
     return !v || v === 'null' || v === 'undefined' || isUndefined(v);
   },
+  initializeCustomEvent,
 }

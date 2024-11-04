@@ -1,3 +1,6 @@
+import commonHelper from '../common.js';
+commonHelper.initializeCustomEvent();
+
 // const geesomeCrypto = require('./generated/geesome-crypto');
 import pIteration from 'p-iteration';
 import pubSubHelper from '../pubSubHelper.js';

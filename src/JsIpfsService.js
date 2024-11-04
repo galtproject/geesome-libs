@@ -6,26 +6,12 @@
  * (Founded by [Nikolai Popeka](https://github.com/npopeka) by
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
-
-if (!global.CustomEvent) {
-  global.CustomEvent = class CustomEvent extends Event {
-    #detail;
-
-    constructor(type, options) {
-      super(type, options);
-      this.#detail = options?.detail ?? null;
-    }
-
-    get detail() {
-      return this.#detail;
-    }
-  }
-}
+import common from './common.js';
+common.initializeCustomEvent();
 
 import ipfsHelper from './ipfsHelper.js';
 import peerIdHelper from './peerIdHelper.js';
 // const pubSubHelper = require('./pubSubHelper');
-import common from './common.js';
 
 import trim from 'lodash/trim.js';
 import pick from 'lodash/pick.js';
