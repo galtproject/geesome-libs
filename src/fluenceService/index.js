@@ -8,7 +8,7 @@ import ipfsHelper from '../ipfsHelper.js';
 // const log = require('loglevel');
 import name from '../name.js';
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = name;
-import { Fluence, randomKras } from "@fluencelabs/js-client";
+// import { Fluence, randomKras } from "@fluencelabs/js-client";
 
 export default class FluenceService {
     constructor(accStorage = null, options = {}) {
@@ -24,11 +24,11 @@ export default class FluenceService {
         // this.dhtApi = await import('./generated/resources.mjs');
         // const {Fluence, randomKras} = await import("@fluencelabs/js-client.api");
 
-        await Fluence.connect(randomKras(), {
-            // keyPair,
-        });
+        // await Fluence.connect(randomKras(), {
+        //     // keyPair,
+        // });
 
-        this.client = await Fluence.getClient();
+        // this.client = await Fluence.getClient();
         this.registerEvents();
     }
 
