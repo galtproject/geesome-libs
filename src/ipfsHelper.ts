@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import { CID } from 'multiformats/cid';
+import { CID } from 'multiformats';
 import * as codec from "@ipld/dag-cbor";
 import libp2pCrypto from 'libp2p-crypto';
 import { sha256 } from 'multiformats/hashes/sha2';

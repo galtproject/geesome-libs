@@ -9,7 +9,7 @@
 import itFirst from 'it-first';
 import itConcat from 'it-concat';
 import itToStream from 'it-to-stream';
-import { CID } from 'multiformats/cid';
+import { CID } from 'multiformats';
 import { unixfs } from '@helia/unixfs';
 import { dagCbor } from '@helia/dag-cbor';
 import _ from 'lodash';
