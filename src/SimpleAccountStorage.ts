@@ -1,7 +1,9 @@
-import peerIdHelper from './peerIdHelper.js';
-import find from 'lodash/find.js';
+import peerIdHelper from './peerIdHelper';
+import {find} from 'lodash';
 
 export default class SimpleAccountStorage {
+    storageData;
+
     getStorage() {
         // return JSON.parse(fs.existsSync(storagePath) ? fs.readFileSync(storagePath, {encoding: 'utf8'}) : '{}');
         return this.storageData || {};

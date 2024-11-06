@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import JsIpfsServiceNode from './JsIpfsServiceNode.js';
+import JsIpfsServiceNode from './JsIpfsServiceNode';
 
 export default function (node, pass) {
   class JsIpfsServiceNodePass extends JsIpfsServiceNode {

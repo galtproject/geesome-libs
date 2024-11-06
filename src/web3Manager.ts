@@ -1,21 +1,21 @@
-import Ethereum from './ethereum.js';
+import Ethereum from './ethereum';
 import EthCrypto from 'eth-crypto';
 
-export default {
-    currentAccountAddress: null,
-    accountAddressInterval: null,
-    onAccountAddressChangeCallbacks: [],
+export default class Web3Manager {
+    static currentAccountAddress: any;
+    static accountAddressInterval: any;
+    static onAccountAddressChangeCallbacks: any[];
 
-    onAccountAddressChange(callback) {
+    static onAccountAddressChange(callback) {
         this.onAccountAddressChangeCallbacks.push(callback);
-    },
+    }
 
-    triggerOnAccountAddressChange(newAccountAddress) {
+    static triggerOnAccountAddressChange(newAccountAddress) {
         this.currentAccountAddress = newAccountAddress;
         this.onAccountAddressChangeCallbacks.forEach((callback) => callback(newAccountAddress))
-    },
+    }
 
-    signMessage(message, address, fieldName, provider = null) {
+    static signMessage(message, address, fieldName, provider = null) {
         const messageParams = [{type: 'string', name: fieldName, value: message}];
 
         if (!provider) {
@@ -40,34 +40,34 @@ export default {
                 }
             })
         })
-    },
+    }
 
-    getClientProvider() {
-        return window['ethereum'] ? window['ethereum'] : (window['web3'] || {}).currentProvider;
-    },
+    static getClientProvider() {
+        return global.window['ethereum'] ? global.window['ethereum'] : (global.window['web3'] || {}).currentProvider;
+    }
 
-    async getClientProviderAccounts(provider = null) {
+    static async getClientProviderAccounts(provider = null) {
         let accounts;
         if (provider) {
             accounts = await provider.eth.getAccounts();
-        } else if (window['ethereum']) {
+        } else if (global.window['ethereum']) {
             try {
-                if (!window['ethereum'].selectedAddress) {
-                    await window['ethereum'].enable();
+                if (!global.window['ethereum'].selectedAddress) {
+                    await global.window['ethereum'].enable();
                 }
-                accounts = await window['ethereum'].request({method: 'eth_accounts'});
+                accounts = await global.window['ethereum'].request({method: 'eth_accounts'});
             } catch (error) {
                 console.error('ethereum enable error', error);
             }
         }
         // Legacy dapp browsers...
-        else if (window['web3']) {
-            accounts = await window['web3'].eth.getAccounts();
+        else if (global.window['web3']) {
+            accounts = await global.window['web3'].eth.getAccounts();
         }
         return accounts;
-    },
+    }
 
-    async initClientWeb3(provider = null) {
+    static async initClientWeb3(provider = null) {
         if (this.accountAddressInterval) {
             clearInterval(this.accountAddressInterval);
         }

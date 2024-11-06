@@ -7,24 +7,17 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import isNaN from 'lodash/isNaN.js';
-import isString from 'lodash/isString.js';
-import isObject from 'lodash/isObject.js';
-import isUndefined from 'lodash/isUndefined.js';
-import isArray from 'lodash/isArray.js';
-import includes from 'lodash/includes.js';
-import startsWith from 'lodash/startsWith.js';
-import endsWith from 'lodash/endsWith.js';
-import last from 'lodash/last.js';
-import trim from 'lodash/trim.js';
-import createHash from 'create-hash';
+import _ from "lodash";
+import uuid from 'uuid';
 import stableSort from 'stable';
-import uuidv4 from 'uuid/v4.js';
-import bip39 from "ethereum-cryptography/bip39/index.js";
-import englishWords from "ethereum-cryptography/bip39/wordlists/english.js";
+import createHash from 'create-hash';
+import bip39 from "ethereum-cryptography/bip39";
+import englishWords from "ethereum-cryptography/bip39/wordlists/english";
+const {isNaN, isString, isObject, isUndefined, isArray, startsWith, last, trim} = _;
 const bip39Wordlist = englishWords.wordlist;
+const {v4: uuidv4} = uuid;
 
-const isNumber = (str) => {
+const isNumber = (str: string) => {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {
     return false;
   }
@@ -33,22 +26,22 @@ const isNumber = (str) => {
 
 const moveFromDate = (fromDate, value, unit) => {
   value = parseFloat(value);
-  if(includes(unit, 'second')) {
+  if(unit.includes('second')) {
     return new Date(fromDate.getTime() + value * 1000);
   }
-  if(includes(unit, 'minute')) {
+  if(unit.includes('minute')) {
     return new Date(fromDate.getTime() + value * 60 * 1000);
   }
-  if(includes(unit, 'hour')) {
+  if(unit.includes('hour')) {
     return new Date(fromDate.getTime() + value * 60 * 60 * 1000);
   }
-  if(includes(unit, 'day')) {
+  if(unit.includes('day')) {
     return new Date(fromDate.getTime() + value * 24 * 60 * 60 * 1000);
   }
-  if(includes(unit, 'week')) {
+  if(unit.includes('week')) {
     return new Date(fromDate.getTime() + value * 7 * 24 * 60 * 60 * 1000);
   }
-  if(includes(unit, 'month')) {
+  if(unit.includes('month')) {
     return new Date(fromDate.getTime() + value * 30 * 24 * 60 * 60 * 1000);
   }
   return null;
@@ -92,7 +85,7 @@ const random = (mode = 'hash') => {
 };
 
 const hash = (input, algo = 'sha256') => {
-  return createHash(algo).update(input).digest('hex');
+  return createHash(algo as any).update(input).digest('hex');
 }
 
 const makeCode = (length) => {
@@ -109,17 +102,18 @@ const getFilenameFromPath = (path) => {
 }
 
 const getExtensionFromName = (fileName) => {
-  return (fileName || '').split('.').length > 1 ? last((fileName || '').split('.')).toLowerCase().split('?')[0] : null
+  return (fileName || '').split('.').length > 1 ? (last((fileName || '').split('.')) as string).toLowerCase().split('?')[0] : null
 }
 
 const isVideoType = (fullType) => {
   //TODO: detect more video types
-  return startsWith(fullType, 'video') || endsWith(fullType, 'mp4') || endsWith(fullType, 'avi') || endsWith(fullType, 'mov') || endsWith(fullType, 'quicktime');
+  return startsWith(fullType, 'video') || fullType.endsWith('mp4') || fullType.endsWith('avi') || fullType.endsWith('mov') || fullType.endsWith('quicktime');
 }
 
 function initializeCustomEvent() {
   if (typeof globalThis.CustomEvent !== 'function') {
     globalThis.CustomEvent = class CustomEvent extends Event {
+      detail;
       constructor(event, params) {
         params = params || { bubbles: false, cancelable: false, detail: null };
         super(event, params);

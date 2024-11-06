@@ -6,37 +6,35 @@
  * (Founded by [Nikolai Popeka](https://github.com/npopeka) by
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
-import common from './common.js';
-common.initializeCustomEvent();
-
-import ipfsHelper from './ipfsHelper.js';
-import peerIdHelper from './peerIdHelper.js';
-// const pubSubHelper = require('./pubSubHelper');
-
-import trim from 'lodash/trim.js';
-import pick from 'lodash/pick.js';
-import isObject from 'lodash/isObject.js';
-import find from 'lodash/find.js';
-import startsWith from 'lodash/startsWith.js';
-import includes from 'lodash/includes.js';
-import isString from 'lodash/isString.js';
-import isBuffer from 'lodash/isBuffer.js';
-import get from 'lodash/get.js';
-// const urlSource = require('ipfs-utils/src/files/url-source');
 import itFirst from 'it-first';
 import itConcat from 'it-concat';
 import itToStream from 'it-to-stream';
 import { CID } from 'multiformats/cid';
-
-// const Helia = require('helia');
-import got from 'got';
-
-import name from './name.js';
-const { getIpnsUpdatesTopic } = name;
 import { unixfs } from '@helia/unixfs';
 import { dagCbor } from '@helia/dag-cbor';
+import _ from 'lodash';
+import peerIdHelper from './peerIdHelper';
+import ipfsHelper from './ipfsHelper';
+import common from './common';
+import name from './name';
+import got from 'got';
+const {trim, pick, isObject, find, startsWith, isString, isBuffer, get} = _;
+
+const { getIpnsUpdatesTopic } = name;
+common.initializeCustomEvent();
+// const pubSubHelper = require('./pubSubHelper');
+// const Helia = require('helia');
+// const urlSource = require('ipfs-utils/src/files/url-source');
 
 export default class JsIpfsService {
+  node;
+  type;
+  id;
+  swarmConnect;
+  heliaFs;
+  heliaCbor;
+  stop;
+
   constructor(node, type = 'helia') {
     this.node = node;
     this.type = type;
@@ -66,7 +64,7 @@ export default class JsIpfsService {
     return this.saveFile(got.stream(url));
   }
 
-  async saveBrowserFile(fileObject, options = {}) {
+  async saveBrowserFile(fileObject, options: any = {}) {
     let result = await this.node.add(fileObject, {pin: false, cidVersion: 1});
     result = this.wrapIpfsItem(result);
     const pinPromise = this.addPin(result.id);
@@ -102,7 +100,7 @@ export default class JsIpfsService {
     });
   }
 
-  async saveFile(data, options = {}) {
+  async saveFile(data, options: any = {}) {
     let result;
     if (this.type === 'helia') {
       result = await this.saveFileByData(data);
@@ -178,8 +176,8 @@ export default class JsIpfsService {
     const firstPart = trim(filePath, '/').split('/')[0];
     if (ipfsHelper.isIpfsHash(firstPart) && filePath.slice(-1) === '/') {
       filePath = trim(filePath, '/');
-      const stat = await this.getFileStat(firstPart);
-      if(stat.type === 'directory') {
+      const stat: any = await this.getFileStat(firstPart);
+      if (stat.type === 'directory') {
         filePath += '/index.html';
       }
     }
@@ -194,7 +192,7 @@ export default class JsIpfsService {
     return this.getFileData(filePath).then(response => response.toString());
   }
 
-  async saveObject(objectData, options = {}) {
+  async saveObject(objectData, options: any = {}) {
     // objectData = isObject(objectData) ? JSON.stringify(objectData) : objectData;
 
     objectData = common.sortObject(objectData);
@@ -213,7 +211,7 @@ export default class JsIpfsService {
     return ipldHash;
   }
 
-  async getObjectPure(cid, options = {}) {
+  async getObjectPure(cid, options: any = {}) {
     if (this.type === 'helia') {
       return this.heliaCbor.get(cid, options).then(response => {
         if (!options.path) {
@@ -266,7 +264,7 @@ export default class JsIpfsService {
     }
   }
 
-  async bindToStaticId(storageId, accountKey, options = {}) {
+  async bindToStaticId(storageId, accountKey, options: any = {}) {
     if (startsWith(accountKey, 'Qm')) {
       accountKey = await this.getAccountNameById(accountKey);
     }
@@ -279,7 +277,7 @@ export default class JsIpfsService {
   async resolveStaticId(staticStorageId) {
     //TODO: support more then 1 value
     const name = '/ipns/' + staticStorageId;
-    return itFirst(this.node.name.resolve(name)).then(h => h.replace('/ipfs/', ''));
+    return itFirst(this.node.name.resolve(name)).then((h: string) => h.replace('/ipfs/', ''));
   }
 
   // async resolveStaticIdEntry(staticStorageId) {
@@ -332,9 +330,9 @@ export default class JsIpfsService {
 
   async remoteNodeAddressList(types = []) {
     return this.nodeAddressList().then(addresses => {
-      addresses = addresses.filter(a => !includes(a, '/127.0.0.1/'))
+      addresses = addresses.filter(a => !a.includes('/127.0.0.1/'))
       types.forEach(type => {
-        addresses = addresses.filter(a => includes(a, '/' + type + '/'))
+        addresses = addresses.filter(a => a.includes('/' + type + '/'))
       });
       return addresses;
     });
@@ -458,7 +456,7 @@ export default class JsIpfsService {
         await this.node.files.rm(filePath);
       }
     } catch (e) {
-      if(!includes(e.message, 'file does not exist')) {
+      if(!e.message.includes('file does not exist')) {
         console.error('copyFileFromId error:');
         throw e;
       }

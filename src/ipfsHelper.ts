@@ -8,16 +8,13 @@
  */
 
 import { CID } from 'multiformats/cid';
+import * as codec from "@ipld/dag-cbor";
+import libp2pCrypto from 'libp2p-crypto';
 import { sha256 } from 'multiformats/hashes/sha2';
 import * as jsonCodec from 'multiformats/codecs/json';
-import startsWith from 'lodash/startsWith.js';
-import isString from 'lodash/isString.js';
-import pick from 'lodash/pick.js';
-import isUndefined from 'lodash/isUndefined.js';
-import isDate from 'lodash/isDate.js';
-import libp2pCrypto from 'libp2p-crypto';
-import common from "./common.js";
-import * as codec from "@ipld/dag-cbor";
+import _ from 'lodash';
+import common from "./common";
+const {startsWith, isString, pick, isUndefined, isDate} = _;
 // import * as dagCBOR from '@ipld/dag-cbor';
 // import * as dagJSON from '@ipld/dag-json';
 
@@ -90,14 +87,14 @@ const ipfsHelper = {
   },
 
   async getIpfsHashFromString(string) {
-    return ipfsHelper.cidHashFromBytes(new TextEncoder('utf8').encode(string), 0x55);
+    return ipfsHelper.cidHashFromBytes(new (TextEncoder as any)('utf8').encode(string), 0x55);
   },
 
   async cidHashFromBytes(bytes, code) {
     // 0x55 - raw ipfs hash
     // 0x72 - pubkey
     // https://github.com/multiformats/multicodec/blob/5de6f09bdf7ed137f47c94a2e61866a87b4b3141/table.csv
-    return sha256.digest(bytes).then(res => CID.createV1(code, res)).then(cid => cid.toString());
+    return (sha256.digest(bytes) as any).then(res => CID.createV1(code, res)).then(cid => cid.toString());
   },
 
   async getJsonHashFromObject(object) {

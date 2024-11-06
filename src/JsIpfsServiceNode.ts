@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import JsIpfsService from './JsIpfsService.js';
+import JsIpfsService from './JsIpfsService';
 import { globSource } from '@helia/unixfs';
 import fs from 'node:fs';
 import Path from "path";
@@ -18,7 +18,7 @@ export default class JsIpfsServiceNode extends JsIpfsService {
     return this.saveFile(fs.createReadStream(path), options);
   }
 
-  async saveDirectory(path, options = {}) {
+  async saveDirectory(path, options: any = {}) {
     let res;
     let asyncGenerator;
     if (this.type === 'helia') {

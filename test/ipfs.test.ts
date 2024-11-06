@@ -13,27 +13,16 @@
 
 import chai from 'chai';
 import dirtyChai from 'dirty-chai';
-const expect = chai.expect;
-chai.use(dirtyChai);
-
-import JsIpfsService from '../src/JsIpfsService.js';
-import ipfsHelper from '../src/ipfsHelper.js';
-import peerIdHelper from '../src/peerIdHelper.js';
-import common from '../src/common.js';
-import trie from '../src/base36Trie.js';
 import { createHelia } from 'helia';
 import { MemoryBlockstore } from 'blockstore-core';
-import { MemoryDatastore } from 'datastore-core';
-import * as Filters from '@libp2p/websockets/filters';
-import { bootstrap } from '@libp2p/bootstrap';
-import { identify } from '@libp2p/identify';
-import { tcp } from '@libp2p/tcp';
-import { webSockets } from "@libp2p/websockets";
-import { noise } from '@chainsafe/libp2p-noise';
-import { yamux } from '@chainsafe/libp2p-yamux';
+import JsIpfsService from '../src/JsIpfsService';
+import peerIdHelper from '../src/peerIdHelper';
+import ipfsHelper from '../src/ipfsHelper';
+import trie from '../src/base36Trie';
+import common from '../src/common';
+const expect = chai.expect;
+chai.use(dirtyChai);
 const blockstore = new MemoryBlockstore();
-const datastore = new MemoryDatastore();
-import { unixfs } from '@helia/unixfs';
 
 describe.only('ipfs', function () {
   let node;
@@ -43,41 +32,9 @@ describe.only('ipfs', function () {
 
     (async () => {
       try {
-        // const libp2p = await createLibp2p({
-        //   datastore,
-        //   streamMuxers: [
-        //     yamux()
-        //   ],
-        //   services: {
-        //     identify: identify()
-        //   },
-        //   addresses: {
-        //     listen: [
-        //       '/ip4/127.0.0.1/tcp/0'
-        //     ]
-        //   },
-        //   transports: [
-        //     webSockets({
-        //       filter: Filters.all // this is necessary to dial insecure websockets
-        //     })
-        //     // other transports
-        //   ],
-        //   connectionGater: {
-        //     denyDialMultiaddr: () => false // this is necessary to dial local addresses at all
-        //   },
-        //   peerDiscovery: [
-        //     bootstrap({
-        //       list: [
-        //         '/ip4/127.0.0.1/tcp/4001/ws/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-        //       ]
-        //     })
-        //   ],
-        // });
-        // console.log('libp2p', libp2p);
+        // const helia = null;
         const helia = await createHelia({
-          // datastore,
           blockstore,
-          // libp2p,
         });
         node = new JsIpfsService(helia);
         await node.init();

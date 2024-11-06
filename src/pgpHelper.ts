@@ -7,13 +7,14 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
+import BN from 'bn.js';
+import _ from 'lodash';
 import openpgp from 'openpgp';
 import forge from 'node-forge';
-import BN from 'bn.js';
-import extend from 'lodash/extend.js';
+const {extend} = _;
 
 // https://github.com/openpgpjs/openpgpjs/issues/1126
-openpgp.config.allow_insecure_decryption_with_signing_keys = true;
+openpgp.config['allow_insecure_decryption_with_signing_keys'] = true;
 
 const pgpHelper = {
   async encrypt(privateKeys, publicKeys, text) {
@@ -38,24 +39,28 @@ const pgpHelper = {
     return decryptedData;
   },
   
-  async transformKey(masrshalIpfsKey, isPublic) {
-    const buffer = new forge.util.ByteBuffer(masrshalIpfsKey);
+  async transformKey(masrshalIpfsKey, isPublic = false) {
+    const buffer = new (forge.util as any).ByteBuffer(masrshalIpfsKey);
     const asn1 = forge.asn1.fromDer(buffer);
 
     const packetList = new openpgp.packet.List();
 
     const userIdPacket = new openpgp.packet.Userid();
-    userIdPacket.format({name: 'Phil Zimmermann', email: 'phil@openpgp.org'});
+    userIdPacket.format();
 
     packetList.push(userIdPacket);
 
     const algorithm = openpgp.enums.publicKey.rsa_encrypt_sign;
 
-    const signaturePacket = new openpgp.packet.Signature(new Date());
+    const signaturePacket: any = new openpgp.packet.Signature(new Date());
     signaturePacket.signatureType = openpgp.enums.signature.cert_generic;
     signaturePacket.publicKeyAlgorithm = algorithm;
 
     let pgpSecretKey;
+
+    const openpgpCrypto: any = openpgp.crypto;
+    const openpgpEnums: any = openpgp.enums;
+    const openpgpKey: any = openpgp.key;
 
     if (isPublic) {
       const publicKey = forge.pki.publicKeyFromAsn1(asn1);
@@ -63,29 +68,29 @@ const pgpHelper = {
         publicKey[field] = new BN(publicKey[field].toString(10));
       });
 
-      const algo = openpgp.enums.write(openpgp.enums.publicKey, openpgp.enums.publicKey.rsa_encrypt_sign);
-      const types = [].concat(openpgp.crypto.getPubKeyParamTypes(algo));//, openpgp.crypto.getPrivKeyParamTypes(algo)
-      const params = openpgp.crypto.constructParams(
-        types, [publicKey.n, publicKey.e, publicKey.d, publicKey.p, publicKey.q, publicKey.u]
+      const algo = openpgpEnums.write(openpgpEnums.publicKey, openpgpEnums.publicKey.rsa_encrypt_sign);
+      const types = [].concat(openpgpCrypto.getPubKeyParamTypes(algo));//, openpgp.crypto.getPrivKeyParamTypes(algo)
+      const params = openpgpCrypto.constructParams(
+        types, [publicKey.n, publicKey.e, publicKey['d'], publicKey['p'], publicKey['q'], publicKey['u']]
       );
-      const pgpPublicKey = new openpgp.packet.PublicKey();
+      const pgpPublicKey: any = new openpgp.packet.PublicKey();
       pgpPublicKey.params = params;
       pgpPublicKey.algorithm = algorithm;
       packetList.push(pgpPublicKey);
 
       signaturePacket.issuerKeyId = pgpPublicKey.getKeyId();
 
-      signaturePacket.hashAlgorithm = await openpgp.key.getPreferredHashAlgo(null, pgpPublicKey);
+      signaturePacket.hashAlgorithm = await openpgpKey.getPreferredHashAlgo(null, pgpPublicKey);
     } else {
-      const privateKey = forge.pki.privateKeyFromAsn1(asn1);
+      const privateKey: any = forge.pki.privateKeyFromAsn1(asn1);
       ['p', 'q', 'n', 'e', 'd'].forEach(field => {
         privateKey[field] = new BN(privateKey[field].toString(10));
       });
       privateKey.u = privateKey.p.invm(privateKey.q);
 
-      const algo = openpgp.enums.write(openpgp.enums.publicKey, openpgp.enums.publicKey.rsa_encrypt_sign);
-      const types = [].concat(openpgp.crypto.getPubKeyParamTypes(algo), openpgp.crypto.getPrivKeyParamTypes(algo));
-      const params = openpgp.crypto.constructParams(
+      const algo = openpgpEnums.write(openpgp.enums.publicKey, openpgp.enums.publicKey.rsa_encrypt_sign);
+      const types = [].concat(openpgpCrypto.getPubKeyParamTypes(algo), openpgpCrypto.getPrivKeyParamTypes(algo));
+      const params = openpgpCrypto.constructParams(
         types, [privateKey.n, privateKey.e, privateKey.d, privateKey.p, privateKey.q, privateKey.u]
       );
       pgpSecretKey = new openpgp.packet.SecretKey();
@@ -93,7 +98,7 @@ const pgpHelper = {
       pgpSecretKey.algorithm = algorithm;
       packetList.push(pgpSecretKey);
 
-      signaturePacket.hashAlgorithm = await openpgp.key.getPreferredHashAlgo(null, pgpSecretKey);
+      signaturePacket.hashAlgorithm = await openpgpKey.getPreferredHashAlgo(null, pgpSecretKey);
       signaturePacket.keyFlags = [openpgp.enums.keyFlags.certify_keys | openpgp.enums.keyFlags.sign_data];
 
       pgpSecretKey.isDecrypted = (function () {
@@ -101,7 +106,7 @@ const pgpHelper = {
       }).bind(pgpSecretKey);
     }
 
-    const config = {};
+    const config: any = {};
 
     signaturePacket.preferredSymmetricAlgorithms = createdPreferredAlgos([
       // prefer aes256, aes128, then aes192 (no WebCrypto support: https://www.chromium.org/blink/webcrypto#TOC-AES-support)
@@ -142,7 +147,7 @@ const pgpHelper = {
     }
 
     if (pgpSecretKey) {
-      const dataToSign = {};
+      const dataToSign: any = {};
       dataToSign.userId = userIdPacket;
       dataToSign.key = pgpSecretKey;
 

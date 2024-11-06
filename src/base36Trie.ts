@@ -7,8 +7,8 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import base36 from './base36.js';
-import trie from './trie.js';
+import base36 from './base36';
+import trie from './trie';
 
 const base36TrieLib = {
   setNode(tree, id, node) {

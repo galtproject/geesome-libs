@@ -8,18 +8,15 @@
  */
 
 import sortBy from 'lodash/sortBy.js';
-import sha3 from 'sha3';
-const { Keccak } = sha3;
+import {Keccak} from 'sha3';
 import base64url from 'base64url';
-// const ipns = require('ipns');
 import {fromB58String} from 'multihashes';
-import uint8FromString from 'uint8arrays/from-string.js';
-const { fromString: uint8ArrayFromString } = uint8FromString;
-import uint8FromConcat from 'uint8arrays/concat.js';
-const { concat: uint8ArrayConcat } = uint8FromConcat;
-import { base32upper } from 'multiformats/bases/base32';
+import {fromString as uint8ArrayFromString, concat as uint8ArrayConcat} from 'uint8arrays';
+import {base32upper} from 'multiformats/bases/base32';
+import {key as Key} from "openpgp";
+// const ipns = require('ipns');
 
-export default {
+const name = {
   getPersonalChatName(friendsIds, groupTheme) {
     return sortBy(friendsIds).join(':') + ':personal_chat:' + groupTheme;
   },
@@ -51,7 +48,7 @@ export default {
   base64Ipns(ipnsId) {
     const multihash = fromB58String(ipnsId);
     // const idKeys = ipns.getIdKeys(multihash);
-    return base64url.encode(idKeys.routingKey._buf);
+    // return base64url.encode(idKeys.routingKey._buf);
   }
 };
 
@@ -60,13 +57,15 @@ function getIdKeys (pid) {
   const ipnsBuffer = uint8ArrayFromString('/ipns/')
 
   return {
-    routingPubKey: new Key(uint8ArrayConcat([pkBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/8#issue-213857876 (pkKey will be deprecated in a future release)
-    pkKey: new Key(rawStdEncoding(uint8ArrayConcat([pkBuffer, pid]))),
-    routingKey: new Key(uint8ArrayConcat([ipnsBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/6#issue-213631461 (ipnsKey will be deprecated in a future release)
-    ipnsKey: new Key(rawStdEncoding(uint8ArrayConcat([ipnsBuffer, pid])))
+    routingPubKey: new (Key as any)(uint8ArrayConcat([pkBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/8#issue-213857876 (pkKey will be deprecated in a future release)
+    pkKey: new (Key as any)(rawStdEncoding(uint8ArrayConcat([pkBuffer, pid]))),
+    routingKey: new (Key as any)(uint8ArrayConcat([ipnsBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/6#issue-213631461 (ipnsKey will be deprecated in a future release)
+    ipnsKey: new (Key as any)(rawStdEncoding(uint8ArrayConcat([ipnsBuffer, pid])))
   }
 }
 
 function rawStdEncoding(key) {
   return base32upper.encode(key).slice(1);
 }
+
+export default name;

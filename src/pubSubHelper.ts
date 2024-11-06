@@ -2,22 +2,18 @@
 // const ipns = require('ipns');
 // const {signMessage, SignPrefix: Libp2pSignPrefix} = require('libp2p-interfaces/src/pubsub/message/sign');
 // const {normalizeOutRpcMessage, randomSeqno, ensureArray} = require('libp2p-interfaces/src/pubsub/utils');
-import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc.js';
-const {RPC} = rpcPkg;
-import randomBytes from 'libp2p-crypto/src/random-bytes.js';
-
-import isBuffer from 'lodash/isBuffer.js';
-import isObject from 'lodash/isObject.js';
-import isString from 'lodash/isString.js';
-import startsWith from 'lodash/startsWith.js';
-import pemJwk from 'pem-jwk';
-const {jwk2pem: jwkToPem} = pemJwk;
-import uint8ArrayConcat from 'uint8arrays/concat.js';
-import libp2pKeys from 'libp2p-crypto/src/keys/index.js';
+import _ from 'lodash';
 import crypto from 'crypto';
-import uint8ArrayFromString from 'uint8arrays/from-string.js';
-import peerIdHelper from './peerIdHelper.js';
+import pemJwk from 'pem-jwk';
+import uint8ArrayConcat from 'uint8arrays/concat';
+import uint8ArrayFromString from 'uint8arrays/from-string';
+import rpcPkg from 'libp2p-interfaces/src/pubsub/message/rpc';
+import {keys as libp2pKeys, randomBytes} from 'libp2p-crypto';
+import peerIdHelper from './peerIdHelper';
+const {isBuffer, isObject, isString, startsWith} = _;
+const {jwk2pem: jwkToPem} = pemJwk;
 const GeesomeSignPrefix = uint8ArrayFromString('geesome:');
+const {RPC} = rpcPkg;
 
 const pubSubHelper = {
     // async buildAndSignPubSubMessage(privateKey, topics, data) {
@@ -48,7 +44,7 @@ const pubSubHelper = {
         const message = {
             data,
             from,
-            seqno: randomSeqno().toString('base64')
+            seqno: (randomSeqno() as any).toString('base64')
         };
         const bytes = uint8ArrayConcat([GeesomeSignPrefix, RPC.Message.encode(message).finish()]);
         const signature = await peerId.privKey.sign(bytes);
@@ -120,11 +116,11 @@ const pubSubHelper = {
         if (startsWith(topic, 'Qm')) {
             const split = topic.split('/');
             const staticBase58 = split[0];
-            const fromBase58 = peerIdHelper.peerIdToPublicBase58(fromPeerId);
-            if (staticBase58 !== fromBase58) {
-                console.log('static_id_not_match');
-                return null;
-            }
+            // const fromBase58 = peerIdHelper.peerIdToPublicBase58(fromPeerId);
+            // if (staticBase58 !== fromBase58) {
+            //     console.log('static_id_not_match');
+            //     return null;
+            // }
             event.staticType = split[1];
         }
 
@@ -162,7 +158,7 @@ const pubSubHelper = {
         const rsaPubKey = libp2pKeys.unmarshalPublicKey(pubKey.bytes);
         const verify = crypto.createVerify('RSA-SHA256');
         verify.update(bytes);
-        const pem = jwkToPem(rsaPubKey._key);
+        const pem = jwkToPem(rsaPubKey['_key']);
         return verify.verify(pem, signature);
     },
 

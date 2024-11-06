@@ -1,15 +1,23 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+
+  "_version": "18.2.0",
+
   "compilerOptions": {
-    "sourceMap": true,
-    "target": "es5",
-    "lib": [
-      "dom",
-      "es2015",
-      "es2016",
-      "es2017"
-    ]
+    "lib": ["es2023"],
+    "module": "node16",
+    "target": "es2022",
+
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node16",
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": [
-    "./**/*"
+    "./test/**/*",
+    "./src/**/*",
+    "./types/**/"
   ]
 }
+

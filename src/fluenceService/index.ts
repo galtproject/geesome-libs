@@ -1,16 +1,21 @@
-import commonHelper from '../common.js';
-commonHelper.initializeCustomEvent();
-
-// const geesomeCrypto = require('./generated/geesome-crypto');
-import pIteration from 'p-iteration';
-import pubSubHelper from '../pubSubHelper.js';
-import ipfsHelper from '../ipfsHelper.js';
-// const log = require('loglevel');
-import name from '../name.js';
+import commonHelper from '../common';
+import * as pIteration from 'p-iteration';
+import pubSubHelper from '../pubSubHelper';
+import ipfsHelper from '../ipfsHelper';
+import name from '../name';
 const {getFluenceUpdatesTopic, getFluenceAccountsGroupUpdatesTopic} = name;
+commonHelper.initializeCustomEvent();
 // import { Fluence, randomKras } from "@fluencelabs/js-client";
+// const geesomeCrypto = require('./generated/geesome-crypto');
+// const log = require('loglevel');
 
 export default class FluenceService {
+    accStorage: any;
+    subscribesByTopics: any;
+    peer: any;
+    client: any;
+    dhtApi: any;
+
     constructor(accStorage = null, options = {}) {
         this.accStorage = accStorage;
         this.subscribesByTopics = {};
@@ -21,7 +26,7 @@ export default class FluenceService {
     }
 
     async initClient(keyPair, relay = null) {
-        // this.dhtApi = await import('./generated/resources.mjs');
+        // this.dhtApi = await import('./generated/resources.ts');
         // const {Fluence, randomKras} = await import("@fluencelabs/js-client.api");
 
         // await Fluence.connect(randomKras(), {
@@ -62,12 +67,12 @@ export default class FluenceService {
         this.subscribesByTopics[topic].push(callback);
     }
     emitTopicSubscribers(topic, event) {
-        return pIteration.forEach(this.subscribesByTopics[topic] || [], async callback => {
+        return pIteration.forEach(this.subscribesByTopics[topic] || [], async (callback: any) => {
             const parsedEvent = await pubSubHelper.parseFluenceEvent(topic, event);
             return parsedEvent && callback(parsedEvent);
         });
     }
-    async bindToStaticId(storageId, accountKey, options = {}) {
+    async bindToStaticId(storageId, accountKey, options: any = {}) {
         return new Promise(async (resolve, reject) => {
             let resolved = false;
             setTimeout(() => {
@@ -185,7 +190,7 @@ export default class FluenceService {
         });
     }
 
-    async subscribeToEvent(_topic, _callback, options = {}) {
+    async subscribeToEvent(_topic, _callback, options: any = {}) {
         console.log('initTopicAndSubscribeBlocking', _topic);
         await this.initTopicAndSubscribeBlocking(_topic, _topic, options.tries || 0);
         return this.addTopicSubscriber(_topic, _callback);
