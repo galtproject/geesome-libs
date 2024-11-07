@@ -15,7 +15,7 @@ import bip39 from "ethereum-cryptography/bip39";
 import englishWords from "ethereum-cryptography/bip39/wordlists/english";
 const {isNaN, isString, isObject, isUndefined, isArray, startsWith, last, trim} = _;
 const bip39Wordlist = englishWords.wordlist;
-const {v4: uuidv4} = uuid;
+const {v4: uuidv4} = uuid['default'];
 
 const isNumber = (str: string) => {
   if (isString(str) && !/^[0-9.]+$/.test(str)) {

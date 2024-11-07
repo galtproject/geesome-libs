@@ -11,7 +11,7 @@
 
 // Wait for async function `test` to callback(null, true) or timeout after
 // options.timeout milliseconds.
-function waitFor (test, options, callback) {
+function waitFor (test, options?, callback?) {
   return new Promise((resolve, reject) => {
     if (typeof options === 'function') {
       callback = options
@@ -32,7 +32,7 @@ function waitFor (test, options, callback) {
         }
 
         if (arrived) {
-          return resolve()
+          return resolve(null)
         }
 
         if (Date.now() > start + options.timeout) {
@@ -66,7 +66,4 @@ async function promises (test, options) {
   }
 }
 
-export default {
-  waitFor,
-  promises
-}
+export default waitFor
