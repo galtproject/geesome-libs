@@ -8,7 +8,7 @@
  */
 
 import _ from "lodash";
-import uuid from 'uuid';
+import * as uuid from 'uuid';
 import stableSort from 'stable';
 import createHash from 'create-hash';
 import bip39 from "ethereum-cryptography/bip39";
