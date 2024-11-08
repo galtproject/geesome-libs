@@ -12,14 +12,15 @@
 'use strict';
 
 import chai from 'chai';
+import fs from "node:fs";
 import dirtyChai from 'dirty-chai';
 import { createHelia } from 'helia';
 import { MemoryBlockstore } from 'blockstore-core';
-import JsIpfsService from '../src/JsIpfsService';
-import peerIdHelper from '../src/peerIdHelper';
-import ipfsHelper from '../src/ipfsHelper';
-import trie from '../src/base36Trie';
-import common from '../src/common';
+import JsIpfsServiceNode from "../src/JsIpfsServiceNode.js";
+import peerIdHelper from '../src/peerIdHelper.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import trie from '../src/base36Trie.js';
+import common from '../src/common.js';
 const expect = chai.expect;
 chai.use(dirtyChai);
 const blockstore = new MemoryBlockstore();
@@ -36,7 +37,7 @@ describe.only('ipfs', function () {
         const helia = await createHelia({
           blockstore,
         });
-        node = new JsIpfsService(helia);
+        node = new JsIpfsServiceNode(helia);
         await node.init();
         // add the bytes to your node and receive a unique content identifier
       } catch (error) {
@@ -214,5 +215,20 @@ describe.only('ipfs', function () {
       expect(decryptedPrivateKey).to.equals(privateKey);
       done();
     })();
+  });
+
+  it.only('should save directory correctly', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const path = './temp';
+      fs.existsSync(path) || fs.mkdirSync(path);
+      fs.writeFileSync(`${path}/file1.txt`, 'test1', {encoding: 'utf8'});
+      fs.writeFileSync(`${path}/file2.txt`, 'test2', {encoding: 'utf8'});
+      const res = await node.saveDirectory(path + '/');
+      console.log('res', res);
+      console.log('fileLs', await node.fileLs(res.id));
+      done();
+    })().catch(e => console.error(e));
   });
 });

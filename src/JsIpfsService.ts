@@ -7,6 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 import itFirst from 'it-first';
+import itAll from 'it-all';
 import itConcat from 'it-concat';
 import itToStream from 'it-to-stream';
 import { CID } from 'multiformats';
@@ -446,7 +447,11 @@ export default class JsIpfsService {
   }
 
   async fileLs(filePath) {
-    return itFirst(this.node.files.ls(filePath));
+    if (this.type === 'helia') {
+      return itAll(this.heliaFs.ls(filePath));
+    } else {
+      return itFirst(this.node.files.ls(filePath));
+    }
   }
 
   async copyFileFromId(storageId, filePath) {

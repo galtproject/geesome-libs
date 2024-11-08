@@ -94,7 +94,8 @@ const ipfsHelper = {
     // 0x55 - raw ipfs hash
     // 0x72 - pubkey
     // https://github.com/multiformats/multicodec/blob/5de6f09bdf7ed137f47c94a2e61866a87b4b3141/table.csv
-    return (sha256.digest(bytes) as any).then(res => CID.createV1(code, res)).then(cid => cid.toString());
+    const res = (sha256.digest(bytes) as any);
+    return CID.createV1(code, res).toString();
   },
 
   async getJsonHashFromObject(object) {
