@@ -450,7 +450,7 @@ export default class JsIpfsService {
     if (this.type === 'helia') {
       return itAll(this.heliaFs.ls(filePath));
     } else {
-      return itFirst(this.node.files.ls(filePath));
+      return itAll(this.node.ls(filePath));
     }
   }
 
