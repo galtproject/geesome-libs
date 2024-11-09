@@ -23,9 +23,9 @@ export default class JsIpfsServiceNode extends JsIpfsService {
     let asyncGenerator;
     path = Path.resolve(process.cwd(), path);
     if (this.type === 'helia') {
-      asyncGenerator = this.heliaFs.addAll(filterGlobSource(path), {wrapWithDirectory: true});
+      asyncGenerator = this.heliaFs.addAll(filterGlobSource(path, `{.,**/*}`), {wrapWithDirectory: true});
     } else {
-      asyncGenerator = this.node.addAll(filterGlobSource(path), {
+      asyncGenerator = this.node.addAll(filterGlobSource(path, `{**/*}`), {
         pin: false,
         cidVersion: 1,
         wrapWithDirectory: true
@@ -46,9 +46,12 @@ export default class JsIpfsServiceNode extends JsIpfsService {
   }
 };
 
-async function * filterGlobSource(path) {
+async function * filterGlobSource(path, pattern) {
   // yield* globSource(path + '/', '{.,**/*}', {});
-  for await (const p of globSource(path, '{.,**/*}')) {
+  // const splitPath = trim(path, '/').split('/');
+  // const subPath = '/' + splitPath.slice(0, -1).join('/');
+  // const dirName = splitPath.slice(-1)
+  for await (const p of globSource(path, pattern)) {
     // if (p.path === path || p.path === trim(path, '/')) {
     //   p.path += '/';
     // }
