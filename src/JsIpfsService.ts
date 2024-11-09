@@ -229,7 +229,9 @@ export default class JsIpfsService {
         return {value: response, remainderPath: splitPath.slice(pathIndex).join('/')};
       });
     } else {
-      return this.node.dag.get(cid, options).then(({value, remainderPath}) => {
+      return this.node.dag.get(cid, options).then((res) => {
+        console.log('node.dag.get', res);
+        let {value, remainderPath} = res;
         if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
           value = get(value, remainderPath.replace('/', '.'));
           remainderPath = undefined;
