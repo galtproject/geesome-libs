@@ -258,10 +258,11 @@ export default class JsIpfsService {
     if (!ipfsHelper.isCid(storageId)) {
       storageId = CID.parse(storageId)
     }
-    let {value, remainderPath} = await this.getObjectPure(storageId, {
-      path: this.type === 'helia' ? propName : '/' + propName + '/',
-      localResolve: true
-    });
+    let options = {localResolve: true};
+    if (propName) {
+      options['path'] = this.type === 'helia' ? propName : '/' + propName + '/';
+    }
+    let {value, remainderPath} = await this.getObjectPure(storageId, options);
     console.log('ipfsHelper.isIpfsHash(value)', ipfsHelper.isIpfsHash(value), 'resolveProp', resolveProp);
     if (ipfsHelper.isIpfsHash(value) && resolveProp) {
       return this.getObjectProp(ipfsHelper.ipfsHashToCid(value), remainderPath, true);
