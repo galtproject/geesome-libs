@@ -25,7 +25,7 @@ export default class JsIpfsServiceNode extends JsIpfsService {
     if (this.type === 'helia') {
       asyncGenerator = this.heliaFs.addAll(filterGlobSource(path, `{.,**/*}`), {wrapWithDirectory: true});
     } else {
-      asyncGenerator = this.node.addAll(filterGlobSource(path, `{**/*}`), {
+      asyncGenerator = this.node.addAll(filterGlobSource(path, `**/*`), {
         pin: false,
         cidVersion: 1,
         wrapWithDirectory: true
