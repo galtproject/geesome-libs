@@ -227,7 +227,7 @@ describe.only('ipfs', function () {
       fs.writeFileSync(`${path}/file2.txt`, 'test2', {encoding: 'utf8'});
       const res = await node.saveDirectory(path + '/');
       console.log('res', res);
-      console.log('fileLs', await node.fileLs(res.id));
+      console.log('nodeLs', await node.nodeLs(res.id));
       done();
     })().catch(e => console.error(e));
   });

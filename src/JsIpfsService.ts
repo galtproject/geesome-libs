@@ -446,17 +446,25 @@ export default class JsIpfsService {
     return this.node.files.mkdir(path, { parents: true });
   }
 
-  async fileLs(filePath) {
+  async nodeLs(filePath, single = false) {
     if (this.type === 'helia') {
-      return itAll(this.heliaFs.ls(filePath));
+      return single ? itFirst(this.heliaFs.ls(filePath)) : itAll(this.heliaFs.ls(filePath));
     } else {
-      return itAll(this.node.ls(filePath));
+      return single ? itFirst(this.node.ls(filePath)) : itAll(this.node.ls(filePath));
+    }
+  }
+
+  async fileLs(filePath, single = false) {
+    if (this.type === 'helia') {
+      return single ? itFirst(this.heliaFs.ls(filePath)) : itAll(this.heliaFs.ls(filePath));
+    } else {
+      return single ? itFirst(this.node.files.ls(filePath)) : itAll(this.node.files.ls(filePath));
     }
   }
 
   async copyFileFromId(storageId, filePath) {
     try {
-      const exist = await this.fileLs(filePath);
+      const exist = await this.fileLs(filePath, true);
       if(exist) {
         await this.node.files.rm(filePath);
       }
