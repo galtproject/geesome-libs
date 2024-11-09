@@ -233,6 +233,7 @@ export default class JsIpfsService {
         console.log('node.dag.get', res);
         let {value, remainderPath} = res;
         if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
+          console.log('value = ', get(value, remainderPath.replace('/', '.')));
           value = get(value, remainderPath.replace('/', '.'));
           remainderPath = undefined;
         }
@@ -253,6 +254,7 @@ export default class JsIpfsService {
   }
 
   async getObjectProp(storageId, propName, resolveProp = true) {
+    console.log('getObjectProp storageId', storageId, 'propName', propName);
     if (!ipfsHelper.isCid(storageId)) {
       storageId = CID.parse(storageId)
     }
@@ -260,6 +262,7 @@ export default class JsIpfsService {
       path: this.type === 'helia' ? propName : '/' + propName + '/',
       localResolve: true
     });
+    console.log('ipfsHelper.isIpfsHash(value)', ipfsHelper.isIpfsHash(value), 'resolveProp', resolveProp);
     if (ipfsHelper.isIpfsHash(value) && resolveProp) {
       return this.getObjectProp(ipfsHelper.ipfsHashToCid(value), remainderPath, true);
     } else {
