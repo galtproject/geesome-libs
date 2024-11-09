@@ -48,7 +48,7 @@ const moveFromDate = (fromDate, value, unit) => {
 };
 
 const moveDate = (value, unit) => {
-  return module.exports.moveFromDate(new Date(), value, unit);
+  return moveFromDate(new Date(), value, unit);
 };
 
 const extractHostname = (url) => {
