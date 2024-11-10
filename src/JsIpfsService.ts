@@ -91,7 +91,7 @@ export default class JsIpfsService {
           return resolve(this.heliaFs.addByteStream(content));
         } else {
           //https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS
-          console.log('this.heliaFs.addBytes');
+          // console.log('this.heliaFs.addBytes');
           return resolve(this.heliaFs.addBytes(content));
         }
       } else {
@@ -230,10 +230,10 @@ export default class JsIpfsService {
       });
     } else {
       return this.node.dag.get(cid, options).then((res) => {
-        console.log('node.dag.get', res);
+        // console.log('node.dag.get', res);
         let {value, remainderPath} = res;
         if (isObject(value) && remainderPath && get(value, remainderPath.replace('/', '.'))) {
-          console.log('value = ', get(value, remainderPath.replace('/', '.')));
+          // console.log('value = ', get(value, remainderPath.replace('/', '.')));
           value = get(value, remainderPath.replace('/', '.'));
           remainderPath = undefined;
         }
@@ -254,7 +254,7 @@ export default class JsIpfsService {
   }
 
   async getObjectProp(storageId, propName, resolveProp = true) {
-    console.log('getObjectProp storageId', storageId, 'propName', propName);
+    // console.log('getObjectProp storageId', storageId, 'propName', propName);
     if (!ipfsHelper.isCid(storageId)) {
       storageId = CID.parse(storageId)
     }
@@ -263,7 +263,7 @@ export default class JsIpfsService {
       options['path'] = this.type === 'helia' ? propName : '/' + propName + '/';
     }
     let {value, remainderPath} = await this.getObjectPure(storageId, options);
-    console.log('ipfsHelper.isIpfsHash(value)', ipfsHelper.isIpfsHash(value), 'resolveProp', resolveProp);
+    // console.log('ipfsHelper.isIpfsHash(value)', ipfsHelper.isIpfsHash(value), 'resolveProp', resolveProp);
     if (ipfsHelper.isIpfsHash(value) && resolveProp) {
       return this.getObjectProp(ipfsHelper.ipfsHashToCid(value), remainderPath, true);
     } else {
