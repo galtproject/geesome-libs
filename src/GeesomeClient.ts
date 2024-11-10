@@ -7,38 +7,36 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const axios = require('axios');
+import _ from 'lodash';
+import axios from 'axios';
+import pIteration from 'p-iteration';
+import geesomeWalletClientLib from 'geesome-wallet-client/src/lib.js';
+import JsIpfsService from './JsIpfsService';
+import ipfsHelper from './ipfsHelper';
+import commonHelper from './common';
+import pgpHelper from './pgpHelper';
+import trie from './base36Trie';
+import common from './common';
+import name from './name';
 
-const extend = require('lodash/extend');
-const get = require('lodash/get');
-const set = require('lodash/set');
-const isObject = require('lodash/isObject');
-const forEach = require('lodash/forEach');
-const isUndefined = require('lodash/isUndefined');
-const range = require('lodash/range');
-const includes = require('lodash/includes');
-const merge = require('lodash/merge');
-const find = require('lodash/find');
-const filter = require('lodash/filter');
-const startsWith = require('lodash/startsWith');
-const pick = require('lodash/pick');
-const isEmpty = require('lodash/isEmpty');
-
-const pIteration = require('p-iteration');
-const ipfsHelper = require('./ipfsHelper');
-const pgpHelper = require('./pgpHelper');
-const commonHelper = require('./common');
-const trie = require('./base36Trie');
-const JsIpfsService = require('./JsIpfsService');
-const geesomeWalletClientLib = require('geesome-wallet-client/src/lib')
-
-const {extractHostname, isIpAddress, isNumber} = require('./common');
-const {getGroupUpdatesTopic, getPersonalChatTopic} = require('./name');
+const {extend, get, set, isObject, forEach, isUndefined, range, merge, find, filter, startsWith, pick, isEmpty} = _;
+const {extractHostname, isIpAddress, isNumber} = common;
+const {getGroupUpdatesTopic, getPersonalChatTopic} = name;
 
 class GeesomeClient {
+  server;
+  apiKey;
+  ipfsNode;
+  clientStorage;
+  $http;
+  ipfsService;
+  serverLessMode;
+  ipfsIddleTime;
+  _privateKey;
+  communicator;
   decryptedSocNetCache = {};
 
-  constructor(config = {}) {
+  constructor(config: any = {}) {
     this.server = config.server;
     if (commonHelper.isUndefined(this.server)) {
       this.setServerByDocumentLocation();
@@ -68,8 +66,8 @@ class GeesomeClient {
     return this.wrapResponse(this.$http.get('/v1/' + url, options));
   }
 
-  postRequest(url, data = null) {
-    return this.wrapResponse(this.$http.post('/v1/' + url, data));
+  postRequest(url, data = null, options = null) {
+    return this.wrapResponse(this.$http.post('/v1/' + url, data, options));
   }
 
   wrapResponse(httPromise) {
@@ -654,7 +652,7 @@ class GeesomeClient {
   getAdminInGroups(types) {
     //TODO: get groups list directly from ipld?
     return this.getRequest('user/admin-in-groups', {params: {types: types.join(',')}}).then(groupData => {
-      return pIteration.map(groupData.list, (group) => this.getGroup(group.manifestStorageId))
+      return pIteration.map(groupData.list, (group: any) => this.getGroup(group.manifestStorageId))
     });
   }
 
@@ -686,7 +684,7 @@ class GeesomeClient {
       groupId = await this.resolveIpns(groupId);
     }
 
-    const groupObj = await this.getObject(groupId);
+    const groupObj: any = await this.getObject(groupId);
 
     if (groupObj) {
       groupObj.$manifestId = groupId;
@@ -699,7 +697,7 @@ class GeesomeClient {
   }
 
   async fetchIpldFields(obj, fieldsNamesArr) {
-    await pIteration.forEach(fieldsNamesArr, async (fieldName) => {
+    await pIteration.forEach(fieldsNamesArr, async (fieldName: string) => {
       if (!get(obj, fieldName)) {
         return;
       }
@@ -775,8 +773,10 @@ class GeesomeClient {
     }
   }
 
-  async getContentData(contentHash) {
+  async getContentData(contentHash: any) {
+    // @ts-ignore
     if (isObject(contentHash) && contentHash.storageId) {
+      // @ts-ignore
       contentHash = contentHash.storageId;
     }
     if (contentHash['/']) {
@@ -804,7 +804,7 @@ class GeesomeClient {
     }
   }
 
-  async getGroupPostsAsync(groupId, options = {}, onItemCallback = null, onFinishCallback = null) {
+  async getGroupPostsAsync(groupId, options: any = {}, onItemCallback = null, onFinishCallback = null) {
     const group = await this.getGroup(groupId);
 
     const defaultOptions = {
@@ -910,7 +910,7 @@ class GeesomeClient {
       return console.warn('[GeesomeClient] Communicator not defined');
     }
     this.communicator.subscribeToEvent(getPersonalChatTopic(membersIpnsIds, groupTheme), (event) => {
-      if (includes(membersIpnsIds, event.keyIpns)) {
+      if (membersIpnsIds.includes(event.keyIpns)) {
         callback(event);
       }
     });
@@ -944,7 +944,7 @@ class GeesomeClient {
     return this.getRequest(`resolve/${ipns}`).catch(() => null);
   }
 
-  getFileCatalogItems(parentItemId, type, listParams = {}) {
+  getFileCatalogItems(parentItemId, type, listParams: any = {}) {
     let {sortBy, sortDir, limit, offset, search} = listParams;
 
     if (!sortBy) {
@@ -979,7 +979,7 @@ class GeesomeClient {
   }
 
   getContentsIdsByFileCatalogIds(fileCatalogIds) {
-    return this.postRequest(`file-catalog/get-contents-ids`, fileCatalogIds);
+    return this.postRequest(`user/file-catalog/get-contents-ids`, fileCatalogIds);
   }
 
   saveContentByPath(contentId, path) {
@@ -998,12 +998,12 @@ class GeesomeClient {
     return this.postRequest(`user/file-catalog/publish-folder/${folderId}`, params);
   }
 
-  getAllItems(itemsName, search = null, listParams = {}) {
+  getAllItems(itemsName, search = null, listParams: any = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`admin/all-` + itemsName, {params: {search, sortBy, sortDir, limit, offset}});
   }
 
-  getUserApiKeys(isDisabled = null, search = null, listParams = {}) {
+  getUserApiKeys(isDisabled = null, search = null, listParams: any = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
     return this.getRequest(`user/api-key-list`, {params: {sortBy, sortDir, limit, offset}});
   }
@@ -1044,7 +1044,7 @@ class GeesomeClient {
     return this.postRequest(`admin/update-invite/${inviteId}`, inviteData);
   }
 
-  adminInvitesList(isActive = undefined, listParams = {}) {
+  adminInvitesList(isActive = undefined, listParams: any = {}) {
     let {sortBy, sortDir, limit, offset} = listParams;
 
     if (!sortBy) {
@@ -1115,11 +1115,11 @@ class GeesomeClient {
 
     if (_includesAddress) {
       return find(addresses, (address) => {
-        return includes(address, _includesAddress);
+        return address.includes(_includesAddress);
       });
     } else {
       return filter(addresses, (address) => {
-        return !includes(address, '127.0.0.1') && !includes(address, '192.168') && address.length > 64;//&& !includes(address, '/p2p-circuit/ipfs/')
+        return !address.ncludes('127.0.0.1') && !address.includes('192.168') && address.length > 64;//&& !includes(address, '/p2p-circuit/ipfs/')
       })[0];
     }
   }
@@ -1145,14 +1145,14 @@ class GeesomeClient {
 
   setServerByDocumentLocation() {
     let postfix = '/api';
-    if (document.location.hostname === 'localhost' || document.location.hostname === '127.0.0.1' || startsWith(document.location.pathname, '/node')) {
+    if (global.document.location.hostname === 'localhost' || global.document.location.hostname === '127.0.0.1' || startsWith(global.document.location.pathname, '/node')) {
       postfix = ':2052';
     }
-    this.server = document.location.protocol + "//" + document.location.hostname + postfix;
+    this.server = global.document.location.protocol + "//" + global.document.location.hostname + postfix;
   }
 
   isLocalServer() {
-    return includes(this.server, ':2052');
+    return this.server.includes(':2052');
   }
 
   async getPreloadAddresses() {
@@ -1186,7 +1186,7 @@ class GeesomeClient {
 
   async initBrowserIpfsNode() {
     function createIpfsNode(options) {
-      return window['Ipfs'].create(merge({
+      return global.window['Ipfs'].create(merge({
         EXPERIMENTAL: {
           pubsub: true,
           ipnsPubsub: true
@@ -1209,11 +1209,11 @@ class GeesomeClient {
 
 class AbstractClientStorage {
   set(name, value) {
-    assert(false, 'you have to override getValue');
+    global.assert(false, 'you have to override getValue');
   }
 
-  get(name) {
-    assert(false, 'you have to override getValue');
+  get(name): any {
+    global.assert(false, 'you have to override getValue');
   }
 
   joinToGroup(groupId) {
@@ -1243,6 +1243,7 @@ class AbstractClientStorage {
 }
 
 class SimpleClientStorage extends AbstractClientStorage {
+  storage;
   constructor() {
     super();
     this.storage = {};
@@ -1271,9 +1272,4 @@ class BrowserLocalClientStorage extends AbstractClientStorage {
   }
 }
 
-module.exports = {
-  GeesomeClient,
-  AbstractClientStorage,
-  SimpleClientStorage,
-  BrowserLocalClientStorage
-};
+export default GeesomeClient;

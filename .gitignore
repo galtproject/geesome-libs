@@ -5,4 +5,4 @@ coverage
 .DS_Store
 *.log
 *.key
-*.ts
+temp

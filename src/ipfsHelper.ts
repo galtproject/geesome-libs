@@ -7,15 +7,16 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const { CID } = require('multiformats/cid');
-const { sha256 } = require('multiformats/hashes/sha2');
-const startsWith = require('lodash/startsWith');
-const isString = require('lodash/isString');
-const libp2pCrypto = require('libp2p-crypto');
-const dagCBOR = require('@ipld/dag-cbor')
-const pick = require('lodash/pick');
-const isUndefined = require('lodash/isUndefined');
-const isDate = require('lodash/isDate');
+import { CID } from 'multiformats';
+import * as codec from "@ipld/dag-cbor";
+import libp2pCrypto from 'libp2p-crypto';
+import { sha256 } from 'multiformats/hashes/sha2';
+import * as jsonCodec from 'multiformats/codecs/json';
+import _ from 'lodash';
+import common from "./common";
+const {startsWith, isString, pick, isUndefined, isDate} = _;
+// import * as dagCBOR from '@ipld/dag-cbor';
+// import * as dagJSON from '@ipld/dag-json';
 
 const ipfsHelper = {
   isIpfsHash(value) {
@@ -41,7 +42,7 @@ const ipfsHelper = {
     if (!value) {
       return false;
     }
-    return isString(value) && value.length === 59 && /^\w+$/.test(value) && startsWith(value, 'bafyre');
+    return isString(value) && (value.length === 59 || value.length === 61) && /^\w+$/.test(value) && (startsWith(value, 'bafyre') || startsWith(value, 'bagaai'));
   },
   isAccountCidHash(value) {
     if (!value) {
@@ -86,43 +87,56 @@ const ipfsHelper = {
   },
 
   async getIpfsHashFromString(string) {
-    return ipfsHelper.cidHashFromBytes(new TextEncoder('utf8').encode(string), 0x55);
+    return ipfsHelper.cidHashFromBytes(new (TextEncoder as any)('utf8').encode(string), 0x55);
   },
 
   async cidHashFromBytes(bytes, code) {
     // 0x55 - raw ipfs hash
     // 0x72 - pubkey
     // https://github.com/multiformats/multicodec/blob/5de6f09bdf7ed137f47c94a2e61866a87b4b3141/table.csv
-    return sha256.digest(bytes).then(res => CID.createV1(code, res)).then(cid => cid.toString());
+    const res = (sha256.digest(bytes) as any);
+    return CID.createV1(code, res).toString();
+  },
+
+  async getJsonHashFromObject(object) {
+    object = common.sortObject(object);
+    const buf = jsonCodec.encode(object);
+    const hash = await sha256.digest(buf);
+    const cid = CID.createV1(jsonCodec.code, hash);
+    return ipfsHelper.cidToHash(cid);
   },
 
   async getIpldHashFromObject(object) {
-    return sha256.digest(dagCBOR.encode(object)).then(res => CID.createV1(dagCBOR.code, res)).then(res => ipfsHelper.cidToHash(res));
+    object = common.sortObject(object);
+    const buf = codec.encode(object);
+    const hash = await sha256.digest(buf);
+    const cid = CID.createV1(codec.code, hash);
+    return ipfsHelper.cidToHash(cid);
   },
 
   async createDaemonNode(options = {}, ipfsOptions = {}) {
-    const hat = require('hat');
-    const {createFactory} = require('ipfsd-ctl');
-
-    const factory = createFactory({
-      type: 'proc', // or 'js' to run in a separate process
-      // type: 'js',
-      ipfsHttpModule: require('ipfs-http-client'),
-      ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
-      ...options
-    })
-
-    const node = await factory.spawn({
-      ipfsOptions: {
-        pass: hat(),
-        init: true,
-        // start: true,
-        ...ipfsOptions
-      },
-      // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
-    });
-
-    return node.api;
+    // const hat = require('hat');
+    // const {createFactory} = require('ipfsd-ctl');
+    //
+    // const factory = createFactory({
+    //   type: 'proc', // or 'js' to run in a separate process
+    //   // type: 'js',
+    //   ipfsHttpModule: require('ipfs-http-client'),
+    //   ipfsModule: require('ipfs'), // only if you gonna spawn 'proc' controllers
+    //   ...options
+    // })
+    //
+    // const node = await factory.spawn({
+    //   ipfsOptions: {
+    //     pass: hat(),
+    //     init: true,
+    //     // start: true,
+    //     ...ipfsOptions
+    //   },
+    //   // preload: {enabled: false, addresses: await this.getPreloadAddresses()}
+    // });
+    //
+    // return node.api;
   },
 
   getStorageIdHash(storageId) {
@@ -137,4 +151,4 @@ const ipfsHelper = {
     return storageId;
   }
 };
-module.exports = ipfsHelper;
+export default ipfsHelper;

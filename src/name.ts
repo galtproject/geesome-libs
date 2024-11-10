@@ -7,11 +7,14 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-const sortBy = require('lodash/sortBy');
-const { Keccak } = require('sha3');
-const base64url = require('base64url');
-const ipns = require('ipns');
-const {fromB58String} = require('multihashes');
+import sortBy from 'lodash/sortBy.js';
+import {Keccak} from 'sha3';
+import base64url from 'base64url';
+import {fromB58String} from 'multihashes';
+import {fromString as uint8ArrayFromString, concat as uint8ArrayConcat} from 'uint8arrays';
+import {base32upper} from 'multiformats/bases/base32';
+import {key as Key} from "openpgp";
+// const ipns = require('ipns');
 
 const name = {
   getPersonalChatName(friendsIds, groupTheme) {
@@ -44,10 +47,25 @@ const name = {
 
   base64Ipns(ipnsId) {
     const multihash = fromB58String(ipnsId);
-    const idKeys = ipns.getIdKeys(multihash);
-    return base64url.encode(idKeys.routingKey._buf);
+    // const idKeys = ipns.getIdKeys(multihash);
+    // return base64url.encode(idKeys.routingKey._buf);
   }
 };
 
+function getIdKeys (pid) {
+  const pkBuffer = uint8ArrayFromString('/pk/')
+  const ipnsBuffer = uint8ArrayFromString('/ipns/')
 
-module.exports = name;
+  return {
+    routingPubKey: new (Key as any)(uint8ArrayConcat([pkBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/8#issue-213857876 (pkKey will be deprecated in a future release)
+    pkKey: new (Key as any)(rawStdEncoding(uint8ArrayConcat([pkBuffer, pid]))),
+    routingKey: new (Key as any)(uint8ArrayConcat([ipnsBuffer, pid]), false), // Added on https://github.com/ipfs/js-ipns/pull/6#issue-213631461 (ipnsKey will be deprecated in a future release)
+    ipnsKey: new (Key as any)(rawStdEncoding(uint8ArrayConcat([ipnsBuffer, pid])))
+  }
+}
+
+function rawStdEncoding(key) {
+  return base32upper.encode(key).slice(1);
+}
+
+export default name;

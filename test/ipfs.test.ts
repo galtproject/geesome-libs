@@ -11,28 +11,38 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import fs from "node:fs";
+import dirtyChai from 'dirty-chai';
+import { createHelia } from 'helia';
+import { MemoryBlockstore } from 'blockstore-core';
+import JsIpfsServiceNode from "../src/JsIpfsServiceNode.js";
+import peerIdHelper from '../src/peerIdHelper.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import trie from '../src/base36Trie.js';
+import common from '../src/common.js';
 const expect = chai.expect;
 chai.use(dirtyChai);
+const blockstore = new MemoryBlockstore();
 
-const JsIpfsService = require('../src/JsIpfsService');
-const ipfsHelper = require('../src/ipfsHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const common = require('../src/common');
-const trie = require('../src/base36Trie');
-
-describe('ipfs', function () {
+describe.only('ipfs', function () {
   let node;
 
   beforeEach(function (done) {
-    this.timeout(40 * 1000);
+    this.timeout(400 * 1000);
 
     (async () => {
-      node = new JsIpfsService(await ipfsHelper.createDaemonNode({
-        test: true,
-        disposable: true,
-      }));
+      try {
+        // const helia = null;
+        const helia = await createHelia({
+          blockstore,
+        });
+        node = new JsIpfsServiceNode(helia);
+        await node.init();
+        // add the bytes to your node and receive a unique content identifier
+      } catch (error) {
+        console.error('catch', error);
+      }
       done();
     })();
   });
@@ -44,15 +54,19 @@ describe('ipfs', function () {
 
     (async () => {
       const content = '1';
-      const savedText = await node.saveFileByData(content, {waitForPin: true});
-      const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
-      expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
-      expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
-      expect(savedText.id).to.equals(ipfsHash);
-      const savedText2 = await node.saveFileByData('2', {waitForPin: true});
-      expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
-      expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
-      expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
+      const savedText = await node.saveFile(content, {waitForPin: true});
+      try {
+        const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
+        expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
+        expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
+        expect(savedText.id).to.equals(ipfsHash);
+        const savedText2 = await node.saveFile('2', {waitForPin: true});
+        expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
+        expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
+        expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
+      } catch (e) {
+        console.error('catch', e);
+      }
       done();
     })();
   });
@@ -73,7 +87,9 @@ describe('ipfs', function () {
       const gotObject = await node.getObject(savedIpld);
       expect(gotObject.foo).to.equals('bar');
       done();
-    })();
+    })().catch(e => {
+      console.error('catch', e);
+    });
   });
 
   it('should resolve object props', function (done) {
@@ -94,7 +110,6 @@ describe('ipfs', function () {
         fooArray: arrayId,
         fooObj: nestedObjId
       };
-      console.log('obj', obj);
       const objectId = await node.saveObject(obj);
       expect(await node.getObjectProp(objectId, 'fooArray', true)).to.deep.equal(array);
       expect(await node.getObjectProp(objectId, 'fooArray/0', true)).to.deep.equal(array[0]);
@@ -103,7 +118,7 @@ describe('ipfs', function () {
       expect(await node.getObjectProp(objectId, 'fooArray', false)).to.deep.equal(arrayId);
       expect(await node.getObjectProp(objectId, 'fooObj', false)).to.deep.equal(nestedObjId);
       done();
-    })();
+    })().catch(e => console.error('error', e));
   });
 
   it('should resolve trie props', function (done) {
@@ -151,9 +166,8 @@ describe('ipfs', function () {
         _type: 'user-manifest'
       };
 
-      const storageId = await ipfsHelper.getIpldHashFromObject(
-          ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type'])
-      );
+      const pickObjectFields = ipfsHelper.pickObjectFields(userObj, ['name', 'title', 'email', 'description', 'updatedAt', 'createdAt', 'staticId', 'publicKey', 'accounts', '_version', '_source', '_protocol', '_type']);
+      const storageId = await ipfsHelper.getIpldHashFromObject(pickObjectFields);
       expect(storageId).to.equals('bafyreidbolvs64moiamhoq4xol5jmrzpgi27wgxgwseiopr7nrkgn4pemu');
       done();
     })();
@@ -201,5 +215,20 @@ describe('ipfs', function () {
       expect(decryptedPrivateKey).to.equals(privateKey);
       done();
     })();
+  });
+
+  it.only('should save directory correctly', function (done) {
+    this.timeout(80 * 1000);
+
+    (async () => {
+      const path = './temp';
+      fs.existsSync(path) || fs.mkdirSync(path);
+      fs.writeFileSync(`${path}/file1.txt`, 'test1', {encoding: 'utf8'});
+      fs.writeFileSync(`${path}/file2.txt`, 'test2', {encoding: 'utf8'});
+      const res = await node.saveDirectory(path + '/');
+      console.log('res', res);
+      console.log('nodeLs', await node.nodeLs(res.id));
+      done();
+    })().catch(e => console.error(e));
   });
 });

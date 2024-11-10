@@ -11,16 +11,16 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const dirtyChai = require('dirty-chai');
+import chai from 'chai';
+import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-const {GeesomeClient} = require('../src/GeesomeClient');
-const pgpHelper = require('../src/pgpHelper');
-const peerIdHelper = require('../src/peerIdHelper');
-const ipfsHelper = require('../src/ipfsHelper');
-const pubSubHelper = require('../src/pubSubHelper');
+import GeesomeClient from '../src/GeesomeClient.js';
+import pgpHelper from '../src/pgpHelper.js';
+import peerIdHelper from '../src/peerIdHelper.js';
+import ipfsHelper from '../src/ipfsHelper.js';
+import pubSubHelper from '../src/pubSubHelper.js';
 
 describe('pgp', function () {
   let geesomeClient;
