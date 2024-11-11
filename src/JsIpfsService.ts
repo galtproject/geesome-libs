@@ -337,6 +337,7 @@ export default class JsIpfsService {
 
   async remoteNodeAddressList(types = []) {
     return this.nodeAddressList().then(addresses => {
+      console.log('remoteNodeAddressList', addresses);
       addresses = addresses.filter(a => !a.includes('/127.0.0.1/'))
       types.forEach(type => {
         addresses = addresses.filter(a => a.includes('/' + type + '/'))
