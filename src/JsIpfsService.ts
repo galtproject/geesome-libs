@@ -19,7 +19,7 @@ import ipfsHelper from './ipfsHelper';
 import common from './common';
 import name from './name';
 import got from 'got';
-const {trim, pick, isObject, find, startsWith, isString, isBuffer, get} = _;
+const {trim, pick, isObject, find, startsWith, isString, isBuffer, get, includes} = _;
 
 const { getIpnsUpdatesTopic } = name;
 common.initializeCustomEvent();
@@ -338,9 +338,9 @@ export default class JsIpfsService {
   async remoteNodeAddressList(types = []) {
     return this.nodeAddressList().then(addresses => {
       console.log('remoteNodeAddressList', addresses);
-      addresses = addresses.filter(a => !a.includes('/127.0.0.1/'))
+      addresses = addresses.filter(a => !includes(a, '/127.0.0.1/'))
       types.forEach(type => {
-        addresses = addresses.filter(a => a.includes('/' + type + '/'))
+        addresses = addresses.filter(a => includes(a, '/' + type + '/'))
       });
       return addresses;
     });
