@@ -484,9 +484,7 @@ export default class JsIpfsService {
   }
 
   async getDirectoryId(path) {
-    let res = await this.node.files.stat(path, {hash: true});
-    console.log('files.ls', path, await this.node.files.ls(path));
-    let {hash, cid} = res;
+    let {hash, cid} = await this.node.files.stat(path, {hash: true});
     if (!hash) {
       hash = ipfsHelper.cidToIpfsHash(cid);
     }
