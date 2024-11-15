@@ -341,8 +341,8 @@ class GeesomeClient {
     return this.postRequest(`render/static-site-generator/get-default-options`, { entityType, entityId });
   }
 
-  async staticSiteRunGenerate(entityType, entityId, options) {
-    return this.postRequest(`render/static-site-generator/run`, { entityType, entityId, options });
+  async staticSiteRunGenerate(renderArgs, options) {
+    return this.postRequest(`render/static-site-generator/run`, { ...renderArgs, options });
   }
 
   async staticSiteBind(id) {
