@@ -35,7 +35,6 @@ export default class JsIpfsServiceNode extends JsIpfsService {
       if (!file.path || file.path === path || file.path === trim(path, '/')) {
         res = file;
       }
-      console.log('addAll path', path, 'file', file)
     }
     const dirResult = this.wrapIpfsItem(res);
     const pinPromise = this.addPin(dirResult.id);

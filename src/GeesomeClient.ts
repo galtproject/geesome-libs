@@ -46,7 +46,7 @@ class GeesomeClient {
 
     this.clientStorage = config.clientStorage;
 
-    this.$http = axios.create({});
+    this.$http = axios.create({baseURL: this.server});
 
     this.ipfsService = null;
     this.serverLessMode = isUndefined(config.serverLessMode) ? true : config.serverLessMode;
