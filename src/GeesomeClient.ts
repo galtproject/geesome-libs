@@ -709,11 +709,11 @@ class GeesomeClient {
     })
   }
 
-  async getContentLinkByStaticId(staticId) {
+  getContentLinkByStaticId(staticId) {
     return this.server + '/ipns/' + staticId;
   }
 
-  async getContentLinkByStorageId(storageId) {
+  getContentLinkByStorageId(storageId) {
     return this.server + '/ipfs/' + storageId;
   }
 
