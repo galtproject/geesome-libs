@@ -484,7 +484,7 @@ export default class JsIpfsService {
   }
 
   async getDirectoryId(path) {
-    let res = await this.node.files.stat(path, {hash: true, hashAlg: 'sha2-256'});
+    let res = await this.node.files.stat(path, {hashAlg: 'sha2-256'});
     console.log('getDirectoryId', res);
     let {hash, cid} = res;
     if (!hash) {
