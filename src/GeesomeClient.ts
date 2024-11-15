@@ -713,6 +713,10 @@ class GeesomeClient {
     return this.server + '/ipns/' + staticId;
   }
 
+  async getContentLinkByStorageId(storageId) {
+    return this.server + '/ipfs/' + storageId;
+  }
+
   async getContentLink(content, previewType = null) {
     if (!content) {
       return null;
