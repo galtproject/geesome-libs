@@ -449,7 +449,7 @@ export default class JsIpfsService {
   }
 
   async makeDir(path) {
-    return this.node.files.mkdir(path, { parents: true });
+    return this.node.files.mkdir(path, { parents: true, cidVersion: 1 });
   }
 
   async nodeLs(filePath, single = false) {
@@ -484,8 +484,8 @@ export default class JsIpfsService {
   }
 
   async getDirectoryId(path) {
-    let res = await this.node.files.stat(path, {hashAlg: 'sha2-256'});
-    console.log('getDirectoryId', res);
+    let res = await this.node.files.stat(path, {hash: true});
+    console.log('files.ls', path, await this.node.files.ls(path));
     let {hash, cid} = res;
     if (!hash) {
       hash = ipfsHelper.cidToIpfsHash(cid);
