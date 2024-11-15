@@ -709,12 +709,12 @@ class GeesomeClient {
     })
   }
 
-  getContentLinkByStaticId(staticId) {
-    return this.server + '/ipns/' + staticId;
+  getContentLinkByStaticId(staticId, isDir = false) {
+    return this.server + '/ipns/' + staticId + (isDir ? '/' : '');
   }
 
-  getContentLinkByStorageId(storageId) {
-    return this.server + '/ipfs/' + storageId;
+  getContentLinkByStorageId(storageId, isDir = false) {
+    return this.server + '/ipfs/' + storageId + (isDir ? '/' : '');
   }
 
   async getContentLink(content, previewType = null) {
