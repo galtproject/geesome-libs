@@ -740,7 +740,7 @@ class GeesomeClient {
     }
   }
 
-  getServerStorageUri(isIpns) {
+  getServerStorageUri(isIpns = false) {
     return `${this.server}/${isIpns ? 'ipns' : 'ipfs'}/`;
   }
 
