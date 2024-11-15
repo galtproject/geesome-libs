@@ -472,7 +472,7 @@ export default class JsIpfsService {
     try {
       const exist = await this.fileLs(filePath, true);
       if(exist) {
-        await this.node.files.rm(filePath);
+        await this.node.files.rm(filePath, {recursive: true});
       }
     } catch (e) {
       if(!e.message.includes('file does not exist')) {
