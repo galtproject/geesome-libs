@@ -345,6 +345,10 @@ class GeesomeClient {
     return this.postRequest(`render/static-site-generator/run`, { ...renderArgs, options });
   }
 
+  getOperationQueueItem(operationId?) {
+    return this.postRequest(`user/get-operation-queue/${operationId}`);
+  }
+
   async staticSiteBind(id) {
     return this.postRequest(`render/static-site-generator/bind-to-static-id/${id}`);
   }
