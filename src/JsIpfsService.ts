@@ -80,34 +80,24 @@ export default class JsIpfsService {
       content = Buffer.from(content, 'utf8');
     }
     return new Promise((resolve, reject) => {
-      // if content is stream - subscribe for error
       if(content.on) {
         // TODO: figure out why its not working
         content.on('error', reject);
       }
-      if (this.type === 'helia') {
-        if (content.pipe) {
-          //https://github.com/ipfs-examples/helia-examples/blob/main/examples/helia-create-car/test/index.spec.js
-          return resolve(this.heliaFs.addByteStream(content));
-        } else {
-          //https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS
-          // console.log('this.heliaFs.addBytes');
-          return resolve(this.heliaFs.addBytes(content));
-        }
-      } else {
-        //https://github.com/ipfs/js-kubo-rpc-client
-        this.saveFile({content}).then(resolve).catch(reject);
-      }
+      this.saveFile(content, options).then(resolve).catch(reject);
     });
   }
 
-  async saveFile(data, options: any = {}) {
+  async saveFile(content, options: any = {}) {
     let result;
     if (this.type === 'helia') {
-      result = await this.saveFileByData(data);
+      //https://github.com/ipfs-examples/helia-examples/blob/main/examples/helia-create-car/test/index.spec.js
+      //https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS
+      result = await (content.pipe ? this.heliaFs.addByteStream(content) : this.heliaFs.addBytes(content));
       result = this.wrapIpfsItem(await this.heliaFs.stat(result));
     } else {
-      result = this.wrapIpfsItem(await this.node.add(data, {pin: false, cidVersion: 1}));
+      //https://github.com/ipfs/js-kubo-rpc-client
+      result = this.wrapIpfsItem(await this.node.add({content}, {pin: false, cidVersion: 1}));
     }
     const pinPromise = this.addPin(result.id);
     if (options.waitForPin) {

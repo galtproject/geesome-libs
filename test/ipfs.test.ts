@@ -54,13 +54,13 @@ describe.only('ipfs', function () {
 
     (async () => {
       const content = '1';
-      const savedText = await node.saveFile(content, {waitForPin: true});
+      const savedText = await node.saveFileByData(content, {waitForPin: true});
       try {
         const ipfsHash = await ipfsHelper.getIpfsHashFromString(content);
         expect(ipfsHash).to.equals('bafkreidlq2zhh7zu7tqz224aj37vup2xi6w2j2vcf4outqa6klo3pb23jm');
         expect(ipfsHelper.isFileCidHash(ipfsHash)).to.equals(true);
         expect(savedText.id).to.equals(ipfsHash);
-        const savedText2 = await node.saveFile('2', {waitForPin: true});
+        const savedText2 = await node.saveFileByData('2', {waitForPin: true});
         expect(ipfsHelper.isFileCidHash(savedText2.id)).to.equals(true);
         expect(ipfsHelper.isAccountCidHash(savedText2.id)).to.equals(false);
         expect(ipfsHelper.isObjectCidHash(savedText2.id)).to.equals(false);
@@ -217,7 +217,7 @@ describe.only('ipfs', function () {
     })();
   });
 
-  it.only('should save directory correctly', function (done) {
+  it('should save directory correctly', function (done) {
     this.timeout(80 * 1000);
 
     (async () => {
