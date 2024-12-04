@@ -152,7 +152,11 @@ export default class JsIpfsService {
         }
       }, options.attemptTimeout);
 
-      this.node.files.stat('/ipfs/' + filePath, pick(options, ['hash', 'size', 'withLocal', 'timeout', 'signal'])).then((r) => {
+      if (!filePath.startsWith('/ipfs/')) {
+        filePath = '/ipfs/' + filePath;
+      }
+
+      this.node.files.stat(filePath, pick(options, ['hash', 'size', 'withLocal', 'timeout', 'signal'])).then((r) => {
         if (r) {
           resolved = true;
           resolve(r);
