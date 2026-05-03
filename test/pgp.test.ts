@@ -16,103 +16,42 @@ import dirtyChai from 'dirty-chai';
 const expect = chai.expect;
 chai.use(dirtyChai);
 
-import GeesomeClient from '../src/GeesomeClient.js';
 import pgpHelper from '../src/pgpHelper.js';
 import peerIdHelper from '../src/peerIdHelper.js';
-import ipfsHelper from '../src/ipfsHelper.js';
 import pubSubHelper from '../src/pubSubHelper.js';
+import {keys as cryptoKeys} from 'libp2p-crypto';
 
 describe('pgp', function () {
-  let geesomeClient;
-  const pass = 'ipfs-is-awesome-software';
+  this.timeout(40 * 1000);
 
-  const createNode = () => {
-    return ipfsHelper.createDaemonNode({
-      config: {
-        Bootstrap: [],
-        Discovery: {
-          MDNS: {
-            Enabled: false
-          },
-          webRTCStar: {
-            Enabled: false
-          }
-        }
-      },
-      preload: {enabled: false},
-    }, { pass });
-  };
+  it('should encrypt and decrypt messages', async function () {
+    const bobKey = await cryptoKeys.generateKeyPair('RSA', 2048);
+    const aliceKey = await cryptoKeys.generateKeyPair('RSA', 2048);
 
-  before(function (done) {
-    this.timeout(40 * 1000);
+    const bobPrivateKey = await pgpHelper.transformKey(bobKey.marshal());
+    const alicePrivateKey = await pgpHelper.transformKey(aliceKey.marshal());
 
-    (async () => {
-      const ipfsNode = await createNode();
-      
-      geesomeClient = new GeesomeClient({ ipfsNode });
-      await geesomeClient.init();
-      
-      done();
-    })();
+    const bobPublicKey = await pgpHelper.transformKey(bobKey.public.marshal(), true);
+    const alicePublicKey = await pgpHelper.transformKey(aliceKey.public.marshal(), true);
+
+    const plainText = 'Hello world!';
+    const encryptedText = await pgpHelper.encrypt([bobPrivateKey], [alicePublicKey, bobPublicKey], plainText);
+
+    const decryptedByAliceText = await pgpHelper.decrypt([alicePrivateKey], [bobPublicKey], encryptedText);
+    expect(plainText).to.equals(decryptedByAliceText);
+
+    const decryptedByBobText = await pgpHelper.decrypt([bobPrivateKey], [], encryptedText);
+    expect(plainText).to.equals(decryptedByBobText);
   });
 
-  after((done) => {geesomeClient.ipfsNode.stop().then(() => done())});
+  it('should sign fluence message and validate signature', async function () {
+    const bobPeerId = await peerIdHelper.createPeerId();
+    const alicePeerId = await peerIdHelper.createPeerId();
+    const bobPrivateKey = peerIdHelper.peerIdToPrivateBase64(bobPeerId);
+    const alicePublicKey = peerIdHelper.peerIdToPublicBase64(alicePeerId);
 
-  it('should encrypt and decrypt messages', function (done) {
-
-    (async () => {
-      this.timeout(10 * 1000);
-
-      const bobId = await geesomeClient.ipfsService.createAccountIfNotExists('bob');
-      const aliceId = await geesomeClient.ipfsService.createAccountIfNotExists('alice');
-
-      const bobKey = await geesomeClient.ipfsService.keyLookup(bobId, pass);
-      const aliceKey = await geesomeClient.ipfsService.keyLookup(aliceId, pass);
-
-      const bobPrivateKey = await pgpHelper.transformKey(bobKey.marshal());
-      const alicePrivateKey = await pgpHelper.transformKey(aliceKey.marshal());
-
-      // DO NOT WORKING :(
-      // const bobPublicPeerId = ipfsHelper.createPeerIdFromIpns(bobId);
-      // const alicePublicPeerId = ipfsHelper.createPeerIdFromIpns(aliceId);
-      // bobPublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(bobPublicPeerId);
-      // alicePublicPeerId._pubKey = ipfsHelper.extractPublicKeyFromId(alicePublicPeerId);
-      
-      const bobPublicKey = await pgpHelper.transformKey(bobKey.public.marshal(), true);
-      const alicePublicKey = await pgpHelper.transformKey(aliceKey.public.marshal(), true);
-
-      const plainText = 'Hello world!';
-
-      const encryptedText = await pgpHelper.encrypt([bobPrivateKey], [alicePublicKey, bobPublicKey], plainText);
-
-      const decryptedByAliceText = await pgpHelper.decrypt([alicePrivateKey], [bobPublicKey], encryptedText);
-
-      expect(plainText).to.equals(decryptedByAliceText);
-
-      const decryptedByBobText = await pgpHelper.decrypt([bobPrivateKey], [], encryptedText);
-
-      expect(plainText).to.equals(decryptedByBobText);
-      done();
-    })();
+    const msg = await pubSubHelper.buildAndSignFluenceMessage(bobPrivateKey, 'test');
+    expect(await pubSubHelper.checkFluenceSignature(msg.from, msg.data, msg.seqno, msg.signature)).to.equals(true);
+    expect(await pubSubHelper.checkFluenceSignature(alicePublicKey, msg.data, msg.seqno, msg.signature)).to.equals(false);
   });
-
-  it('should sign fluence message and validate signature', function (done) {
-    (async () => {
-      this.timeout(10 * 1000);
-
-      const bobId = await geesomeClient.ipfsService.createAccountIfNotExists('bob');
-      const aliceId = await geesomeClient.ipfsService.createAccountIfNotExists('alice');
-
-      const bobKey = await geesomeClient.ipfsService.keyLookup(bobId, pass);
-      const aliceKey = await geesomeClient.ipfsService.keyLookup(aliceId, pass);
-      const bobKeyBase58 = peerIdHelper.privateKeyToBase64(bobKey);
-      const alicePeerId = await peerIdHelper.createPeerIdFromPrivKey(peerIdHelper.privateKeyToBase64(aliceKey));
-      const aliceBase64PublicKey = peerIdHelper.peerIdToPublicBase64(alicePeerId);
-
-      const msg = await pubSubHelper.buildAndSignFluenceMessage(bobKeyBase58, 'test');
-      expect(await pubSubHelper.checkFluenceSignature(msg.from, msg.data, msg.seqno, msg.signature)).to.equals(true);
-      expect(await pubSubHelper.checkFluenceSignature(aliceBase64PublicKey, msg.data, msg.seqno, msg.signature)).to.equals(false);
-      done();
-    })();
-  })
 });

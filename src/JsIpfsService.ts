@@ -105,7 +105,7 @@ export default class JsIpfsService {
     let result;
     if (this.type === 'helia') {
       result = await this.saveFileByData(data);
-      result = this.wrapIpfsItem(await this.heliaFs.stat(result));
+      result = this.wrapIpfsItem(await this.heliaFs.stat(result.toString()));
     } else {
       result = this.wrapIpfsItem(await this.node.add(data, {pin: false, cidVersion: 1}));
     }
