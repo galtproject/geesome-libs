@@ -24,6 +24,7 @@ describe('e2eeHelper', function () {
   it('should encrypt opaque envelopes for listed recipients', async function () {
     const alice = await peerIdHelper.createPeerId();
     const bob = await peerIdHelper.createPeerId();
+    const sender = await peerIdHelper.createPeerId();
     const plaintext = 'frontend-only secret';
 
     const envelope = await e2eeHelper.encryptEnvelope(plaintext, [
@@ -36,20 +37,58 @@ describe('e2eeHelper', function () {
         publicKeyBase64: peerIdHelper.peerIdToPublicBase64(bob)
       }
     ], {
+      messageId: 'message-1',
+      conversationId: 'group-1',
       createdAt: '2026-05-03T00:00:00.000Z',
+      senderPrivateKeyBase64: peerIdHelper.peerIdToPrivateBase64(sender),
+      sender: {
+        deviceId: 'sender-device'
+      },
       metadata: {
-        groupId: 'group-1',
-        messageId: 'message-1'
+        relay: 'geesome-node'
       },
       contentKey: Buffer.alloc(32, 7),
       iv: Buffer.alloc(12, 3)
     });
 
     expect(e2eeHelper.isEncryptedEnvelope(envelope)).to.equals(true);
+    expect(envelope.messageId).to.equal('message-1');
+    expect(envelope.conversationId).to.equal('group-1');
+    expect(envelope.sender.deviceId).to.equal('sender-device');
+    expect(envelope.sender.id).to.equal(peerIdHelper.peerIdToPublicBase58(sender));
+    expect(envelope.signature.algorithm).to.equal(e2eeHelper.constants.SIGNATURE_ALGORITHM);
+    expect(await e2eeHelper.verifyEnvelopeSignature(envelope)).to.equals(true);
     expect(e2eeHelper.getRecipientIds(envelope)).to.deep.equal(['alice-device', 'bob-device']);
     expect(JSON.stringify(envelope).includes(plaintext)).to.equals(false);
     expect(await e2eeHelper.decryptEnvelopeText(envelope, peerIdHelper.peerIdToPrivateBase64(alice), {recipientId: 'alice-device'})).to.equals(plaintext);
     expect(await e2eeHelper.decryptEnvelopeText(envelope, peerIdHelper.peerIdToPrivateBase64(bob), {recipientId: 'bob-device'})).to.equals(plaintext);
+  });
+
+  it('should reject tampered signed envelopes', async function () {
+    const alice = await peerIdHelper.createPeerId();
+    const sender = await peerIdHelper.createPeerId();
+
+    const envelope = await e2eeHelper.encryptEnvelope('signed body', [
+      {
+        id: 'alice-device',
+        publicKeyBase64: peerIdHelper.peerIdToPublicBase64(alice)
+      }
+    ], {
+      messageId: 'message-2',
+      conversationId: 'group-1',
+      createdAt: '2026-05-03T00:00:00.000Z',
+      senderPrivateKeyBase64: peerIdHelper.peerIdToPrivateBase64(sender),
+      contentKey: Buffer.alloc(32, 11),
+      iv: Buffer.alloc(12, 5)
+    });
+
+    const tampered = {
+      ...envelope,
+      messageId: 'message-3'
+    };
+
+    expect(await e2eeHelper.verifyEnvelopeSignature(envelope)).to.equals(true);
+    expect(await e2eeHelper.verifyEnvelopeSignature(tampered)).to.equals(false);
   });
 
   it('should reject decrypt with a non-recipient key', async function () {

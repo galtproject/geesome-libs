@@ -72,6 +72,19 @@ const peerIdHelper = {
     return Buffer.from(await peerId.privKey.decrypt(Buffer.isBuffer(encryptedData) ? encryptedData : Buffer.from(encryptedData)));
   },
 
+  async signWithPrivateKeyBase64(privateKeyBase64, data) {
+    const peerId = await peerIdHelper.createPeerIdFromPrivateBase64(privateKeyBase64);
+    return Buffer.from(await peerId.privKey.sign(Buffer.isBuffer(data) ? data : Buffer.from(data)));
+  },
+
+  async verifyWithPublicKeyBase64(publicKeyBase64, data, signature) {
+    const peerId = await peerIdHelper.createPeerIdFromPublicBase64(publicKeyBase64);
+    return peerId.pubKey.verify(
+      Buffer.isBuffer(data) ? data : Buffer.from(data),
+      Buffer.isBuffer(signature) ? signature : Buffer.from(signature)
+    );
+  },
+
   createPeerId: PeerId.create.bind(PeerId),
   createPeerIdFromPubKey: PeerId.createFromPubKey.bind(PeerId),
   createPeerIdFromPrivKey: PeerId.createFromPrivKey.bind(PeerId),

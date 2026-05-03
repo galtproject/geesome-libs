@@ -12,6 +12,7 @@ import common from './common';
 const ENVELOPE_VERSION = 'geesome-e2ee-v1';
 const CONTENT_ALGORITHM = 'aes-256-gcm';
 const KEY_WRAP_ALGORITHM = 'libp2p-rsa';
+const SIGNATURE_ALGORITHM = 'libp2p-rsa-sha256';
 
 const toBuffer = (value) => {
   if (Buffer.isBuffer(value)) {
@@ -69,13 +70,46 @@ const getRecipientId = async (recipient, publicKey) => {
   return peerIdHelper.peerIdToPublicBase58(await peerIdHelper.createPeerIdFromPubKey(publicKey.bytes));
 };
 
+const normalizeSender = async (options) => {
+  const sender = options.sender || {};
+  if (!sender.id && !sender.publicKeyBase64 && !sender.publicKey && !options.senderPrivateKeyBase64) {
+    return null;
+  }
+
+  let publicKeyBase64 = sender.publicKeyBase64 || sender.publicKey;
+  if (!publicKeyBase64 && options.senderPrivateKeyBase64) {
+    publicKeyBase64 = peerIdHelper.peerIdToPublicBase64(await peerIdHelper.createPeerIdFromPrivateBase64(options.senderPrivateKeyBase64));
+  }
+
+  return common.sortObject({
+    id: sender.id || (publicKeyBase64 ? await peerIdHelper.publicKeyBase64ToPeerIdBase58(publicKeyBase64) : null),
+    deviceId: sender.deviceId || null,
+    publicKey: publicKeyBase64 || null
+  });
+};
+
 const buildAad = (envelopeFields) => {
-  return Buffer.from(JSON.stringify(common.sortObject({
+  const aadFields = {
     version: envelopeFields.version,
     type: envelopeFields.type,
     createdAt: envelopeFields.createdAt,
     metadata: envelopeFields.metadata || {}
-  })), 'utf8');
+  };
+  if (envelopeFields.messageId != null) {
+    aadFields['messageId'] = envelopeFields.messageId;
+  }
+  if (envelopeFields.conversationId != null) {
+    aadFields['conversationId'] = envelopeFields.conversationId;
+  }
+  if (envelopeFields.sender != null) {
+    aadFields['sender'] = envelopeFields.sender;
+  }
+  return Buffer.from(JSON.stringify(common.sortObject(aadFields)), 'utf8');
+};
+
+const getSigningBytes = (envelope) => {
+  const {signature, ...unsignedEnvelope} = envelope;
+  return Buffer.from(JSON.stringify(common.sortObject(unsignedEnvelope)), 'utf8');
 };
 
 const e2eeHelper = {
@@ -96,7 +130,10 @@ const e2eeHelper = {
     const envelopeFields = {
       version: ENVELOPE_VERSION,
       type: options.type || 'geesome.chat.message',
+      messageId: options.messageId || crypto.randomUUID(),
+      conversationId: options.conversationId || options.groupId || null,
       createdAt: options.createdAt || new Date().toISOString(),
+      sender: await normalizeSender(options),
       metadata: options.metadata || {}
     };
     const aad = buildAad(envelopeFields);
@@ -118,7 +155,7 @@ const e2eeHelper = {
       });
     }
 
-    return {
+    const envelope = {
       ...envelopeFields,
       content: {
         algorithm: CONTENT_ALGORITHM,
@@ -128,6 +165,11 @@ const e2eeHelper = {
       },
       recipients: wrappedRecipients
     };
+
+    if (options.senderPrivateKeyBase64) {
+      return e2eeHelper.signEnvelope(envelope, options.senderPrivateKeyBase64);
+    }
+    return envelope;
   },
 
   async decryptEnvelope(envelope, privateKey, options: any = {}) {
@@ -157,6 +199,42 @@ const e2eeHelper = {
     return e2eeHelper.decryptEnvelope(envelope, privateKey, options).then((data) => data.toString('utf8'));
   },
 
+  async signEnvelope(envelope, senderPrivateKeyBase64) {
+    if (!envelope.sender) {
+      throw new Error('envelope_sender_required');
+    }
+    const sender = envelope.sender;
+    const unsignedEnvelope = {
+      ...envelope,
+      sender
+    };
+    return {
+      ...unsignedEnvelope,
+      signature: {
+        algorithm: SIGNATURE_ALGORITHM,
+        signature: toBase64(await peerIdHelper.signWithPrivateKeyBase64(senderPrivateKeyBase64, getSigningBytes(unsignedEnvelope)))
+      }
+    };
+  },
+
+  async verifyEnvelopeSignature(envelope, senderPublicKeyBase64 = null) {
+    if (!envelope || !envelope.signature) {
+      return false;
+    }
+    if (envelope.signature.algorithm !== SIGNATURE_ALGORITHM) {
+      return false;
+    }
+    const publicKeyBase64 = senderPublicKeyBase64 || envelope.sender?.publicKey;
+    if (!publicKeyBase64) {
+      throw new Error('sender_public_key_required');
+    }
+    return peerIdHelper.verifyWithPublicKeyBase64(
+      publicKeyBase64,
+      getSigningBytes(envelope),
+      fromBase64(envelope.signature.signature)
+    );
+  },
+
   getRecipientIds(envelope) {
     return (envelope.recipients || []).map(recipient => recipient.id);
   },
@@ -168,7 +246,8 @@ const e2eeHelper = {
   constants: {
     ENVELOPE_VERSION,
     CONTENT_ALGORITHM,
-    KEY_WRAP_ALGORITHM
+    KEY_WRAP_ALGORITHM,
+    SIGNATURE_ALGORITHM
   }
 };
 
