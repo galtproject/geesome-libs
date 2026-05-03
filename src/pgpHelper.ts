@@ -46,7 +46,7 @@ const pgpHelper = {
     const packetList = new openpgp.packet.List();
 
     const userIdPacket = new openpgp.packet.Userid();
-    userIdPacket.format();
+    userIdPacket.format({name: 'geesome'});
 
     packetList.push(userIdPacket);
 

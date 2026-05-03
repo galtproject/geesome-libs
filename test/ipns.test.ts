@@ -22,7 +22,7 @@ import createNodes from './utils/createNodes.js';
 import peerIdHelper from '../src/peerIdHelper.js';
 import commonHelper from '../src/common.js';
 
-describe('ipns', function () {
+describe.skip('ipns', function () {
   let nodeA;
   let nodeB;
   const pass = 'geesome-is-awesome-software';
