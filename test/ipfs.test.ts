@@ -181,6 +181,17 @@ describe('ipfs', function () {
     expect(ipfsHelper.isFileCidHash(peerIdHelper.peerIdToCid(peerId))).to.equals(false);
   });
 
+  it('should encrypt and decrypt bytes with base64 peer keys', async function () {
+    this.timeout(80 * 1000);
+
+    const peerId = await peerIdHelper.createPeerId();
+    const encrypted = await peerIdHelper.encryptWithPublicKeyBase64(peerIdHelper.peerIdToPublicBase64(peerId), Buffer.from('secret-bytes'));
+    const decrypted = await peerIdHelper.decryptWithPrivateKeyBase64(peerIdHelper.peerIdToPrivateBase64(peerId), encrypted);
+
+    expect(await peerIdHelper.publicKeyBase64ToPeerIdBase58(peerIdHelper.peerIdToPublicBase64(peerId))).to.equals(peerIdHelper.peerIdToPublicBase58(peerId));
+    expect(decrypted.toString('utf8')).to.equals('secret-bytes');
+  });
+
   it('encrypt and decrypt base64 private key', async function () {
     this.timeout(80 * 1000);
 

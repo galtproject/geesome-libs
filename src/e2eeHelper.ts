@@ -31,10 +31,16 @@ const fromBase64 = (value) => Buffer.from(value, 'base64');
 
 const normalizePublicKey = async (publicKey) => {
   if (typeof publicKey === 'string') {
-    return peerIdHelper.base64ToPublicKey(publicKey);
+    return {
+      base64: publicKey,
+      key: peerIdHelper.base64ToPublicKey(publicKey)
+    };
   }
   if (publicKey.bytes || publicKey.encrypt) {
-    return publicKey;
+    return {
+      base64: peerIdHelper.publicKeyToBase64(publicKey),
+      key: publicKey
+    };
   }
   throw new Error('recipient_public_key_required');
 };
@@ -58,7 +64,7 @@ const getRecipientId = async (recipient, publicKey) => {
   }
   const publicKeyBase64 = recipient.publicKeyBase64 || recipient.publicKey;
   if (publicKeyBase64) {
-    return peerIdHelper.peerIdToPublicBase58(await peerIdHelper.createPeerIdFromPublicBase64(publicKeyBase64));
+    return peerIdHelper.publicKeyBase64ToPeerIdBase58(publicKeyBase64);
   }
   return peerIdHelper.peerIdToPublicBase58(await peerIdHelper.createPeerIdFromPubKey(publicKey.bytes));
 };
@@ -102,11 +108,11 @@ const e2eeHelper = {
     const wrappedRecipients = [];
     for (const recipient of recipients) {
       const publicKeyBase64 = recipient.publicKeyBase64 || recipient.publicKey;
-      const publicKey = await normalizePublicKey(publicKeyBase64 || recipient);
-      const wrappedKey = await publicKey.encrypt(contentKey);
+      const publicKeyData = await normalizePublicKey(publicKeyBase64 || recipient);
+      const wrappedKey = await peerIdHelper.encryptWithPublicKeyBase64(publicKeyData.base64, contentKey);
       wrappedRecipients.push({
-        id: await getRecipientId(recipient, publicKey),
-        publicKey: publicKeyBase64 || peerIdHelper.publicKeyToBase64(publicKey),
+        id: await getRecipientId(recipient, publicKeyData.key),
+        publicKey: publicKeyData.base64,
         algorithm: KEY_WRAP_ALGORITHM,
         wrappedKey: toBase64(wrappedKey)
       });
@@ -135,8 +141,9 @@ const e2eeHelper = {
       throw new Error('recipient_not_found');
     }
 
-    const normalizedPrivateKey = await normalizePrivateKey(privateKey);
-    const contentKey = Buffer.from(await normalizedPrivateKey.decrypt(fromBase64(recipient.wrappedKey)));
+    const contentKey = typeof privateKey === 'string'
+      ? await peerIdHelper.decryptWithPrivateKeyBase64(privateKey, fromBase64(recipient.wrappedKey))
+      : Buffer.from(await (await normalizePrivateKey(privateKey)).decrypt(fromBase64(recipient.wrappedKey)));
     const decipher = crypto.createDecipheriv(CONTENT_ALGORITHM, contentKey, fromBase64(envelope.content.iv));
     decipher.setAAD(buildAad(envelope));
     decipher.setAuthTag(fromBase64(envelope.content.authTag));
