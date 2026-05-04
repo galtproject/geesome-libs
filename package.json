@@ -77,6 +77,8 @@
     "geesome-wallet-client/**/follow-redirects": "1.16.0",
     "geesome-wallet-client/**/fetch-ponyfill/node-fetch": "2.7.0",
     "fetch-ponyfill/node-fetch": "2.7.0",
+    "geesome-wallet-client/**/request/form-data": "2.5.5",
+    "request/form-data": "2.5.5",
     "geesome-wallet-client/ethers/@ethersproject/providers/ws": "7.5.10",
     "geesome-wallet-client/web3-provider-engine/ws": "5.2.4",
     "elliptic": "6.6.1",
