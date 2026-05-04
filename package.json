@@ -40,7 +40,7 @@
     "it-first": "^1.0.4",
     "it-last": "^1.0.4",
     "it-to-stream": "^1.0.0",
-    "kubo-rpc-client": "^5.0.2",
+    "kubo-rpc-client": "^6.1.0",
     "libp2p-crypto": "0.19.7",
     "libp2p-interfaces": "1.1.0",
     "lodash": "^4.18.1",
