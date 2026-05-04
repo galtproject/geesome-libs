@@ -12,8 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@ethersproject/hash": "^5.7.0",
-    "@helia/dag-cbor": "^4.0.0",
-    "@helia/unixfs": "^4.0.0",
+    "@helia/dag-cbor": "^5.1.1",
+    "@helia/unixfs": "^7.2.1",
     "@types/chai": "^4.3.20",
     "@types/create-hash": "^1.2.6",
     "@types/dirty-chai": "^2.0.5",
@@ -34,7 +34,7 @@
     "geesome-wallet-client": "https://github.com/galtproject/geesome-wallet-client#c95cf1c",
     "got": "11.8.6",
     "hat": "^0.0.3",
-    "helia": "^5.0.1",
+    "helia": "^6.1.4",
     "it-all": "^1.0.4",
     "it-concat": "^1.0.3",
     "it-first": "^1.0.4",
@@ -57,7 +57,7 @@
     "strip-hex-prefix": "^1.0.0",
     "tsx": "^4.19.2",
     "uint8arrays": "^2.1.3",
-    "uuid": "^3.3.2",
+    "uuid": "^14.0.0",
     "web3-utils": "^1.3.1"
   },
   "devDependencies": {
