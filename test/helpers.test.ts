@@ -25,6 +25,16 @@ describe('helpers', function () {
         done();
     });
 
+    it('makeCode should return requested-length base62 codes', function () {
+        const seenCodes = new Set<string>();
+        for (let i = 0; i < 20; i++) {
+            const code = commonHelper.makeCode(16);
+            expect(code).to.match(/^[A-Za-z0-9]{16}$/);
+            expect(seenCodes.has(code)).to.equal(false);
+            seenCodes.add(code);
+        }
+    });
+
     it('use hash to encrypt', function (done) {
         const hash = commonHelper.hash("58a9149c-7575-444d-9809-b69fe040239e");
         expect(hash).to.equal("87a339fe13f761473b6e84e707692a14149eb6092222552aa5ca660d38df8dd6");
