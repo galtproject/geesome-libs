@@ -11,6 +11,7 @@ import _ from "lodash";
 import {v4 as uuidv4} from 'uuid';
 import stableSort from 'stable';
 import createHash from 'create-hash';
+import {randomInt} from 'node:crypto';
 import bip39 from "ethereum-cryptography/bip39";
 import englishWords from "ethereum-cryptography/bip39/wordlists/english";
 const {isNaN, isString, isObject, isUndefined, isArray, startsWith, last, trim} = _;
@@ -91,7 +92,7 @@ const makeCode = (length) => {
   let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let res = '';
   for (let i = 0; i < length; i++) {
-    res += chars.charAt(Math.floor(Math.random() * chars.length));
+    res += chars.charAt(randomInt(chars.length));
   }
   return res;
 };
