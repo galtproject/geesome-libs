@@ -7,35 +7,64 @@ Created for [GeeSome project](https://github.com/galtspace/geesome-node)
 - IPFS wrapper for improve developer-friendly expirience: [JsIpfsService.ts](./src/JsIpfsService.ts)
 - Helpers with parsing, converting, checking: [ipfsHelper.ts](./src/ipfsHelper.ts)
 - Import IPFS keys to PGP and encryption/decryption: [pgpHelper.ts](./src/pgpHelper.ts)
-- Opaque frontend-side E2EE envelope helpers for chat/storage routing: [e2eeHelper.ts](./src/e2eeHelper.ts)
+- Browser-native device keys, encrypted envelopes, and attachments: [browserE2eeHelper.ts](./src/browserE2eeHelper.ts)
+- Legacy Node.js E2EE envelope compatibility: [e2eeHelper.ts](./src/e2eeHelper.ts)
 - Deterministic ActivityPub actor/object/signature helper contracts: [activityPubHelper.ts](./src/activityPubHelper.ts)
 
 ## E2EE chat helper usage
 
-Use [e2eeHelper.ts](./src/e2eeHelper.ts) for frontend-side chat payload envelopes only. A browser/client should encrypt with the sender private key and recipient device public keys, then send the returned envelope to geesome-node. The node should store, index, relay, and optionally verify the sender signature, but must not receive private keys or plaintext.
+Use [browserE2eeHelper.ts](./src/browserE2eeHelper.ts) for new chat clients. It uses browser WebCrypto for non-extractable device private keys, HPKE-wrapped content keys, signed AES-GCM envelopes, and encrypted attachments. Persist the returned `CryptoKey` objects in IndexedDB. Publish only the public device bundle and send only encrypted envelopes or attachments to geesome-node.
 
-The current `geesome-e2ee-v1` envelope is a compatibility layer, not a full production group chat protocol. It provides opaque content encryption, per-recipient key wrapping, message/conversation/device metadata, and sender signatures. Group-chat delivery still needs higher-level policy for trusted devices, key rotation when members/devices change, replay protection, ordered history, and a future MLS/ratchet-style protocol for forward secrecy.
+The node may store, index, relay, and verify opaque payloads, but it must not receive private keys, attachment keys, or plaintext. The helper requires a secure browser context with WebCrypto. Applications must authenticate public device bundles before trusting them, track revoked devices, and include every currently authorized device when encrypting.
 
-Typical frontend flow:
+The `geesome-e2ee-v2` contract is versioned so the chat protocol can later adopt MLS or a ratchet. This initial browser contract does not provide forward secrecy or post-compromise security by itself. Conversation membership, key epochs, replay protection, ordered history, acknowledgements, and retry policy belong to the higher-level chat protocol.
+
+Typical browser flow:
 
 ```ts
-const envelope = await e2eeHelper.encryptEnvelope(messageText, recipientDevices, {
-  messageId,
-  conversationId,
-  senderPrivateKeyBase64,
-  sender: {
-    deviceId
-  }
+const aliceDevice = await browserE2eeHelper.generateDeviceKeys({
+  ownerId: 'alice',
+  deviceId: crypto.randomUUID()
 });
+
+const envelope = await browserE2eeHelper.encryptEnvelope(
+  messageText,
+  recipientPublicDeviceBundles,
+  aliceDevice,
+  {
+    messageId,
+    conversationId
+  }
+);
+
+const plaintext = await browserE2eeHelper.decryptEnvelopeText(
+  envelope,
+  aliceDevice,
+  senderPublicDeviceBundle
+);
 ```
 
-Typical node-side checks:
+Attachments must be encrypted before upload:
 
 ```ts
-if (!e2eeHelper.isEncryptedEnvelope(envelope)) {
+const encrypted = await browserE2eeHelper.encryptAttachment(fileBytes, {
+  name: file.name,
+  mimeType: file.type
+});
+
+const storedAttachment = browserE2eeHelper.serializeAttachment(
+  encrypted.attachment
+);
+```
+
+The attachment key belongs inside the encrypted message payload. Upload `storedAttachment` separately; never upload `encrypted.key` as public metadata.
+
+The older [e2eeHelper.ts](./src/e2eeHelper.ts) remains available for `geesome-e2ee-v1` compatibility. It depends on Node.js crypto and should not be used for new browser key generation.
+
+Typical opaque-storage check:
+
+```ts
+if (!browserE2eeHelper.isEncryptedEnvelope(envelope)) {
   throw new Error('encrypted_envelope_required');
-}
-if (!(await e2eeHelper.verifyEnvelopeSignature(envelope))) {
-  throw new Error('envelope_signature_invalid');
 }
 ```
