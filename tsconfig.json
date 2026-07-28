@@ -4,7 +4,7 @@
   "_version": "18.2.0",
 
   "compilerOptions": {
-    "lib": ["es2023"],
+    "lib": ["es2023", "dom"],
     "module": "node16",
     "target": "es2022",
 
@@ -20,4 +20,3 @@
     "./types/**/"
   ]
 }
-
