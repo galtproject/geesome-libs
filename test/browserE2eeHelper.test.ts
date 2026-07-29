@@ -383,6 +383,98 @@ describe('browserE2eeHelper', function () {
       browserE2eeHelper.decryptAttachment(serialized, result.key)
     );
   });
+
+  it('separates attachment upload bytes from the private encrypted-message reference', async function () {
+    const sender = await createDevice('sender', 'sender-browser');
+    const alice = await createDevice('alice', 'alice-browser');
+    const plaintext = new TextEncoder().encode('private image bytes');
+    const encrypted = await browserE2eeHelper.encryptAttachment(plaintext, {
+      name: 'private-photo.jpg',
+      mimeType: 'image/jpeg',
+      key: new Uint8Array(32).fill(5),
+      iv: new Uint8Array(12).fill(6)
+    });
+    const uploadData = browserE2eeHelper.getAttachmentUploadData(encrypted.attachment);
+    const reference = browserE2eeHelper.createAttachmentReference(
+      'bafyattachment',
+      encrypted.attachment,
+      encrypted.key
+    );
+    const payload = browserE2eeHelper.createChatMessagePayload('photo', [reference]);
+    const envelope = await browserE2eeHelper.encryptEnvelope(
+      payload,
+      [alice.publicBundle],
+      sender,
+      {
+        messageId: 'message-attachment',
+        conversationId: 'conversation-attachment',
+        createdAt: '2026-07-28T00:06:00.000Z',
+        metadata: browserE2eeHelper.createChatMessageEnvelopeMetadata(payload),
+        contentKey: new Uint8Array(32).fill(7),
+        iv: new Uint8Array(12).fill(8)
+      }
+    );
+    const storedEnvelope = JSON.parse(JSON.stringify(envelope));
+
+    expect(reference).to.not.have.property('ciphertext');
+    expect(reference.encryption).to.not.have.property('ciphertext');
+    expect(browserE2eeHelper.isAttachmentReference(reference)).to.equal(true);
+    expect(browserE2eeHelper.isChatMessagePayload(payload)).to.equal(true);
+    expect(storedEnvelope.metadata.attachmentStorageIds).to.deep.equal(['bafyattachment']);
+    expect(JSON.stringify(storedEnvelope)).to.not.include('private-photo.jpg');
+    expect(JSON.stringify(storedEnvelope)).to.not.include('image/jpeg');
+    expect(JSON.stringify(storedEnvelope)).to.not.include(reference.encryption.key);
+
+    const decryptedPayload = await browserE2eeHelper.decryptEnvelopeJson(
+      storedEnvelope,
+      alice,
+      sender.publicBundle
+    );
+    expect(browserE2eeHelper.isChatMessagePayload(decryptedPayload)).to.equal(true);
+    expect(new TextDecoder().decode(
+      await browserE2eeHelper.decryptAttachmentReference(
+        uploadData,
+        decryptedPayload.attachments[0]
+      )
+    )).to.equal('private image bytes');
+  });
+
+  it('rejects invalid attachment references, duplicate storage IDs, and metadata tampering', async function () {
+    const encrypted = await browserE2eeHelper.encryptAttachment(
+      new TextEncoder().encode('authenticated attachment'),
+      {
+        name: 'document.txt',
+        mimeType: 'text/plain',
+        key: new Uint8Array(32).fill(2),
+        iv: new Uint8Array(12).fill(3)
+      }
+    );
+    const uploadData = browserE2eeHelper.getAttachmentUploadData(encrypted.attachment);
+    const reference = browserE2eeHelper.createAttachmentReference(
+      'bafyreference',
+      encrypted.attachment,
+      encrypted.key
+    );
+    const invalidKey = JSON.parse(JSON.stringify(reference));
+    invalidKey.encryption.key = browserE2eeHelper.encodeBase64Url(new Uint8Array(31));
+    const embeddedCiphertext = JSON.parse(JSON.stringify(reference));
+    embeddedCiphertext.encryption.ciphertext = 'not-allowed-in-reference';
+
+    expect(browserE2eeHelper.isAttachmentReference(invalidKey)).to.equal(false);
+    expect(browserE2eeHelper.isAttachmentReference(embeddedCiphertext)).to.equal(false);
+    expect(() => browserE2eeHelper.createChatMessagePayload('', []))
+      .to.throw('chat_message_content_required');
+    expect(() => browserE2eeHelper.createChatMessagePayload('duplicate', [
+      reference,
+      reference
+    ])).to.throw('chat_message_attachment_duplicate');
+
+    const tampered = JSON.parse(JSON.stringify(reference));
+    tampered.encryption.name = 'different.txt';
+    await expectRejected(
+      browserE2eeHelper.decryptAttachmentReference(uploadData, tampered)
+    );
+  });
 });
 
 async function expectRejected(promise, expectedMessage = null) {
