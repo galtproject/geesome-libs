@@ -30,11 +30,145 @@ describe('browserE2eeHelper', function () {
     expect(alice.privateKeys.encryptionKey.extractable).to.equal(false);
     expect(alice.privateKeys.encryptionPublicKey.type).to.equal('public');
     expect(alice.privateKeys.signingKey.extractable).to.equal(false);
+    expect(alice.recoveryBundle).to.equal(null);
     expect(await browserE2eeHelper.verifyDeviceKeyBundle(alice.publicBundle)).to.equal(true);
 
     const tampered = JSON.parse(JSON.stringify(alice.publicBundle));
     tampered.ownerId = 'mallory';
     expect(await browserE2eeHelper.verifyDeviceKeyBundle(tampered)).to.equal(false);
+  });
+
+  it('creates an encrypted recovery bundle and restores non-extractable device keys', async function () {
+    const passphrase = 'correct horse battery staple';
+    const sender = await createDevice('sender', 'sender-browser');
+    const alice = await browserE2eeHelper.generateDeviceKeys({
+      ownerId: 'alice',
+      deviceId: 'alice-browser',
+      createdAt: '2026-07-28T00:00:00.000Z',
+      recoveryPassphrase: passphrase,
+      recoveryIterations: browserE2eeHelper.constants.MINIMUM_RECOVERY_ITERATIONS,
+      recoverySalt: new Uint8Array(16).fill(8),
+      recoveryIv: new Uint8Array(12).fill(6)
+    });
+    const envelope = await browserE2eeHelper.encryptEnvelope(
+      'recoverable browser secret',
+      [alice.publicBundle],
+      sender,
+      {
+        messageId: 'message-recovery',
+        conversationId: 'conversation-1',
+        createdAt: '2026-07-28T00:01:00.000Z'
+      }
+    );
+
+    expect(alice.recoveryBundle.version).to.equal(
+      browserE2eeHelper.constants.DEVICE_RECOVERY_VERSION
+    );
+    expect(browserE2eeHelper.isDeviceRecoveryBundle(alice.recoveryBundle)).to.equal(true);
+    expect(alice.recoveryBundle.publicBundle).to.deep.equal(alice.publicBundle);
+    expect(alice.recoveryBundle.kdf.iterations).to.equal(
+      browserE2eeHelper.constants.MINIMUM_RECOVERY_ITERATIONS
+    );
+    expect(JSON.stringify(alice.recoveryBundle)).to.not.include(passphrase);
+    expect(alice.recoveryBundle).to.not.have.property('privateKeys');
+
+    const restored = await browserE2eeHelper.restoreDeviceKeys(
+      JSON.parse(JSON.stringify(alice.recoveryBundle)),
+      passphrase
+    );
+    expect(restored.publicBundle).to.deep.equal(alice.publicBundle);
+    expect(restored.privateKeys.encryptionKey.extractable).to.equal(false);
+    expect(restored.privateKeys.signingKey.extractable).to.equal(false);
+    expect(await browserE2eeHelper.decryptEnvelopeText(
+      envelope,
+      restored,
+      sender.publicBundle
+    )).to.equal('recoverable browser secret');
+
+    const reply = await browserE2eeHelper.encryptEnvelope(
+      'signed after recovery',
+      [sender.publicBundle],
+      restored,
+      {
+        messageId: 'message-recovery-reply',
+        conversationId: 'conversation-1',
+        createdAt: '2026-07-28T00:02:00.000Z'
+      }
+    );
+    expect(await browserE2eeHelper.verifyEnvelopeSignature(
+      reply,
+      alice.publicBundle
+    )).to.equal(true);
+    expect(await browserE2eeHelper.decryptEnvelopeText(
+      reply,
+      sender,
+      alice.publicBundle
+    )).to.equal('signed after recovery');
+  });
+
+  it('rejects wrong passphrases and recovery bundle tampering', async function () {
+    const alice = await browserE2eeHelper.generateDeviceKeys({
+      ownerId: 'alice',
+      deviceId: 'alice-browser',
+      recoveryPassphrase: 'alice recovery secret',
+      recoveryIterations: browserE2eeHelper.constants.MINIMUM_RECOVERY_ITERATIONS
+    });
+
+    await expectRejected(
+      browserE2eeHelper.restoreDeviceKeys(
+        alice.recoveryBundle,
+        'wrong recovery secret'
+      ),
+      'device_recovery_decrypt_failed'
+    );
+
+    const tamperedCiphertext = JSON.parse(JSON.stringify(alice.recoveryBundle));
+    const ciphertext = browserE2eeHelper.decodeBase64Url(
+      tamperedCiphertext.cipher.ciphertext
+    );
+    ciphertext[0] ^= 1;
+    tamperedCiphertext.cipher.ciphertext = browserE2eeHelper.encodeBase64Url(ciphertext);
+    await expectRejected(
+      browserE2eeHelper.restoreDeviceKeys(
+        tamperedCiphertext,
+        'alice recovery secret'
+      ),
+      'device_recovery_decrypt_failed'
+    );
+
+    const tamperedBundle = JSON.parse(JSON.stringify(alice.recoveryBundle));
+    tamperedBundle.publicBundle.ownerId = 'mallory';
+    await expectRejected(
+      browserE2eeHelper.restoreDeviceKeys(
+        tamperedBundle,
+        'alice recovery secret'
+      ),
+      'device_recovery_public_bundle_invalid'
+    );
+
+    const oversizedBundle = JSON.parse(JSON.stringify(alice.recoveryBundle));
+    oversizedBundle.cipher.ciphertext = 'a'.repeat(16385);
+    expect(browserE2eeHelper.isDeviceRecoveryBundle(oversizedBundle)).to.equal(false);
+  });
+
+  it('requires a strong recovery passphrase and bounded PBKDF2 work', async function () {
+    await expectRejected(
+      browserE2eeHelper.generateDeviceKeys({
+        ownerId: 'alice',
+        deviceId: 'alice-browser',
+        recoveryPassphrase: 'too-short'
+      }),
+      'recovery_passphrase_too_short'
+    );
+    await expectRejected(
+      browserE2eeHelper.generateDeviceKeys({
+        ownerId: 'alice',
+        deviceId: 'alice-browser',
+        recoveryPassphrase: 'alice recovery secret',
+        recoveryIterations: browserE2eeHelper.constants.MINIMUM_RECOVERY_ITERATIONS - 1
+      }),
+      'recovery_iterations_invalid'
+    );
   });
 
   it('encrypts one opaque envelope for multiple browser devices', async function () {

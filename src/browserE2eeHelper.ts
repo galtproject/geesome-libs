@@ -14,13 +14,21 @@ import {
 } from '@hpke/core';
 
 const DEVICE_KEYS_VERSION = 'geesome-device-keys-v1';
+const DEVICE_RECOVERY_VERSION = 'geesome-device-recovery-v1';
 const ENVELOPE_VERSION = 'geesome-e2ee-v2';
 const ATTACHMENT_VERSION = 'geesome-e2ee-attachment-v1';
 const ENVELOPE_TYPE = 'geesome.chat.message';
 const CONTENT_ALGORITHM = 'AES-256-GCM';
 const SIGNATURE_ALGORITHM = 'ECDSA-P256-SHA256';
 const KEY_WRAP_ALGORITHM = 'HPKE-DHKEM-P256-HKDF-SHA256-AES128GCM';
+const RECOVERY_KDF_ALGORITHM = 'PBKDF2-SHA256';
+const RECOVERY_CIPHER_ALGORITHM = 'AES-256-GCM';
+const DEFAULT_RECOVERY_ITERATIONS = 600000;
+const MINIMUM_RECOVERY_ITERATIONS = 600000;
+const MAXIMUM_RECOVERY_ITERATIONS = 2000000;
+const MINIMUM_RECOVERY_PASSPHRASE_LENGTH = 12;
 const HPKE_INFO = new TextEncoder().encode('geesome.chat.content-key.v1');
+const RECOVERY_KEY_CHECK_INFO = new TextEncoder().encode('geesome.chat.device-recovery-check.v1');
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 const hpkeSuite = new CipherSuite({
@@ -182,6 +190,18 @@ async function protectHpkePrivateKey(key) {
   );
 }
 
+async function protectSigningPrivateKey(key) {
+  const subtle = getCrypto().subtle;
+  const jwk = await subtle.exportKey('jwk', key);
+  return subtle.importKey(
+    'jwk',
+    jwk,
+    {name: 'ECDSA', namedCurve: 'P-256'},
+    false,
+    ['sign']
+  );
+}
+
 function requireString(value, errorCode) {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(errorCode);
@@ -298,6 +318,199 @@ async function decryptAesGcm(ciphertext, rawKey, aad, iv) {
   ));
 }
 
+function normalizeRecoveryIterations(value): number {
+  const iterations = value == null ? DEFAULT_RECOVERY_ITERATIONS : Number(value);
+  if (
+    !Number.isSafeInteger(iterations) ||
+    iterations < MINIMUM_RECOVERY_ITERATIONS ||
+    iterations > MAXIMUM_RECOVERY_ITERATIONS
+  ) {
+    throw new Error('recovery_iterations_invalid');
+  }
+  return iterations;
+}
+
+function requireRecoveryPassphrase(value): string {
+  const passphrase = requireString(value, 'recovery_passphrase_required');
+  if (passphrase.length < MINIMUM_RECOVERY_PASSPHRASE_LENGTH) {
+    throw new Error('recovery_passphrase_too_short');
+  }
+  return passphrase;
+}
+
+async function deriveRecoveryKey(passphrase: string, salt, iterations: number) {
+  const subtle = getCrypto().subtle;
+  const passphraseKey = await subtle.importKey(
+    'raw',
+    new TextEncoder().encode(passphrase),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  return subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt: toUint8Array(salt),
+      iterations
+    },
+    passphraseKey,
+    {name: 'AES-GCM', length: 256},
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+function getRecoveryHeader(recoveryBundle) {
+  return {
+    version: recoveryBundle.version,
+    publicBundle: recoveryBundle.publicBundle,
+    kdf: recoveryBundle.kdf,
+    cipher: {
+      algorithm: recoveryBundle.cipher.algorithm,
+      iv: recoveryBundle.cipher.iv
+    }
+  };
+}
+
+function packRecoveryPrivateKeys(encryptionPrivateKey, signingPrivateKey): Uint8Array {
+  const encryptionBytes = toUint8Array(encryptionPrivateKey);
+  const signingBytes = toUint8Array(signingPrivateKey);
+  if (encryptionBytes.length > 65535 || signingBytes.length > 65535) {
+    throw new Error('recovery_private_key_too_large');
+  }
+
+  const packed = new Uint8Array(4 + encryptionBytes.length + signingBytes.length);
+  const view = new DataView(packed.buffer);
+  view.setUint16(0, encryptionBytes.length);
+  packed.set(encryptionBytes, 2);
+  view.setUint16(2 + encryptionBytes.length, signingBytes.length);
+  packed.set(signingBytes, 4 + encryptionBytes.length);
+  return packed;
+}
+
+function unpackRecoveryPrivateKeys(packedValue) {
+  const packed = toUint8Array(packedValue);
+  if (packed.length < 4) {
+    throw new Error('device_recovery_payload_invalid');
+  }
+
+  const view = new DataView(packed.buffer, packed.byteOffset, packed.byteLength);
+  const encryptionLength = view.getUint16(0);
+  const signingLengthOffset = 2 + encryptionLength;
+  if (signingLengthOffset + 2 > packed.length) {
+    throw new Error('device_recovery_payload_invalid');
+  }
+  const signingLength = view.getUint16(signingLengthOffset);
+  if (signingLengthOffset + 2 + signingLength !== packed.length) {
+    throw new Error('device_recovery_payload_invalid');
+  }
+
+  return {
+    encryptionPrivateKey: packed.slice(2, signingLengthOffset),
+    signingPrivateKey: packed.slice(signingLengthOffset + 2)
+  };
+}
+
+async function createDeviceRecoveryBundle(publicBundle, encryptionPrivateKey, signingPrivateKey, options) {
+  const passphrase = requireRecoveryPassphrase(options.passphrase);
+  const iterations = normalizeRecoveryIterations(options.iterations);
+  const salt = options.salt ? toUint8Array(options.salt) : getCrypto().getRandomValues(new Uint8Array(16));
+  const iv = options.iv ? toUint8Array(options.iv) : getCrypto().getRandomValues(new Uint8Array(12));
+  if (salt.length !== 16) {
+    throw new Error('recovery_salt_must_be_16_bytes');
+  }
+  if (iv.length !== 12) {
+    throw new Error('recovery_iv_must_be_12_bytes');
+  }
+
+  const recoveryBundle: any = {
+    version: DEVICE_RECOVERY_VERSION,
+    publicBundle,
+    kdf: {
+      algorithm: RECOVERY_KDF_ALGORITHM,
+      iterations,
+      salt: encodeBase64Url(salt)
+    },
+    cipher: {
+      algorithm: RECOVERY_CIPHER_ALGORITHM,
+      iv: encodeBase64Url(iv)
+    }
+  };
+  const packed = packRecoveryPrivateKeys(encryptionPrivateKey, signingPrivateKey);
+  try {
+    const ciphertext = await getCrypto().subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv,
+        additionalData: canonicalBytes(getRecoveryHeader(recoveryBundle)),
+        tagLength: 128
+      },
+      await deriveRecoveryKey(passphrase, salt, iterations),
+      packed
+    );
+    recoveryBundle.cipher.ciphertext = encodeBase64Url(ciphertext);
+    return recoveryBundle;
+  } finally {
+    packed.fill(0);
+  }
+}
+
+function assertDeviceRecoveryBundleShape(recoveryBundle) {
+  if (
+    !recoveryBundle ||
+    recoveryBundle.version !== DEVICE_RECOVERY_VERSION ||
+    recoveryBundle.kdf?.algorithm !== RECOVERY_KDF_ALGORITHM ||
+    recoveryBundle.cipher?.algorithm !== RECOVERY_CIPHER_ALGORITHM ||
+    !hasNonEmptyString(recoveryBundle.kdf?.salt) ||
+    !hasNonEmptyString(recoveryBundle.cipher?.iv) ||
+    !hasNonEmptyString(recoveryBundle.cipher?.ciphertext) ||
+    recoveryBundle.kdf.salt.length > 64 ||
+    recoveryBundle.cipher.iv.length > 64 ||
+    recoveryBundle.cipher.ciphertext.length > 16384
+  ) {
+    throw new Error('device_recovery_bundle_invalid');
+  }
+}
+
+async function assertRecoveredKeysMatchBundle(publicBundle, privateKeys) {
+  const signingCheck = {
+    version: DEVICE_RECOVERY_VERSION,
+    keyId: publicBundle.keyId
+  };
+  const signingPublicKey = await importSigningPublicKey(publicBundle);
+  const signature = await signValue(signingCheck, privateKeys.signingKey);
+  if (!await verifyValue(signingCheck, signature, signingPublicKey)) {
+    throw new Error('device_recovery_key_mismatch');
+  }
+
+  const checkValue = new Uint8Array(32).fill(7);
+  const wrapped = await hpkeSuite.seal(
+    {
+      recipientPublicKey: privateKeys.encryptionPublicKey,
+      info: RECOVERY_KEY_CHECK_INFO
+    },
+    checkValue
+  );
+  const unwrapped = await hpkeSuite.open(
+    {
+      recipientKey: {
+        privateKey: privateKeys.encryptionKey,
+        publicKey: privateKeys.encryptionPublicKey
+      },
+      enc: wrapped.enc,
+      info: RECOVERY_KEY_CHECK_INFO
+    },
+    wrapped.ct
+  );
+  if (
+    unwrapped.byteLength !== checkValue.byteLength ||
+    !toUint8Array(unwrapped).every((value, index) => value === checkValue[index])
+  ) {
+    throw new Error('device_recovery_key_mismatch');
+  }
+}
+
 const browserE2eeHelper = {
   async generateDeviceKeys(options: any = {}) {
     const ownerId = requireString(options.ownerId, 'owner_id_required');
@@ -306,7 +519,7 @@ const browserE2eeHelper = {
     const encryptionKeys = await hpkeSuite.kem.generateKeyPair();
     const signingKeys = await getCrypto().subtle.generateKey(
       {name: 'ECDSA', namedCurve: 'P-256'},
-      false,
+      true,
       ['sign', 'verify']
     );
 
@@ -330,14 +543,109 @@ const browserE2eeHelper = {
       signature: await signValue(bundle, signingKeys.privateKey)
     };
 
+    let recoveryBundle = null;
+    if (options.recoveryPassphrase != null) {
+      const encryptionPrivateKey = new Uint8Array(
+        await hpkeSuite.kem.serializePrivateKey(encryptionKeys.privateKey)
+      );
+      const signingPrivateKey = new Uint8Array(
+        await getCrypto().subtle.exportKey('pkcs8', signingKeys.privateKey)
+      );
+      try {
+        recoveryBundle = await createDeviceRecoveryBundle(
+          bundle,
+          encryptionPrivateKey,
+          signingPrivateKey,
+          {
+            passphrase: options.recoveryPassphrase,
+            iterations: options.recoveryIterations,
+            salt: options.recoverySalt,
+            iv: options.recoveryIv
+          }
+        );
+      } finally {
+        encryptionPrivateKey.fill(0);
+        signingPrivateKey.fill(0);
+      }
+    }
+
     return {
       publicBundle: bundle,
       privateKeys: {
         encryptionKey: await protectHpkePrivateKey(encryptionKeys.privateKey),
         encryptionPublicKey: encryptionKeys.publicKey,
-        signingKey: signingKeys.privateKey
-      }
+        signingKey: await protectSigningPrivateKey(signingKeys.privateKey)
+      },
+      recoveryBundle
     };
+  },
+
+  async restoreDeviceKeys(recoveryBundle, recoveryPassphrase) {
+    assertDeviceRecoveryBundleShape(recoveryBundle);
+    if (!await browserE2eeHelper.verifyDeviceKeyBundle(recoveryBundle.publicBundle)) {
+      throw new Error('device_recovery_public_bundle_invalid');
+    }
+
+    const passphrase = requireRecoveryPassphrase(recoveryPassphrase);
+    const iterations = normalizeRecoveryIterations(recoveryBundle.kdf.iterations);
+    const salt = decodeBase64Url(recoveryBundle.kdf.salt);
+    const iv = decodeBase64Url(recoveryBundle.cipher.iv);
+    if (salt.length !== 16 || iv.length !== 12) {
+      throw new Error('device_recovery_bundle_invalid');
+    }
+
+    let plaintext;
+    try {
+      plaintext = new Uint8Array(await getCrypto().subtle.decrypt(
+        {
+          name: 'AES-GCM',
+          iv,
+          additionalData: canonicalBytes(getRecoveryHeader(recoveryBundle)),
+          tagLength: 128
+        },
+        await deriveRecoveryKey(passphrase, salt, iterations),
+        decodeBase64Url(recoveryBundle.cipher.ciphertext)
+      ));
+    } catch {
+      throw new Error('device_recovery_decrypt_failed');
+    }
+
+    try {
+      const serializedKeys = unpackRecoveryPrivateKeys(plaintext);
+      try {
+        const encryptionKey = await hpkeSuite.kem.deserializePrivateKey(
+          serializedKeys.encryptionPrivateKey
+        );
+        const privateKeys = {
+          encryptionKey: await protectHpkePrivateKey(encryptionKey),
+          encryptionPublicKey: await hpkeSuite.kem.deserializePublicKey(
+            decodeBase64Url(recoveryBundle.publicBundle.encryption.publicKey)
+          ),
+          signingKey: await getCrypto().subtle.importKey(
+            'pkcs8',
+            serializedKeys.signingPrivateKey,
+            {name: 'ECDSA', namedCurve: 'P-256'},
+            false,
+            ['sign']
+          )
+        };
+        await assertRecoveredKeysMatchBundle(recoveryBundle.publicBundle, privateKeys);
+        return {
+          publicBundle: recoveryBundle.publicBundle,
+          privateKeys
+        };
+      } finally {
+        serializedKeys.encryptionPrivateKey.fill(0);
+        serializedKeys.signingPrivateKey.fill(0);
+      }
+    } catch (error) {
+      if (error?.message === 'device_recovery_key_mismatch') {
+        throw error;
+      }
+      throw new Error('device_recovery_payload_invalid');
+    } finally {
+      plaintext.fill(0);
+    }
   },
 
   async verifyDeviceKeyBundle(bundle) {
@@ -605,6 +913,15 @@ const browserE2eeHelper = {
     };
   },
 
+  isDeviceRecoveryBundle(value) {
+    try {
+      assertDeviceRecoveryBundleShape(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   isEncryptedEnvelope(value) {
     if (
       !value ||
@@ -647,12 +964,17 @@ const browserE2eeHelper = {
 
   constants: {
     DEVICE_KEYS_VERSION,
+    DEVICE_RECOVERY_VERSION,
     ENVELOPE_VERSION,
     ATTACHMENT_VERSION,
     ENVELOPE_TYPE,
     CONTENT_ALGORITHM,
     SIGNATURE_ALGORITHM,
-    KEY_WRAP_ALGORITHM
+    KEY_WRAP_ALGORITHM,
+    RECOVERY_KDF_ALGORITHM,
+    RECOVERY_CIPHER_ALGORITHM,
+    DEFAULT_RECOVERY_ITERATIONS,
+    MINIMUM_RECOVERY_ITERATIONS
   }
 };
 
