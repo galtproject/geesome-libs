@@ -18,6 +18,8 @@ const DEVICE_FINGERPRINT_VERSION = 'geesome-device-fingerprint-v1';
 const DEVICE_RECOVERY_VERSION = 'geesome-device-recovery-v1';
 const ENVELOPE_VERSION = 'geesome-e2ee-v2';
 const ATTACHMENT_VERSION = 'geesome-e2ee-attachment-v1';
+const ATTACHMENT_REFERENCE_VERSION = 'geesome-e2ee-attachment-reference-v1';
+const CHAT_MESSAGE_PAYLOAD_VERSION = 'geesome-chat-message-v1';
 const ENVELOPE_TYPE = 'geesome.chat.message';
 const CONTENT_ALGORITHM = 'AES-256-GCM';
 const SIGNATURE_ALGORITHM = 'ECDSA-P256-SHA256';
@@ -29,6 +31,7 @@ const DEFAULT_RECOVERY_ITERATIONS = 600000;
 const MINIMUM_RECOVERY_ITERATIONS = 600000;
 const MAXIMUM_RECOVERY_ITERATIONS = 2000000;
 const MINIMUM_RECOVERY_PASSPHRASE_LENGTH = 12;
+const MAXIMUM_CHAT_ATTACHMENTS = 20;
 const HPKE_INFO = new TextEncoder().encode('geesome.chat.content-key.v1');
 const RECOVERY_KEY_CHECK_INFO = new TextEncoder().encode('geesome.chat.device-recovery-check.v1');
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -949,6 +952,92 @@ const browserE2eeHelper = {
     };
   },
 
+  getAttachmentUploadData(attachment) {
+    assertEncryptedAttachment(attachment, true);
+    return typeof attachment.ciphertext === 'string'
+      ? decodeBase64Url(attachment.ciphertext)
+      : new Uint8Array(toUint8Array(attachment.ciphertext));
+  },
+
+  createAttachmentReference(storageId, attachment, key) {
+    requireString(storageId, 'attachment_storage_id_required');
+    assertEncryptedAttachment(attachment, false);
+    const keyBytes = toUint8Array(key);
+    if (keyBytes.length !== 32) {
+      throw new Error('attachment_key_must_be_32_bytes');
+    }
+    return {
+      version: ATTACHMENT_REFERENCE_VERSION,
+      storageId,
+      encryption: {
+        version: attachment.version,
+        algorithm: attachment.algorithm,
+        mimeType: attachment.mimeType,
+        name: attachment.name,
+        size: attachment.size,
+        iv: attachment.iv,
+        key: encodeBase64Url(keyBytes)
+      }
+    };
+  },
+
+  isAttachmentReference(value) {
+    try {
+      assertAttachmentReference(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async decryptAttachmentReference(ciphertext, reference) {
+    assertAttachmentReference(reference);
+    return browserE2eeHelper.decryptAttachment(
+      {
+        ...reference.encryption,
+        key: undefined,
+        ciphertext
+      },
+      decodeBase64Url(reference.encryption.key)
+    );
+  },
+
+  createChatMessagePayload(text, attachments: any[] = []) {
+    if (typeof text !== 'string') {
+      throw new Error('chat_message_text_invalid');
+    }
+    assertAttachmentReferenceList(attachments);
+    if (text.length === 0 && attachments.length === 0) {
+      throw new Error('chat_message_content_required');
+    }
+    return {
+      version: CHAT_MESSAGE_PAYLOAD_VERSION,
+      text,
+      attachments: attachments.map(copyAttachmentReference)
+    };
+  },
+
+  isChatMessagePayload(value) {
+    try {
+      assertChatMessagePayload(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  getChatAttachmentStorageIds(payload) {
+    assertChatMessagePayload(payload);
+    return payload.attachments.map(attachment => attachment.storageId);
+  },
+
+  createChatMessageEnvelopeMetadata(payload) {
+    return {
+      kind: 'message',
+      attachmentStorageIds: browserE2eeHelper.getChatAttachmentStorageIds(payload)
+    };
+  },
+
   isDeviceRecoveryBundle(value) {
     try {
       assertDeviceRecoveryBundleShape(value);
@@ -1005,6 +1094,8 @@ const browserE2eeHelper = {
     DEVICE_RECOVERY_VERSION,
     ENVELOPE_VERSION,
     ATTACHMENT_VERSION,
+    ATTACHMENT_REFERENCE_VERSION,
+    CHAT_MESSAGE_PAYLOAD_VERSION,
     ENVELOPE_TYPE,
     CONTENT_ALGORITHM,
     SIGNATURE_ALGORITHM,
@@ -1013,8 +1104,106 @@ const browserE2eeHelper = {
     RECOVERY_KDF_ALGORITHM,
     RECOVERY_CIPHER_ALGORITHM,
     DEFAULT_RECOVERY_ITERATIONS,
-    MINIMUM_RECOVERY_ITERATIONS
+    MINIMUM_RECOVERY_ITERATIONS,
+    MAXIMUM_CHAT_ATTACHMENTS
   }
 };
+
+function assertEncryptedAttachment(attachment, requireCiphertext: boolean) {
+  if (
+    !attachment ||
+    attachment.version !== ATTACHMENT_VERSION ||
+    attachment.algorithm !== CONTENT_ALGORITHM ||
+    !hasNonEmptyString(attachment.mimeType) ||
+    !(attachment.name === null || hasNonEmptyString(attachment.name)) ||
+    !Number.isSafeInteger(attachment.size) ||
+    attachment.size < 0 ||
+    !hasNonEmptyString(attachment.iv)
+  ) {
+    throw new Error('encrypted_attachment_invalid');
+  }
+  let iv;
+  try {
+    iv = decodeBase64Url(attachment.iv);
+  } catch {
+    throw new Error('encrypted_attachment_invalid');
+  }
+  if (iv.length !== 12) {
+    throw new Error('encrypted_attachment_invalid');
+  }
+  if (requireCiphertext && attachment.ciphertext === undefined) {
+    throw new Error('attachment_ciphertext_required');
+  }
+  if (requireCiphertext) {
+    try {
+      const ciphertext = typeof attachment.ciphertext === 'string'
+        ? decodeBase64Url(attachment.ciphertext)
+        : toUint8Array(attachment.ciphertext);
+      if (ciphertext.length < 16) {
+        throw new Error('attachment_ciphertext_invalid');
+      }
+    } catch {
+      throw new Error('attachment_ciphertext_invalid');
+    }
+  }
+}
+
+function assertAttachmentReference(value) {
+  if (
+    !value ||
+    value.version !== ATTACHMENT_REFERENCE_VERSION ||
+    !hasNonEmptyString(value.storageId) ||
+    !value.encryption ||
+    !hasNonEmptyString(value.encryption.key) ||
+    value.encryption.ciphertext !== undefined
+  ) {
+    throw new Error('attachment_reference_invalid');
+  }
+  assertEncryptedAttachment(value.encryption, false);
+  let key;
+  try {
+    key = decodeBase64Url(value.encryption.key);
+  } catch {
+    throw new Error('attachment_reference_invalid');
+  }
+  if (key.length !== 32) {
+    throw new Error('attachment_reference_invalid');
+  }
+}
+
+function assertAttachmentReferenceList(attachments) {
+  if (
+    !Array.isArray(attachments) ||
+    attachments.length > MAXIMUM_CHAT_ATTACHMENTS
+  ) {
+    throw new Error('chat_message_attachments_invalid');
+  }
+  attachments.forEach(assertAttachmentReference);
+  const storageIds = attachments.map(attachment => attachment.storageId);
+  if (new Set(storageIds).size !== storageIds.length) {
+    throw new Error('chat_message_attachment_duplicate');
+  }
+}
+
+function assertChatMessagePayload(value) {
+  if (
+    !value ||
+    value.version !== CHAT_MESSAGE_PAYLOAD_VERSION ||
+    typeof value.text !== 'string'
+  ) {
+    throw new Error('chat_message_payload_invalid');
+  }
+  assertAttachmentReferenceList(value.attachments);
+  if (value.text.length === 0 && value.attachments.length === 0) {
+    throw new Error('chat_message_content_required');
+  }
+}
+
+function copyAttachmentReference(reference) {
+  return {
+    ...reference,
+    encryption: {...reference.encryption}
+  };
+}
 
 export default browserE2eeHelper;
