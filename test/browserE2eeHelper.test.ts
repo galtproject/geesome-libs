@@ -33,9 +33,39 @@ describe('browserE2eeHelper', function () {
     expect(alice.recoveryBundle).to.equal(null);
     expect(await browserE2eeHelper.verifyDeviceKeyBundle(alice.publicBundle)).to.equal(true);
 
+    const fingerprint = await browserE2eeHelper.getDeviceFingerprint(alice.publicBundle);
+    expect(fingerprint).to.include({
+      version: browserE2eeHelper.constants.DEVICE_FINGERPRINT_VERSION,
+      algorithm: browserE2eeHelper.constants.FINGERPRINT_ALGORITHM,
+      ownerId: 'alice',
+      deviceId: 'alice-browser',
+      keyId: alice.publicBundle.keyId
+    });
+    expect(fingerprint.value).to.match(/^(?:[0-9A-F]{4} ){15}[0-9A-F]{4}$/);
+    expect(await browserE2eeHelper.getDeviceFingerprint(
+      JSON.parse(JSON.stringify(alice.publicBundle))
+    )).to.deep.equal(fingerprint);
+
     const tampered = JSON.parse(JSON.stringify(alice.publicBundle));
     tampered.ownerId = 'mallory';
     expect(await browserE2eeHelper.verifyDeviceKeyBundle(tampered)).to.equal(false);
+    await expectRejected(
+      browserE2eeHelper.getDeviceFingerprint(tampered),
+      'device_bundle_invalid'
+    );
+  });
+
+  it('formats a full deterministic device fingerprint', function () {
+    const keyId = browserE2eeHelper.encodeBase64Url(
+      Uint8Array.from({length: 32}, (_value, index) => index)
+    );
+    expect(browserE2eeHelper.formatDeviceFingerprint(keyId)).to.equal(
+      '0001 0203 0405 0607 0809 0A0B 0C0D 0E0F ' +
+      '1011 1213 1415 1617 1819 1A1B 1C1D 1E1F'
+    );
+    expect(() => browserE2eeHelper.formatDeviceFingerprint('short')).to.throw(
+      'device_key_id_invalid'
+    );
   });
 
   it('creates an encrypted recovery bundle and restores non-extractable device keys', async function () {

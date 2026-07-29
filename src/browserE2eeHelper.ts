@@ -14,12 +14,14 @@ import {
 } from '@hpke/core';
 
 const DEVICE_KEYS_VERSION = 'geesome-device-keys-v1';
+const DEVICE_FINGERPRINT_VERSION = 'geesome-device-fingerprint-v1';
 const DEVICE_RECOVERY_VERSION = 'geesome-device-recovery-v1';
 const ENVELOPE_VERSION = 'geesome-e2ee-v2';
 const ATTACHMENT_VERSION = 'geesome-e2ee-attachment-v1';
 const ENVELOPE_TYPE = 'geesome.chat.message';
 const CONTENT_ALGORITHM = 'AES-256-GCM';
 const SIGNATURE_ALGORITHM = 'ECDSA-P256-SHA256';
+const FINGERPRINT_ALGORITHM = 'SHA-256';
 const KEY_WRAP_ALGORITHM = 'HPKE-DHKEM-P256-HKDF-SHA256-AES128GCM';
 const RECOVERY_KDF_ALGORITHM = 'PBKDF2-SHA256';
 const RECOVERY_CIPHER_ALGORITHM = 'AES-256-GCM';
@@ -107,6 +109,26 @@ function decodeBase64Url(value: string): Uint8Array {
   }
 
   return new Uint8Array(output);
+}
+
+function formatDeviceFingerprint(keyId: string): string {
+  let bytes;
+  try {
+    bytes = decodeBase64Url(keyId);
+  } catch {
+    throw new Error('device_key_id_invalid');
+  }
+  if (bytes.length !== 32) {
+    throw new Error('device_key_id_invalid');
+  }
+  const hex = Array.from(bytes)
+    .map(value => value.toString(16).padStart(2, '0').toUpperCase())
+    .join('');
+  const groups = hex.match(/.{4}/g);
+  if (!groups) {
+    throw new Error('device_key_id_invalid');
+  }
+  return groups.join(' ');
 }
 
 function canonicalize(value) {
@@ -679,6 +701,20 @@ const browserE2eeHelper = {
     }
   },
 
+  async getDeviceFingerprint(bundle) {
+    if (!await browserE2eeHelper.verifyDeviceKeyBundle(bundle)) {
+      throw new Error('device_bundle_invalid');
+    }
+    return {
+      version: DEVICE_FINGERPRINT_VERSION,
+      algorithm: FINGERPRINT_ALGORITHM,
+      ownerId: bundle.ownerId,
+      deviceId: bundle.deviceId,
+      keyId: bundle.keyId,
+      value: formatDeviceFingerprint(bundle.keyId)
+    };
+  },
+
   async encryptEnvelope(plaintext, recipients, senderKeys, options: any = {}) {
     if (!Array.isArray(recipients) || recipients.length === 0) {
       throw new Error('recipients_required');
@@ -961,15 +997,18 @@ const browserE2eeHelper = {
 
   encodeBase64Url,
   decodeBase64Url,
+  formatDeviceFingerprint,
 
   constants: {
     DEVICE_KEYS_VERSION,
+    DEVICE_FINGERPRINT_VERSION,
     DEVICE_RECOVERY_VERSION,
     ENVELOPE_VERSION,
     ATTACHMENT_VERSION,
     ENVELOPE_TYPE,
     CONTENT_ALGORITHM,
     SIGNATURE_ALGORITHM,
+    FINGERPRINT_ALGORITHM,
     KEY_WRAP_ALGORITHM,
     RECOVERY_KDF_ALGORITHM,
     RECOVERY_CIPHER_ALGORITHM,
