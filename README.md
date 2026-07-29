@@ -44,6 +44,39 @@ const plaintext = await browserE2eeHelper.decryptEnvelopeText(
 );
 ```
 
+Enable recovery while creating a device if the user has chosen a recovery
+passphrase. `recoveryBundle` is `null` when recovery is not requested:
+
+```ts
+const device = await browserE2eeHelper.generateDeviceKeys({
+  ownerId,
+  deviceId,
+  recoveryPassphrase
+});
+
+const restoredDevice = await browserE2eeHelper.restoreDeviceKeys(
+  device.recoveryBundle,
+  recoveryPassphrase
+);
+```
+
+The recovery bundle is versioned and protects the transient private key bytes
+with PBKDF2-SHA256 using at least 600,000 iterations and AES-256-GCM. The live
+keys and restored keys are non-extractable. Restore also proves that both
+recovered private keys match the signed public device bundle before returning
+them.
+
+Keep recovery client-owned:
+
+- Store live `CryptoKey` objects in IndexedDB, not `localStorage`.
+- Never upload the recovery passphrase or decrypted private keys to
+  `geesome-node`.
+- Treat the downloaded recovery bundle as sensitive encrypted data.
+- If both IndexedDB state and the recovery bundle are lost, create a new device
+  and revoke the old one.
+- Frontends should provide backup reminders, device verification, revocation,
+  and multi-device trust UX.
+
 Attachments must be encrypted before upload:
 
 ```ts
