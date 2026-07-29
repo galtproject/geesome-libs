@@ -420,7 +420,10 @@ describe('browserE2eeHelper', function () {
     expect(reference.encryption).to.not.have.property('ciphertext');
     expect(browserE2eeHelper.isAttachmentReference(reference)).to.equal(true);
     expect(browserE2eeHelper.isChatMessagePayload(payload)).to.equal(true);
-    expect(storedEnvelope.metadata.attachmentStorageIds).to.deep.equal(['bafyattachment']);
+    expect(storedEnvelope.metadata).to.deep.equal({
+      kind: 'json',
+      attachmentStorageIds: ['bafyattachment']
+    });
     expect(JSON.stringify(storedEnvelope)).to.not.include('private-photo.jpg');
     expect(JSON.stringify(storedEnvelope)).to.not.include('image/jpeg');
     expect(JSON.stringify(storedEnvelope)).to.not.include(reference.encryption.key);
