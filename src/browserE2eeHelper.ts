@@ -1033,7 +1033,7 @@ const browserE2eeHelper = {
 
   createChatMessageEnvelopeMetadata(payload) {
     return {
-      kind: 'message',
+      kind: 'json',
       attachmentStorageIds: browserE2eeHelper.getChatAttachmentStorageIds(payload)
     };
   },
