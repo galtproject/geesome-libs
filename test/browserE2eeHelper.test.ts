@@ -478,6 +478,124 @@ describe('browserE2eeHelper', function () {
       browserE2eeHelper.decryptAttachmentReference(uploadData, tampered)
     );
   });
+
+  it('frames private-group posts with signed stable identity and membership metadata', async function () {
+    const sender = await createDevice('sender', 'sender-browser');
+    const recipient = await createDevice('recipient', 'recipient-browser');
+    const encrypted = await browserE2eeHelper.encryptAttachment(
+      new TextEncoder().encode('private group attachment'),
+      {
+        name: 'private.txt',
+        mimeType: 'text/plain',
+        key: new Uint8Array(32).fill(4),
+        iv: new Uint8Array(12).fill(5)
+      }
+    );
+    const reference = browserE2eeHelper.createAttachmentReference(
+      'bafyprivategroupattachment',
+      encrypted.attachment,
+      encrypted.key
+    );
+    const payload = browserE2eeHelper.createPrivateGroupPostPayload(
+      'private group message',
+      [reference]
+    );
+    const options = browserE2eeHelper.createPrivateGroupPostEnvelopeOptions(
+      'bafyprivategroupidentity',
+      '7',
+      payload,
+      {
+        messageId: 'private-group-message',
+        createdAt: '2026-07-31T00:00:00.000Z',
+        contentKey: new Uint8Array(32).fill(6),
+        iv: new Uint8Array(12).fill(7)
+      }
+    );
+    const envelope = await browserE2eeHelper.encryptEnvelope(
+      payload,
+      [recipient.publicBundle],
+      sender,
+      options
+    );
+
+    expect(browserE2eeHelper.isPrivateGroupPostPayload(payload)).to.equal(true);
+    expect(browserE2eeHelper.isPrivateGroupPostEnvelope(envelope)).to.equal(true);
+    expect(envelope.type).to.equal('geesome.private-group.post');
+    expect(envelope.conversationId).to.equal(
+      'geesome.private-group:bafyprivategroupidentity'
+    );
+    expect(envelope.metadata).to.deep.equal({
+      kind: 'private-group-post',
+      groupIdentity: 'bafyprivategroupidentity',
+      membershipVersion: '7',
+      attachmentStorageIds: ['bafyprivategroupattachment']
+    });
+    expect(JSON.stringify(envelope)).to.not.include('private group message');
+    expect(JSON.stringify(envelope)).to.not.include('private.txt');
+    expect(JSON.stringify(envelope)).to.not.include('text/plain');
+    expect(JSON.stringify(envelope)).to.not.include(reference.encryption.key);
+
+    const decrypted = await browserE2eeHelper.decryptEnvelopeJson(
+      envelope,
+      recipient,
+      sender.publicBundle
+    );
+    expect(browserE2eeHelper.isPrivateGroupPostPayload(decrypted)).to.equal(true);
+    expect(decrypted).to.deep.equal(payload);
+  });
+
+  it('rejects invalid or mismatched private-group envelope metadata', async function () {
+    const payload = browserE2eeHelper.createPrivateGroupPostPayload('message');
+
+    expect(() => browserE2eeHelper.createPrivateGroupPostEnvelopeOptions(
+      'group',
+      '0',
+      payload
+    )).to.throw('private_group_membership_version_invalid');
+    expect(browserE2eeHelper.isPrivateGroupPostPayload({
+      ...payload,
+      kind: 'unexpected'
+    })).to.equal(false);
+    expect(browserE2eeHelper.isPrivateGroupPostEnvelopeMetadata({
+      kind: 'private-group-post',
+      groupIdentity: 'group',
+      membershipVersion: '1',
+      attachmentStorageIds: ['same', 'same']
+    })).to.equal(false);
+    expect(browserE2eeHelper.isPrivateGroupPostEnvelopeMetadata({
+      kind: 'private-group-post',
+      groupIdentity: 'group',
+      membershipVersion: '1',
+      attachmentStorageIds: [],
+      text: 'visible by mistake'
+    })).to.equal(false);
+    expect(() => browserE2eeHelper.createPrivateGroupPostEnvelopeOptions(
+      'group',
+      Number.MAX_SAFE_INTEGER + 1,
+      payload
+    )).to.throw('private_group_membership_version_invalid');
+
+    const sender = await createDevice('sender', 'sender-browser');
+    const recipient = await createDevice('recipient', 'recipient-browser');
+    const envelope = await browserE2eeHelper.encryptEnvelope(
+      payload,
+      [recipient.publicBundle],
+      sender,
+      browserE2eeHelper.createPrivateGroupPostEnvelopeOptions(
+        'group',
+        '1',
+        payload
+      )
+    );
+    const mismatched = JSON.parse(JSON.stringify(envelope));
+    mismatched.metadata.groupIdentity = 'other-group';
+
+    expect(browserE2eeHelper.isPrivateGroupPostEnvelope(mismatched)).to.equal(false);
+    expect(await browserE2eeHelper.verifyEnvelopeSignature(
+      mismatched,
+      sender.publicBundle
+    )).to.equal(false);
+  });
 });
 
 async function expectRejected(promise, expectedMessage = null) {
