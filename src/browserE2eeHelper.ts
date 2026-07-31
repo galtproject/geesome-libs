@@ -20,7 +20,10 @@ const ENVELOPE_VERSION = 'geesome-e2ee-v2';
 const ATTACHMENT_VERSION = 'geesome-e2ee-attachment-v1';
 const ATTACHMENT_REFERENCE_VERSION = 'geesome-e2ee-attachment-reference-v1';
 const CHAT_MESSAGE_PAYLOAD_VERSION = 'geesome-chat-message-v1';
+const PRIVATE_GROUP_POST_PAYLOAD_VERSION = 'geesome-private-group-post-v1';
 const ENVELOPE_TYPE = 'geesome.chat.message';
+const PRIVATE_GROUP_POST_ENVELOPE_TYPE = 'geesome.private-group.post';
+const PRIVATE_GROUP_CONVERSATION_PREFIX = 'geesome.private-group:';
 const CONTENT_ALGORITHM = 'AES-256-GCM';
 const SIGNATURE_ALGORITHM = 'ECDSA-P256-SHA256';
 const FINGERPRINT_ALGORITHM = 'SHA-256';
@@ -1038,6 +1041,80 @@ const browserE2eeHelper = {
     };
   },
 
+  createPrivateGroupPostPayload(text, attachments: any[] = []) {
+    const chatPayload = browserE2eeHelper.createChatMessagePayload(text, attachments);
+    return {
+      ...chatPayload,
+      version: PRIVATE_GROUP_POST_PAYLOAD_VERSION,
+      kind: 'message'
+    };
+  },
+
+  isPrivateGroupPostPayload(value) {
+    try {
+      assertPrivateGroupPostPayload(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  getPrivateGroupPostAttachmentStorageIds(payload) {
+    assertPrivateGroupPostPayload(payload);
+    return payload.attachments.map(attachment => attachment.storageId);
+  },
+
+  createPrivateGroupPostEnvelopeMetadata(groupIdentity, membershipVersion, payload) {
+    return {
+      kind: 'private-group-post',
+      groupIdentity: requireString(groupIdentity, 'private_group_identity_required'),
+      membershipVersion: normalizePrivateGroupMembershipVersion(membershipVersion),
+      attachmentStorageIds: browserE2eeHelper.getPrivateGroupPostAttachmentStorageIds(payload)
+    };
+  },
+
+  createPrivateGroupPostEnvelopeOptions(
+    groupIdentity,
+    membershipVersion,
+    payload,
+    options: any = {}
+  ) {
+    const metadata = browserE2eeHelper.createPrivateGroupPostEnvelopeMetadata(
+      groupIdentity,
+      membershipVersion,
+      payload
+    );
+    return {
+      ...options,
+      type: PRIVATE_GROUP_POST_ENVELOPE_TYPE,
+      conversationId: formatPrivateGroupConversationId(metadata.groupIdentity),
+      metadata
+    };
+  },
+
+  isPrivateGroupPostEnvelopeMetadata(value) {
+    try {
+      assertPrivateGroupPostEnvelopeMetadata(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  isPrivateGroupPostEnvelope(value) {
+    if (
+      !browserE2eeHelper.isEncryptedEnvelope(value) ||
+      value.type !== PRIVATE_GROUP_POST_ENVELOPE_TYPE ||
+      value.encoding !== 'json' ||
+      !browserE2eeHelper.isPrivateGroupPostEnvelopeMetadata(value.metadata)
+    ) {
+      return false;
+    }
+    return value.conversationId === formatPrivateGroupConversationId(
+      value.metadata.groupIdentity
+    );
+  },
+
   isDeviceRecoveryBundle(value) {
     try {
       assertDeviceRecoveryBundleShape(value);
@@ -1096,7 +1173,10 @@ const browserE2eeHelper = {
     ATTACHMENT_VERSION,
     ATTACHMENT_REFERENCE_VERSION,
     CHAT_MESSAGE_PAYLOAD_VERSION,
+    PRIVATE_GROUP_POST_PAYLOAD_VERSION,
     ENVELOPE_TYPE,
+    PRIVATE_GROUP_POST_ENVELOPE_TYPE,
+    PRIVATE_GROUP_CONVERSATION_PREFIX,
     CONTENT_ALGORITHM,
     SIGNATURE_ALGORITHM,
     FINGERPRINT_ALGORITHM,
@@ -1197,6 +1277,69 @@ function assertChatMessagePayload(value) {
   if (value.text.length === 0 && value.attachments.length === 0) {
     throw new Error('chat_message_content_required');
   }
+}
+
+function assertPrivateGroupPostPayload(value) {
+  if (
+    !value ||
+    value.version !== PRIVATE_GROUP_POST_PAYLOAD_VERSION ||
+    value.kind !== 'message' ||
+    typeof value.text !== 'string'
+  ) {
+    throw new Error('private_group_post_payload_invalid');
+  }
+  assertAttachmentReferenceList(value.attachments);
+  if (value.text.length === 0 && value.attachments.length === 0) {
+    throw new Error('private_group_post_content_required');
+  }
+}
+
+function assertPrivateGroupPostEnvelopeMetadata(value) {
+  if (
+    !value ||
+    !hasExactKeys(value, [
+      'kind',
+      'groupIdentity',
+      'membershipVersion',
+      'attachmentStorageIds'
+    ]) ||
+    value.kind !== 'private-group-post' ||
+    !hasNonEmptyString(value.groupIdentity) ||
+    !Array.isArray(value.attachmentStorageIds) ||
+    value.attachmentStorageIds.length > MAXIMUM_CHAT_ATTACHMENTS ||
+    !hasUniqueStrings(value.attachmentStorageIds)
+  ) {
+    throw new Error('private_group_post_metadata_invalid');
+  }
+  normalizePrivateGroupMembershipVersion(value.membershipVersion);
+}
+
+function normalizePrivateGroupMembershipVersion(value): string {
+  if (
+    (typeof value !== 'string' && typeof value !== 'number') ||
+    (typeof value === 'number' && !Number.isSafeInteger(value)) ||
+    !/^[1-9][0-9]*$/.test(String(value))
+  ) {
+    throw new Error('private_group_membership_version_invalid');
+  }
+  return String(value);
+}
+
+function formatPrivateGroupConversationId(groupIdentity): string {
+  return `${PRIVATE_GROUP_CONVERSATION_PREFIX}${requireString(
+    groupIdentity,
+    'private_group_identity_required'
+  )}`;
+}
+
+function hasExactKeys(value, keys: string[]): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  const actualKeys = Object.keys(value).sort();
+  const expectedKeys = [...keys].sort();
+  return actualKeys.length === expectedKeys.length &&
+    actualKeys.every((key, index) => key === expectedKeys[index]);
 }
 
 function copyAttachmentReference(reference) {
