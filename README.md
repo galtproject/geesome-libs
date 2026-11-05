@@ -11,6 +11,10 @@ Created for [GeeSome project](https://github.com/galtspace/geesome-node)
 - Legacy Node.js E2EE envelope compatibility: [e2eeHelper.ts](./src/e2eeHelper.ts)
 - Deterministic ActivityPub actor/object/signature helper contracts: [activityPubHelper.ts](./src/activityPubHelper.ts)
 
+## Kubo storage imports
+
+File, wrapped-directory and DAG-CBOR object helpers import with pinning enabled, await completion and confirm the matching recursive pin before returning. Their CID/output formats stay unchanged; `waitForPin` remains accepted, while Kubo imports always wait for pinning. Transport deadlines and abort signals are forwarded to import and confirmation. The confirmation is a read RPC, replacing the former separate pin write. This guarantee applies to Kubo, not Helia. See [the pinned-write contract and validation scope](docs/gc-safe-pinned-writes.md).
+
 ## E2EE chat helper usage
 
 Use [browserE2eeHelper.ts](./src/browserE2eeHelper.ts) for new chat clients. It uses browser WebCrypto for non-extractable device private keys, HPKE-wrapped content keys, signed AES-GCM envelopes, and encrypted attachments. Persist the returned `CryptoKey` objects in IndexedDB. Publish only the public device bundle and send only encrypted envelopes or attachments to geesome-node.
