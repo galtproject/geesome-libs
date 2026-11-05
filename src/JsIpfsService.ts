@@ -30,7 +30,94 @@ common.initializeCustomEvent();
 // Keep transport cancellation/deadlines without exposing importer switches that
 // could change the established CID or disable the pin/GC safety guarantee.
 export function kuboPinnedImportOptions(options = {}) {
+  kuboPinProofTimeout(options);
   return {...pick(options, ['timeout', 'signal', 'headers']), pin: true, cidVersion: 1};
+}
+
+const defaultPinProofTimeoutMs = 120000;
+function proofError(code, cause?) {
+  return Object.assign(new Error(code, cause === undefined ? undefined : {cause}), {code});
+}
+function kuboPinProofTimeout(options: any) {
+  const timeout = options.pinProofTimeoutMs === undefined ? defaultPinProofTimeoutMs : options.pinProofTimeoutMs;
+  if (!Number.isSafeInteger(timeout) || timeout <= 0) {
+    throw proofError('kubo_import_pin_proof_timeout_invalid');
+  }
+  return timeout;
+}
+function throwIfProofStopped(signal: AbortSignal) {
+  if (signal.aborted) {
+    throw signal.reason;
+  }
+}
+function proofRead<T>(pending: PromiseLike<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const abort = () => {
+      signal.removeEventListener('abort', abort);
+      reject(signal.reason);
+    };
+    signal.addEventListener('abort', abort, {once: true});
+    Promise.resolve(pending).then(value => {
+      signal.removeEventListener('abort', abort);
+      if (signal.aborted) {
+        reject(signal.reason);
+      } else {
+        resolve(value);
+      }
+    }, error => {
+      signal.removeEventListener('abort', abort);
+      reject(signal.aborted ? signal.reason : error);
+    });
+    if (signal.aborted) {
+      abort();
+    }
+  });
+}
+function proofPause(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', abort);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', abort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', abort, {once: true});
+    if (signal.aborted) {
+      abort();
+    }
+  });
+}
+function proofHttpStatus(error) {
+  return Number(error?.response?.status || error?.status || error?.statusCode) || null;
+}
+function proofReadTransient(error) {
+  const status = proofHttpStatus(error);
+  if (status) {
+    return [429, 502, 503, 504].includes(status);
+  }
+  const network = new Set(['ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'ETIMEDOUT', 'EAI_AGAIN',
+    'ENOTFOUND', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'UND_ERR_HEADERS_TIMEOUT']);
+  let current = error;
+  for (let depth = 0; current && depth < 4; depth++, current = current.cause) {
+    if (network.has(current.code) || current instanceof TypeError && current.message === 'fetch failed') {
+      return true;
+    }
+  }
+  return false;
+}
+function proofRetryDelay(error, attempt) {
+  const headers = error?.response?.headers || error?.headers;
+  const value = typeof headers?.get === 'function' ? headers.get('retry-after') : headers?.['retry-after'];
+  if (value == null) {
+    return 50 * attempt;
+  }
+  const text = String(value).trim();
+  const milliseconds = /^\d+$/.test(text) ? Number(text) * 1000 : Math.max(0, Date.parse(text) - Date.now());
+  // Do not retry early when the server asks for more than this bounded proof can afford.
+  return Number.isFinite(milliseconds) && milliseconds >= 0 && milliseconds <= 60000 ? milliseconds : null;
 }
 
 export default class JsIpfsService {
@@ -136,20 +223,82 @@ export default class JsIpfsService {
     return result;
   }
 
-  async assertKuboRecursivePin(value, options = {}) {
+  async assertKuboRecursivePin(value, options: any = {}) {
     const cid = CID.parse(value.toString()).toV1();
-    let found = false;
-    // Some RPC clients do not expose late command-error trailers. Confirm the
-    // resulting recursive pin before publishing a CID, consuming the full stream
-    // so a late pin-list failure cannot turn into success either.
-    for await (const pin of this.node.pin.ls({...pick(options, ['timeout', 'signal', 'headers']),
-      paths: [cid], type: 'recursive'})) {
-      if (pin.type === 'recursive' && pin.cid && CID.parse(pin.cid.toString()).toV1().equals(cid)) {
-        found = true;
-      }
+    const timeoutMs = kuboPinProofTimeout(options);
+    const deadline = performance.now() + timeoutMs;
+    const controller = new AbortController();
+    const parent = options.signal;
+    const abort = () => controller.abort(parent.reason);
+    const timeout = setTimeout(() => controller.abort(proofError('kubo_import_pin_proof_timeout')), timeoutMs);
+    parent?.addEventListener('abort', abort, {once: true});
+    if (parent?.aborted) {
+      abort();
     }
-    if (!found) {
-      throw new Error('kubo_import_pin_unconfirmed');
+    const signal = controller.signal;
+    const check = () => {
+      if (!signal.aborted && performance.now() >= deadline) {
+        controller.abort(proofError('kubo_import_pin_proof_timeout'));
+      }
+      throwIfProofStopped(signal);
+    };
+    try {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        check();
+        let found = false;
+        let iterator;
+        let consumed = false;
+        try {
+          // A proof has its own budget after import; retries share this same deadline.
+          iterator = this.node.pin.ls({...pick(options, ['headers']), paths: [cid], type: 'recursive',
+            timeout: Math.max(1, Math.ceil(deadline - performance.now())), signal})[Symbol.asyncIterator]();
+          while (true) {
+            check();
+            const next: any = await proofRead(iterator.next(), signal);
+            check();
+            if (next.done) {
+              consumed = true;
+              break;
+            }
+            const pin = next.value;
+            if (pin.type === 'recursive' && pin.cid && CID.parse(pin.cid.toString()).toV1().equals(cid)) {
+              found = true;
+            }
+          }
+          if (!found) {
+            throw proofError('kubo_import_pin_unconfirmed');
+          }
+          return;
+        } catch (error) {
+          check();
+          const status = proofHttpStatus(error);
+          if (error?.code === 'kubo_import_pin_unconfirmed'
+            || status !== 401 && status !== 403 && /\b(?:not pinned|not recursively pinned)\b/i.test(error?.message || '')) {
+            throw proofError('kubo_import_pin_unconfirmed', error);
+          }
+          if (attempt === 3 || !proofReadTransient(error)) {
+            throw proofError('kubo_import_pin_proof_unavailable', error);
+          }
+          const wait = proofRetryDelay(error, attempt);
+          if (wait === null || wait >= deadline - performance.now()) {
+            throw proofError('kubo_import_pin_proof_unavailable', error);
+          }
+          await proofPause(wait, signal);
+        } finally {
+          // A non-cooperating iterator must not keep the proof outcome pending.
+          // The supplied AbortSignal closes real RPCs; consume any late rejection.
+          if (!consumed && iterator?.return) {
+            try {
+              void Promise.resolve(iterator.return()).catch(() => {});
+            } catch {
+              // Preserve the proof failure, including cancellation.
+            }
+          }
+        }
+      }
+    } finally {
+      clearTimeout(timeout);
+      parent?.removeEventListener('abort', abort);
     }
   }
 
@@ -238,6 +387,7 @@ export default class JsIpfsService {
     if (this.type === 'helia') {
       cid = await this.heliaCbor.add(objectData);
     } else {
+      kuboPinProofTimeout(options);
       cid = await this.node.dag.put(objectData, {...pick(options, ['timeout', 'signal', 'headers']),
         storeCodec: 'dag-cbor', hashAlg: 'sha2-256', pin: true});
       await this.assertKuboRecursivePin(cid, options);

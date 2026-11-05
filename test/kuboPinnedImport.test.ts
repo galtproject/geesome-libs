@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
+import {getEventListeners} from 'node:events';
 import {CID} from 'multiformats/cid';
 import ipfsHelper from '../src/ipfsHelper.js';
 import Path from 'node:path';
@@ -137,15 +138,19 @@ describe('Kubo GC-safe pinned imports', () => {
     const {node} = stub({addAll: async function* () { yield result('child.txt'); }});
     await assert.rejects(new JsIpfsServiceNode(node, 'kubo').saveDirectory('test'), /directory_import_root_missing/);
   });
-  it('confirms the matching recursive pin using the same deadline and signal', async () => {
+  it('confirms the matching recursive pin with an independent bounded proof budget', async () => {
     const abort = new AbortController();
     const {node} = stub({add: async () => result(), pin: {ls: async function* (options) {
       assert.equal(options.paths.length, 1);
       assert(options.paths[0].equals(cid));
-      assert.deepEqual({...options, paths: undefined}, {paths: undefined, type: 'recursive', timeout: 123, signal: abort.signal});
+      assert.equal(options.type, 'recursive');
+      assert(options.timeout > 123 && options.timeout <= 456);
+      assert(options.signal instanceof AbortSignal);
+      assert.notEqual(options.signal, abort.signal);
       yield {cid, type: 'recursive'};
     }}});
-    await new JsIpfsService(node, 'kubo').saveFile('1', {timeout: 123, signal: abort.signal});
+    await new JsIpfsService(node, 'kubo').saveFile('1', {timeout: 123, pinProofTimeoutMs: 456, signal: abort.signal});
+    assert.equal(getEventListeners(abort.signal, 'abort').length, 0);
   });
 
   it('fails closed when an apparent import success has no matching recursive pin', async () => {
@@ -156,7 +161,8 @@ describe('Kubo GC-safe pinned imports', () => {
   it('consumes pin confirmation to the end and rejects a late stream error', async () => {
     const failure = new Error('pin listing failed late');
     const {node} = stub({add: async () => result(), pin: {ls: async function* () { yield {cid, type: 'recursive'}; throw failure; }}});
-    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1'), error => error === failure);
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1'), error =>
+      error.code === 'kubo_import_pin_proof_unavailable' && error.cause === failure);
   });
 
   for (const waitForPin of [false, true]) {
@@ -191,6 +197,166 @@ describe('Kubo GC-safe pinned imports', () => {
     const {node, calls} = stub({dag: {put: async () => { throw failure; }}});
     await assert.rejects(new JsIpfsService(node, 'kubo').saveObject({a: 1}), error => error === failure);
     assert.equal(calls.pins, 0);
+  });
+
+  it('retries only the read-only proof after a transient failure, never the import', async () => {
+    let imports = 0, proofs = 0, proofSignal;
+    const timeouts = [];
+    const {node, calls} = stub({add: async () => { imports++; return result(); }, pin: {ls: async function* (options) {
+      proofs++;
+      timeouts.push(options.timeout);
+      if (proofSignal) {
+        assert.equal(options.signal, proofSignal, 'all attempts share the same proof cancellation');
+      }
+      proofSignal = options.signal;
+      if (proofs === 1) {
+        throw Object.assign(new Error('temporary connection failure'), {code: 'ECONNRESET'});
+      }
+      yield {cid, type: 'recursive'};
+    }}});
+    assert.equal((await new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 500})).id, cid.toString());
+    assert.equal(imports, 1);
+    assert.equal(proofs, 2);
+    assert(timeouts[1] < timeouts[0]);
+    assert.equal(calls.pins, 0);
+  });
+
+  it('reports a known missing pin without retrying either proof or import', async () => {
+    let imports = 0, proofs = 0;
+    const failure = Object.assign(new Error('path is not pinned'), {status: 500});
+    const {node} = stub({add: async () => { imports++; return result(); }, pin: {ls: async function* () {
+      proofs++;
+      throw failure;
+    }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1'), error =>
+      error.code === 'kubo_import_pin_unconfirmed' && error.cause === failure);
+    assert.equal(imports, 1);
+    assert.equal(proofs, 1);
+  });
+
+  it('distinguishes unavailable/auth proof from a missing pin and never reimports', async () => {
+    let imports = 0, proofs = 0;
+    const failure = Object.assign(new Error('proof not permitted'), {status: 403});
+    const {node} = stub({add: async () => { imports++; return result(); }, pin: {ls: async function* () {
+      proofs++;
+      throw failure;
+    }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1'), error =>
+      error.code === 'kubo_import_pin_proof_unavailable' && error.cause === failure);
+    assert.equal(imports, 1);
+    assert.equal(proofs, 1);
+  });
+
+  it('stops at the bounded read-only retry limit for transient failures', async () => {
+    let imports = 0, proofs = 0;
+    const failure = Object.assign(new Error('busy'), {status: 503});
+    const {node} = stub({add: async () => { imports++; return result(); }, pin: {ls: async function* () {
+      proofs++;
+      throw failure;
+    }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 1000}), error =>
+      error.code === 'kubo_import_pin_proof_unavailable' && error.cause === failure);
+    assert.equal(imports, 1);
+    assert.equal(proofs, 3);
+  });
+
+  it('does not retry early when Retry-After exceeds the remaining proof budget', async () => {
+    let proofs = 0;
+    const failure = Object.assign(new Error('rate limited'), {response: {status: 429,
+      headers: new Headers({'retry-after': '1'})}});
+    const {node} = stub({add: async () => result(), pin: {ls: async function* () { proofs++; throw failure; }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 100}), error =>
+      error.code === 'kubo_import_pin_proof_unavailable' && error.cause === failure);
+    assert.equal(proofs, 1);
+  });
+
+  it('honors a short Retry-After before another read-only proof attempt', async () => {
+    let proofs = 0, failedAt = 0;
+    const {node} = stub({add: async () => result(), pin: {ls: async function* () {
+      if (++proofs === 1) {
+        failedAt = performance.now();
+        throw Object.assign(new Error('rate limited'), {status: 429, headers: new Headers({'retry-after': '1'})});
+      }
+      assert(performance.now() - failedAt >= 990, 'the server delay must not be shortened');
+      yield {cid, type: 'recursive'};
+    }}});
+    await new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 1800});
+    assert.equal(proofs, 2);
+  });
+
+  it('starts the proof budget after a longer import has completed', async () => {
+    const imported = deferred(), entered = deferred();
+    const {node} = stub({add: async () => { entered.resolve(); return imported.promise; }, pin: {ls: async function* (options) {
+      assert.equal(options.signal.aborted, false);
+      assert(options.timeout > 0 && options.timeout <= 30);
+      yield {cid, type: 'recursive'};
+    }}});
+    const pending = new JsIpfsService(node, 'kubo').saveFile('1', {timeout: 1000, pinProofTimeoutMs: 30});
+    await entered.promise;
+    await new Promise(resolve => setTimeout(resolve, 60));
+    imported.resolve(result());
+    assert.equal((await pending).id, cid.toString());
+  });
+
+  it('uses one deadline across retries and bounds an unresponsive proof iterator', async () => {
+    let imports = 0, proofs = 0, signal;
+    const late = deferred();
+    const {node} = stub({add: async () => { imports++; return result(); }, pin: {ls: options => {
+      const attempt = ++proofs;
+      signal = options.signal;
+      return {[Symbol.asyncIterator]() { return this; }, next() {
+        return attempt === 1 ? Promise.reject(Object.assign(new Error('reset'), {code: 'ECONNRESET'})) : late.promise;
+      }, return: async () => ({done: true})};
+    }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 90}), error =>
+      error.code === 'kubo_import_pin_proof_timeout');
+    assert.equal(imports, 1);
+    assert.equal(proofs, 2);
+    assert.equal(signal.aborted, true);
+    late.reject(new Error('late read error'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(proofs, 2);
+  });
+
+  it('lets caller/fence-loss cancellation win and clears parent listeners', async () => {
+    const abort = new AbortController(), entered = deferred(), late = deferred();
+    const reason = new Error('storage_fence_lost');
+    let imports = 0, proofs = 0;
+    const {node} = stub({add: async () => { imports++; return result(); }, pin: {ls: () => {
+      proofs++;
+      return {[Symbol.asyncIterator]() { return this; }, next() { entered.resolve(); return late.promise; },
+        return: async () => ({done: true})};
+    }}});
+    const pending = new JsIpfsService(node, 'kubo').saveFile('1', {pinProofTimeoutMs: 500, signal: abort.signal});
+    await entered.promise;
+    abort.abort(reason);
+    await assert.rejects(pending, error => error === reason);
+    assert.equal(imports, 1);
+    assert.equal(proofs, 1);
+    assert.equal(getEventListeners(abort.signal, 'abort').length, 0);
+    late.resolve({done: true});
+  });
+
+  it('does not issue a proof read when cancellation preceded confirmation', async () => {
+    const abort = new AbortController(), reason = new Error('caller stopped');
+    let proofs = 0;
+    const {node} = stub({add: async () => { abort.abort(reason); return result(); }, pin: {ls: async function* () {
+      proofs++;
+      yield {cid, type: 'recursive'};
+    }}});
+    await assert.rejects(new JsIpfsService(node, 'kubo').saveFile('1', {signal: abort.signal}), error => error === reason);
+    assert.equal(proofs, 0);
+  });
+
+  it('rejects invalid proof budgets before any file or object import', async () => {
+    let imports = 0;
+    const {node} = stub({add: async () => { imports++; return result(); }, dag: {put: async () => { imports++; return cid; }}});
+    const service = new JsIpfsService(node, 'kubo');
+    for (const pinProofTimeoutMs of [0, -1, 1.5, Infinity, NaN, null, '100']) {
+      await assert.rejects(service.saveFile('1', {pinProofTimeoutMs}), /kubo_import_pin_proof_timeout_invalid/);
+    }
+    await assert.rejects(service.saveObject({a: 1}, {pinProofTimeoutMs: 0}), /kubo_import_pin_proof_timeout_invalid/);
+    assert.equal(imports, 0);
   });
 
 });
