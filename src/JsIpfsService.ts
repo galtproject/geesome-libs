@@ -27,6 +27,12 @@ common.initializeCustomEvent();
 // const Helia = require('helia');
 // const urlSource = require('ipfs-utils/src/files/url-source');
 
+// Keep transport cancellation/deadlines without exposing importer switches that
+// could change the established CID or disable the pin/GC safety guarantee.
+export function kuboPinnedImportOptions(options = {}) {
+  return {...pick(options, ['timeout', 'signal', 'headers']), pin: true, cidVersion: 1};
+}
+
 export default class JsIpfsService {
   node;
   type;
@@ -62,14 +68,18 @@ export default class JsIpfsService {
   }
 
   async saveFileByUrl(url, options = {}) {
-    return this.saveFile(got.stream(url));
+    return this.saveFile(got.stream(url), options);
   }
 
   async saveBrowserFile(fileObject, options: any = {}) {
-    let result = await this.node.add(fileObject, {pin: false, cidVersion: 1});
-    result = this.wrapIpfsItem(result);
+    if (this.type !== 'helia') {
+      const result = await this.node.add(fileObject, kuboPinnedImportOptions(options));
+      await this.assertKuboRecursivePin(result.cid || result.hash, options);
+      return this.wrapIpfsItem(result);
+    }
+    const result = this.wrapIpfsItem(await this.node.add(fileObject, {pin: false, cidVersion: 1}));
     const pinPromise = this.addPin(result.id);
-    if(options.waitForPin) {
+    if (options.waitForPin) {
       await pinPromise;
     }
     return result;
@@ -80,40 +90,67 @@ export default class JsIpfsService {
       content = Buffer.from(content, 'utf8');
     }
     return new Promise((resolve, reject) => {
-      // if content is stream - subscribe for error
-      if(content.on) {
-        // TODO: figure out why its not working
-        content.on('error', reject);
-      }
-      if (this.type === 'helia') {
-        if (content.pipe) {
-          //https://github.com/ipfs-examples/helia-examples/blob/main/examples/helia-create-car/test/index.spec.js
-          return resolve(this.heliaFs.addByteStream(content));
+      const onError = error => reject(error);
+      const cleanup = () => content.removeListener?.('error', onError);
+      // Consume stream errors while import is pending. Keep the handler until
+      // the importer settles even when the stream already rejected this promise.
+      content.on?.('error', onError);
+      let imported;
+      try {
+        if (this.type === 'helia') {
+          imported = content.pipe ? this.heliaFs.addByteStream(content) : this.heliaFs.addBytes(content);
         } else {
-          //https://github.com/ipfs/helia/wiki/Migrating-from-js-IPFS
-          // console.log('this.heliaFs.addBytes');
-          return resolve(this.heliaFs.addBytes(content));
+          imported = this.saveFile({content}, options);
         }
-      } else {
-        //https://github.com/ipfs/js-kubo-rpc-client
-        this.saveFile({content}).then(resolve).catch(reject);
+      } catch (error) {
+        cleanup();
+        reject(error);
+        return;
       }
+      Promise.resolve(imported).then(result => {
+        cleanup();
+        resolve(result);
+      }, error => {
+        cleanup();
+        reject(error);
+      });
     });
   }
 
   async saveFile(data, options: any = {}) {
     let result;
     if (this.type === 'helia') {
-      result = await this.saveFileByData(data);
+      result = await this.saveFileByData(data, options);
       result = this.wrapIpfsItem(await this.heliaFs.stat(result.toString()));
     } else {
-      result = this.wrapIpfsItem(await this.node.add(data, {pin: false, cidVersion: 1}));
+      // Kubo pins inside the import, under its own GC coordination. A second
+      // pin RPC after an unpinned add would leave a collection race.
+      const imported = await this.node.add(data, kuboPinnedImportOptions(options));
+      await this.assertKuboRecursivePin(imported.cid || imported.hash, options);
+      return this.wrapIpfsItem(imported);
     }
     const pinPromise = this.addPin(result.id);
     if (options.waitForPin) {
       await pinPromise;
     }
     return result;
+  }
+
+  async assertKuboRecursivePin(value, options = {}) {
+    const cid = CID.parse(value.toString()).toV1();
+    let found = false;
+    // Some RPC clients do not expose late command-error trailers. Confirm the
+    // resulting recursive pin before publishing a CID, consuming the full stream
+    // so a late pin-list failure cannot turn into success either.
+    for await (const pin of this.node.pin.ls({...pick(options, ['timeout', 'signal', 'headers']),
+      paths: [cid], type: 'recursive'})) {
+      if (pin.type === 'recursive' && pin.cid && CID.parse(pin.cid.toString()).toV1().equals(cid)) {
+        found = true;
+      }
+    }
+    if (!found) {
+      throw new Error('kubo_import_pin_unconfirmed');
+    }
   }
 
   async getAccountIdByName(name) {
@@ -201,7 +238,10 @@ export default class JsIpfsService {
     if (this.type === 'helia') {
       cid = await this.heliaCbor.add(objectData);
     } else {
-      cid = await this.node.dag.put(objectData, {storeCodec: 'dag-cbor', hashAlg: 'sha2-256'});
+      cid = await this.node.dag.put(objectData, {...pick(options, ['timeout', 'signal', 'headers']),
+        storeCodec: 'dag-cbor', hashAlg: 'sha2-256', pin: true});
+      await this.assertKuboRecursivePin(cid, options);
+      return ipfsHelper.cidToHash(cid);
     }
     const ipldHash = ipfsHelper.cidToHash(cid);
 

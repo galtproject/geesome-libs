@@ -7,7 +7,7 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-import JsIpfsService from './JsIpfsService';
+import JsIpfsService, {kuboPinnedImportOptions} from './JsIpfsService';
 import { globSource } from '@helia/unixfs';
 import fs from 'node:fs';
 import Path from "path";
@@ -26,8 +26,7 @@ export default class JsIpfsServiceNode extends JsIpfsService {
       asyncGenerator = this.heliaFs.addAll(filterGlobSource(path, `{.,**/*}`), {wrapWithDirectory: true});
     } else {
       asyncGenerator = this.node.addAll(filterGlobSource(path, `**/*`), {
-        pin: false,
-        cidVersion: 1,
+        ...kuboPinnedImportOptions(options),
         wrapWithDirectory: true
       });
     }
@@ -36,10 +35,18 @@ export default class JsIpfsServiceNode extends JsIpfsService {
         res = file;
       }
     }
+    if (!res) {
+      throw new Error('directory_import_root_missing');
+    }
+    if (this.type !== 'helia') {
+      await this.assertKuboRecursivePin(res.cid || res.hash, options);
+    }
     const dirResult = this.wrapIpfsItem(res);
-    const pinPromise = this.addPin(dirResult.id);
-    if (options.waitForPin) {
-      await pinPromise;
+    if (this.type === 'helia') {
+      const pinPromise = this.addPin(dirResult.id);
+      if (options.waitForPin) {
+        await pinPromise;
+      }
     }
     return dirResult;
   }
